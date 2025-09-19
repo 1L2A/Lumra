@@ -9,14 +9,14 @@ import 'package:lumra_project/theme/custom_themes/outlined_button_theme.dart';
 import 'package:lumra_project/theme/custom_themes/text_field_theme.dart';
 import 'package:lumra_project/theme/custom_themes/text_theme.dart';
 
-class BAppTheme {
+class LumraAppTheme {
   //private constructor can not be called, Call the functions
-  BAppTheme._();
+  LumraAppTheme._();
 
   //can be called as an attribute
   static ThemeData lightTheme = ThemeData (
     useMaterial3: true,
-    fontFamily: 'Lato',
+    fontFamily: 'K2D',
     //this is important for flutter to know which theme u on
     brightness:Brightness.light,
     //from constants where the pallet of the app is
