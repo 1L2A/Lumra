@@ -103,7 +103,7 @@ class AccountPage extends StatelessWidget {
                            backgroundColor: BColors.primary,
                            foregroundColor: BColors.textwhite,
                           padding: const EdgeInsets.symmetric(vertical: 15),
-                             textStyle: BTextTheme.lightTextTheme.headlineSmall, // نص الزر
+                             textStyle: BTextTheme.lightTextTheme.headlineSmall, 
                                ),
                            ),
                        ),
