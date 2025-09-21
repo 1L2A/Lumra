@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
 import 'package:lumra_project/controller/auth/auth_controller.dart';
-import 'package:lumra_project/view/auth/loginpage.dart';
 import 'package:lumra_project/view/welcomepage.dart';
 import 'package:lumra_project/theme/custom_themes/text_field_theme.dart';
 
