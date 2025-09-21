@@ -5,6 +5,8 @@ import '../../theme/base_themes/colors.dart';
 import '../../theme/custom_themes/text_theme.dart';
 import '../../theme/custom_themes/appbar_theme.dart';
 import '../Account/viewProfile.dart';
+import 'package:lumra_project/controller/auth/auth_controller.dart';
+import 'package:lumra_project/view/auth/loginPage.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -12,6 +14,9 @@ class AccountPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final UserController userController = Get.find<UserController>();
+
+    final AuthController authController =
+        Get.find<AuthController>(); // to use the log out function
 
     return Scaffold(
       backgroundColor: BColors.light,
@@ -37,10 +42,12 @@ class AccountPage extends StatelessWidget {
             const SizedBox(height: 20),
 
             // User Name
-            Obx(() => Text(
-                  userController.user.value?.name ?? "Loading...",
-                  style: BTextTheme.lightTextTheme.headlineMedium,
-                )),
+            Obx(
+              () => Text(
+                userController.user.value?.name ?? "Loading...",
+                style: BTextTheme.lightTextTheme.headlineMedium,
+              ),
+            ),
             const SizedBox(height: 20),
 
             // Options
@@ -55,11 +62,7 @@ class AccountPage extends StatelessWidget {
               },
             ),
             const SizedBox(height: 10),
-            _buildOption(
-              icon: Icons.article,
-              text: "Posts",
-              onTap: () {},
-            ),
+            _buildOption(icon: Icons.article, text: "Posts", onTap: () {}),
             const SizedBox(height: 10),
             _buildOption(
               icon: Icons.bookmark,
@@ -92,7 +95,10 @@ class AccountPage extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () async {
+                  await authController.logout();
+                  Get.offAll(() => const LoginScreen());
+                },
                 icon: const Icon(Icons.logout),
                 label: const Text("Sign Out"),
                 style: ElevatedButton.styleFrom(
@@ -113,12 +119,19 @@ class AccountPage extends StatelessWidget {
   }
 
   // Method for building each option row
-  Widget _buildOption(
-      {required IconData icon, required String text, VoidCallback? onTap}) {
+  Widget _buildOption({
+    required IconData icon,
+    required String text,
+    VoidCallback? onTap,
+  }) {
     return ListTile(
       leading: Icon(icon, color: BColors.iconColor),
       title: Text(text, style: BTextTheme.lightTextTheme.headlineSmall),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: BColors.iconColor),
+      trailing: const Icon(
+        Icons.arrow_forward_ios,
+        size: 16,
+        color: BColors.iconColor,
+      ),
       onTap: onTap,
     );
   }
