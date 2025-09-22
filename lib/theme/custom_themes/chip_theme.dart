@@ -13,11 +13,12 @@ class BChipTheme {
   BChipTheme._();
 
   static ChipThemeData lightBottomSheetTheme = ChipThemeData(
+    backgroundColor: BColors.white,
     disabledColor: Colors.grey.withOpacity(0.4),
-    labelStyle: const TextStyle(color: Colors.black), ///(text inside the chip)
-    selectedColor: BColors.primary, ///when Selected
-    padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12.0),
-    checkmarkColor: Colors.white, ///If the chip is selectable (ChoiceChip or FilterChip), a checkmark icon may appear when it's selected
-  ); // BottomSheetThemeData
-
+    selectedColor: BColors.primary,
+    checkmarkColor: Colors.white,
+    labelStyle: const TextStyle(color: BColors.black),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+    shape: const StadiumBorder(),
+  );
 }

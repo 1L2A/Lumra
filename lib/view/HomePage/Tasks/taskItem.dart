@@ -1,0 +1,75 @@
+// lib/view/HomePage/Tasks/task_item.dart
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lumra_project/model/task/task.dart';
+import 'package:lumra_project/controller/task/taskController.dart';
+import 'package:lumra_project/theme/base_themes/colors.dart';
+import 'package:lumra_project/theme/base_themes/sizes.dart';
+import 'priorityChip.dart';
+
+class TaskItem extends StatelessWidget {
+  final Task task;
+  final TaskController controller;
+
+  const TaskItem({super.key, required this.task, required this.controller});
+
+  Color _priorityColor(String p) {
+    switch (p.toLowerCase()) {
+      case 'high':
+        return BColors.error;
+      case 'medium':
+        return BColors.warning;
+      case 'done':
+        return BColors.success;
+      default:
+        return BColors.buttonPrimary; // low
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    final label = task.isChecked ? 'Done' : task.priority;
+    final chipColor = _priorityColor(label);
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: BSizes.sm),
+      decoration: BoxDecoration(
+        color: BColors.borderSecondary,
+        borderRadius: BorderRadius.circular(BSizes.borderRadiusMd),
+        border: Border.all(color: BColors.borderSecondary),
+      ),
+      child: Row(
+        children: [
+          // left: checkbox + title
+          Expanded(
+            child: CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                task.tasksTitle,
+                style: tt.bodyMedium?.copyWith(
+                  decoration: task.isChecked
+                      ? TextDecoration.lineThrough
+                      : null,
+                  color: task.isChecked ? Colors.grey : BColors.black,
+                ),
+              ),
+              value: task.isChecked,
+              onChanged: (val) async {
+                if (val == null) return;
+                try {
+                  await controller.updateTaskStatus(task.id, val);
+                } on FirebaseException catch (_) {}
+              },
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
+          ),
+
+          // right: priority chip
+          PriorityChip(label: label, color: chipColor),
+        ],
+      ),
+    );
+  }
+}

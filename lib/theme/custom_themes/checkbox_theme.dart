@@ -11,15 +11,15 @@ class BCheckboxTheme {
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
 
     ///color of the icon, sets the color of the checkmark icon (✔) inside the checkbox.
-    checkColor: MaterialStateProperty.resolveWith( (states) { ///allows you to give different colors depending on the state (selected, hovered, pressed, etc.).
-      if (states.contains(MaterialState.selected)){
+    checkColor: WidgetStateProperty.resolveWith( (states) { ///allows you to give different colors depending on the state (selected, hovered, pressed, etc.).
+      if (states.contains(WidgetState.selected)){
         return BColors.white;}
       else {
         return BColors.black;}
 
   }),
-      fillColor: MaterialStateProperty.resolveWith( (states) {
-        if (states.contains(MaterialState.selected)){
+      fillColor: WidgetStateProperty.resolveWith( (states) {
+        if (states.contains(WidgetState.selected)){
           return BColors.primary;}
         else {
           return Colors.transparent;} ///OR BLACK OR WHITE IF YOU WANT IT MORE VISIBLE?

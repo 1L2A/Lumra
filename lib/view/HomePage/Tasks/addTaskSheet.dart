@@ -1,0 +1,98 @@
+// lib/view/HomePage/Tasks/add_task_sheet.dart
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lumra_project/model/task/task.dart';
+import 'package:lumra_project/controller/task/taskController.dart';
+import 'package:lumra_project/theme/base_themes/sizes.dart';
+
+class AddTaskSheet extends StatefulWidget {
+  final TaskController controller;
+  const AddTaskSheet({super.key, required this.controller});
+
+  @override
+  State<AddTaskSheet> createState() => _AddTaskSheetState();
+}
+
+class _AddTaskSheetState extends State<AddTaskSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleCtrl = TextEditingController();
+  String _priority = 'low';
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: BSizes.md,
+        right: BSizes.md,
+        top: BSizes.md,
+        bottom: MediaQuery.of(context).viewInsets.bottom + BSizes.md,
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Add Task', style: tt.headlineSmall),
+            SizedBox(height: BSizes.sm),
+            TextFormField(
+              controller: _titleCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Title',
+                hintText: 'e.g., Math assignment',
+              ),
+              textInputAction: TextInputAction.done,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Title is required' : null,
+            ),
+            SizedBox(height: BSizes.sm),
+            DropdownButtonFormField<String>(
+              value: _priority,
+              decoration: const InputDecoration(labelText: 'Priority'),
+              items: const [
+                DropdownMenuItem(value: 'high', child: Text('High')),
+                DropdownMenuItem(value: 'medium', child: Text('Medium')),
+                DropdownMenuItem(value: 'low', child: Text('Low')),
+              ],
+              onChanged: (v) => _priority = v ?? 'low',
+            ),
+            SizedBox(height: BSizes.md),
+            FilledButton.icon(
+              icon: const Icon(Icons.check),
+              label: const Text('Add'),
+              onPressed: () async {
+                if (!_formKey.currentState!.validate()) return;
+                final newTask = Task(
+                  id: '',
+                  tasksTitle: _titleCtrl.text.trim(),
+                  priority: _priority,
+                  basePriority: _priority,
+                  isChecked: false,
+                  updatedAt: Timestamp.now(),
+                );
+                try {
+                  await widget.controller.addTask(newTask);
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                } on FirebaseException catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Write error: ${e.code}')),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

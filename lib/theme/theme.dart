@@ -14,15 +14,15 @@ class LumraAppTheme {
   LumraAppTheme._();
 
   //can be called as an attribute
-  static ThemeData lightTheme = ThemeData (
+  static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     fontFamily: 'K2D',
     //this is important for flutter to know which theme u on
-    brightness:Brightness.light,
+    brightness: Brightness.light,
     //from constants where the pallet of the app is
     primaryColor: BColors.primary,
     //this gives a uniform background for the app
-    scaffoldBackgroundColor: Colors.white ,
+    scaffoldBackgroundColor: Colors.white,
     textTheme: BTextTheme.lightTextTheme,
     elevatedButtonTheme: BElevatedButtonTheme.lightElevatedButtonTheme,
     appBarTheme: BAppBarTheme.lightAppBarTheme,
@@ -31,5 +31,5 @@ class LumraAppTheme {
 
     outlinedButtonTheme: BOutlinedButtonTheme.lightOutlinedButtonTheme,
     inputDecorationTheme: BTextFormFieldTheme.lightInputDecorationTheme,
-      );
+  );
 }

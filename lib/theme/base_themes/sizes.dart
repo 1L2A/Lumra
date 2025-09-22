@@ -1,5 +1,4 @@
 class BSizes {
-
   ///padding and margin
   static const double xs = 4.0;
   static const double sm = 8.0;
@@ -67,5 +66,4 @@ class BSizes {
 
   ///Card view spacing
   static const double gridViewSpacing = 16.0;
-
 }

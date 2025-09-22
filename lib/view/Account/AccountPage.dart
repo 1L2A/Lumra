@@ -5,6 +5,7 @@ import '../../theme/base_themes/colors.dart';
 import '../../theme/custom_themes/text_theme.dart';
 import '../../theme/custom_themes/appbar_theme.dart';
 import '../Account/viewProfile.dart';
+import 'package:lumra_project/view/navbar_widget.dart';
 import 'package:lumra_project/controller/auth/auth_controller.dart';
 import 'package:lumra_project/view/auth/loginPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -43,8 +44,9 @@ class AccountPage extends StatelessWidget {
             Center(
               child: CircleAvatar(
                 radius: 100,
-                backgroundImage:
-                    const AssetImage('assets/images/profile_image.jpeg'),
+                backgroundImage: const AssetImage(
+                  'assets/images/profile_image.jpeg',
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -80,27 +82,29 @@ class AccountPage extends StatelessWidget {
             const SizedBox(height: 10),
 
             // QR Code Option (only for ADHD)
-            Obx(() { 
-              if (userController.role.value.toLowerCase() == 'adhd') 
-              { return Column( 
-                children: 
-                [ _buildOption(
-                  icon: Icons.qr_code,
-                  text: "Generate QR Code For Caregiver",
-                  onTap: () {
-                 Navigator.push(
-                 context,
-                 MaterialPageRoute(builder: (context) => const Qrcode()),
-                                );
-                              },
-                            ),
-                 const SizedBox(height: 10),
-                  ], 
-                  ); 
-                  } else 
-                  { return const SizedBox.shrink(); }
-                   }
-                   ),
+            Obx(() {
+              if (userController.role.value.toLowerCase() == 'adhd') {
+                return Column(
+                  children: [
+                    _buildOption(
+                      icon: Icons.qr_code,
+                      text: "Generate QR Code For Caregiver",
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const Qrcode(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                );
+              } else {
+                return const SizedBox.shrink();
+              }
+            }),
 
             const SizedBox(height: 30),
 
@@ -117,8 +121,10 @@ class AccountPage extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: BColors.primary,
                   foregroundColor: BColors.textwhite,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 15, horizontal: 0),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 15,
+                    horizontal: 0,
+                  ),
                   textStyle: BTextTheme.lightTextTheme.headlineSmall,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -129,6 +135,7 @@ class AccountPage extends StatelessWidget {
           ],
         ),
       ),
+      bottomNavigationBar: const NavbarAdhd(),
     );
   }
 
