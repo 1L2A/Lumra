@@ -26,7 +26,7 @@ class UserModel {
       email: data['email'] ?? '',
       gender: data['gender'] ?? '',
       dob: (data['dob'] as Timestamp?)?.toDate() ?? DateTime(2000,1,1),
-      role: data['rule'] ?? '',
+      role: data['role'] ?? '',
     );
   }
 
