@@ -1,11 +1,8 @@
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lumra_project/service/auth.dart';
-<<<<<<< HEAD
 import 'package:lumra_project/view/Account/AccountPage.dart';
-=======
 import 'package:lumra_project/view/Homepage/ADHDhomePageScreen.dart';
->>>>>>> 4d3f9752bed6c68c250d780e67985b1b25d8e211
 import 'package:lumra_project/view/welcomepage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../controller/Account/UserController.dart';
