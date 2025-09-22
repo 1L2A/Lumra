@@ -24,7 +24,7 @@ class UserModel {
       id: doc.id,
       name: data['name'] ?? '', 
       email: data['email'] ?? '',
-      gender: data['gender'] ?? '',
+      gender: (data['gender'] ?? '').toString().trim().toLowerCase(),
       dob: (data['dob'] as Timestamp?)?.toDate() ?? DateTime(2000,1,1),
       role: data['role'] ?? '',
     );
@@ -43,7 +43,7 @@ class UserModel {
 
   UserModel copyWith({
     String? name,
-    String? username,  
+    
     String? email,
     String? gender,
     DateTime? dob,

@@ -8,6 +8,7 @@ import '../Account/viewProfile.dart';
 import 'package:lumra_project/controller/auth/auth_controller.dart';
 import 'package:lumra_project/view/auth/loginPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../Account/QRCode.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -83,7 +84,16 @@ class AccountPage extends StatelessWidget {
               if (userController.role.value.toLowerCase() == 'adhd') 
               { return Column( 
                 children: 
-                [ _buildOption( icon: Icons.qr_code, text: "Generate QR Code For Caregiver", onTap: () {}, ),
+                [ _buildOption(
+                  icon: Icons.qr_code,
+                  text: "Generate QR Code For Caregiver",
+                  onTap: () {
+                 Navigator.push(
+                 context,
+                 MaterialPageRoute(builder: (context) => const Qrcode()),
+                                );
+                              },
+                            ),
                  const SizedBox(height: 10),
                   ], 
                   ); 

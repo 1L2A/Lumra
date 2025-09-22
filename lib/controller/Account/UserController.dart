@@ -46,7 +46,7 @@ class UserController {
         nameController.text = user.value!.name;
         role.value = user.value!.role;
         emailController.text = user.value!.email;
-        gender.value = user.value!.gender;
+        gender.value = user.value!.gender.trim().toLowerCase();
         dob.value = user.value!.dob;
       }
     });
@@ -59,7 +59,8 @@ class UserController {
     final updatedUser = user.value!.copyWith(
       name: nameController.text,
       email: emailController.text,
-      gender: gender.value,
+      gender: gender.value.trim().toLowerCase(),
+      
       dob: dob.value,
       role: role.value,
     );
