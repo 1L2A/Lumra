@@ -41,9 +41,9 @@ class AuthController extends GetxController {
 
       Get.snackbar("Success", "You are now logged in");
       if (role == 'adhd') {
-        Get.offAll(() => const AccountPage()); // jana page
+        Get.offAll(() => const Welcomepage()); // jana page
       } else if (role == 'caregiver') {
-        Get.offAll(() => const AccountPage()); // jana page
+        Get.offAll(() => const Welcomepage()); // jana page
       }
       // else {
       //  Get.offAll(() => const Welcomepage()); ---- the admin page
