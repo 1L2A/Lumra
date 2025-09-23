@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:lumra_project/controller/auth/auth_controller.dart';
-import '../../controller/Account/UserController.dart';
-import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../theme/custom_themes/appbar_theme.dart';
 import '../../theme/base_themes/colors.dart';
 
@@ -11,18 +9,11 @@ class Qrcode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final UserController userController;
-    if (!Get.isRegistered<UserController>()) {
-      userController = Get.put(UserController(FirebaseFirestore.instance));
-      userController.init();
-    } else {
-      userController = Get.find<UserController>();
-    }
+    final String userUid = FirebaseAuth.instance.currentUser?.uid ?? "no-user";
 
-    final AuthController authController = Get.find<AuthController>();
     return Scaffold(
-        backgroundColor: BColors.light,
-        appBar: AppBar(
+      backgroundColor: BColors.light,
+      appBar: AppBar(
         title: const Text("QR Code"),
         backgroundColor: BAppBarTheme.lightAppBarTheme.backgroundColor,
         elevation: BAppBarTheme.lightAppBarTheme.elevation,
@@ -31,14 +22,11 @@ class Qrcode extends StatelessWidget {
         centerTitle: true,
       ),
       body: Center(
-        child: Container(
-         
-           
-
-
-
-
-
+        child: QrImageView(
+          data: userUid,
+          version: QrVersions.auto,
+          size: 200.0,
+          gapless: true,
         ),
       ),
     );
