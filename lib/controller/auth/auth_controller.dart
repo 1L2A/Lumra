@@ -20,7 +20,7 @@ class AuthController extends GetxController {
       isLoading.value = true;
       await _authService.signIn(email, password);
 
-      final uid = FirebaseAuth.instance.currentUser?.uid; // get the uid
+      final uid = currentUser?.uid; // get the uid
 
       if (uid == null) {
         return "User not found.";
