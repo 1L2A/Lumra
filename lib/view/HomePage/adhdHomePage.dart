@@ -139,7 +139,7 @@ class _HomePageState extends State<HomePage> {
     final tt = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: BColors.white, // page background color
+      backgroundColor: BColors.white,
       appBar: AppBar(
         backgroundColor: BColors.primary,
         elevation: 0,

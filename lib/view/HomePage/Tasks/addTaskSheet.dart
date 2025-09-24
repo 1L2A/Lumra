@@ -76,14 +76,14 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
             SizedBox(height: BSizes.md),
             FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: BColors.primary, // your primary color
-                foregroundColor: Colors.white, // text/icon color
+                backgroundColor: BColors.primary,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   vertical: 16,
                   horizontal: 24,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20), // same rounded style
+                  borderRadius: BorderRadius.circular(20),
                 ),
               ),
               icon: const Icon(Icons.check),
