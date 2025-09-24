@@ -48,8 +48,8 @@ class AuthController extends GetxController {
         Get.offAllNamed('/app');
 =======
       if (role == 'adhd') {
-       Get.offAll(() => const HomePage()); // jana page
-       
+       //Get.offAll(() => const HomePage()); // jana page
+       Get.offAll(() => const AccountPage());
       } else if (role == 'caregiver') {
         Get.offAll(() => const Welcomepage()); // jana page
 >>>>>>> cfe332b8ad1394b615a11d95040e6268be2a27dc
