@@ -19,45 +19,19 @@ class AuthController extends GetxController {
       isLoading.value = true;
       await _authService.signIn(email, password);
 
-      final uid = currentUser?.uid; // get the uid
+      final uid = currentUser?.uid;
+      if (uid == null) return "User not found.";
 
-      if (uid == null) {
-        return "User not found.";
-      }
-
-      final snapshot = await FirebaseFirestore
-          .instance // get the user data
+      final snapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
           .get();
 
-      // final role = snapshot.data()?['role']; // get the role /edit by latifa
       final role = snapshot.data()?['role']?.toString().toLowerCase() ?? '';
 
-<<<<<<< HEAD
-      // if (role == 'adhd') {
-      //   Get.offAll(() => const HomePage()); // jana page
-      // } else if (role == 'caregiver') {
-      //   Get.offAll(() => const Welcomepage()); // jana page
-      // }
-      // After you fetch user + role successfully:
-      if (role == 'adhd' || role == 'caregiver') {
-        Get.offAllNamed('/app'); // ONE place, navbar chooses tabs by role
-      } else {
-        // fallback ( admin or missing role)
-        Get.offAllNamed('/app');
-=======
-      if (role == 'adhd') {
-       //Get.offAll(() => const HomePage()); // jana page
-       Get.offAll(() => const AccountPage());
-      } else if (role == 'caregiver') {
-        Get.offAll(() => const Welcomepage()); // jana page
->>>>>>> cfe332b8ad1394b615a11d95040e6268be2a27dc
-      }
+      // Route once cuz AppShell decides tabs based on role
+      Get.offAllNamed('/app');
 
-      // else {
-      //  Get.offAll(() => const Welcomepage()); ---- the admin page
-      //}
       return null;
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
