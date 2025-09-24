@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
       home: SplashGifScreen(
         nextScreen: Welcomepage(),
       ), //splash then we start! :)
-      initialRoute: R.home,
+      //initialRoute: R.home,
       routes: {
         // R.home: (_) => isCaregiver
         //   ? const CaregiverHomePage()    // shows caregiver navbar
