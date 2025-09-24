@@ -10,19 +10,18 @@ import 'package:lumra_project/theme/custom_themes/text_theme.dart';
 import 'package:intl/intl.dart';
 
 class AddEventView extends StatelessWidget {
-  
   AddEventView({super.key});
   final authContoller = Get.find<AuthController>();
 
-  // Directly get the controller from GetX
-  final AddEventController controller = Get.put(
-    AddEventController(FirebaseFirestore.instance, FirebaseAuth.instance.currentUser!.uid),
-  );
-
-
-
   @override
   Widget build(BuildContext context) {
+    // Directly get the controller from GetX
+    final AddEventController controller = Get.put(
+      AddEventController(
+        FirebaseFirestore.instance,
+        authContoller.currentUser!.uid,
+      ),
+    );
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -44,7 +43,8 @@ class AddEventView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: BSizes.SpaceBtwSections),
+            
+            const SizedBox(height: BSizes.SpaceBtwItems),
 
             // Event Title Input
             TextField(
@@ -67,7 +67,7 @@ class AddEventView extends StatelessWidget {
               final startTimestamp = controller.eventStart.value;
 
               //this is just for UI, to make time humen readable not timeStamp
-              final startText = startTimestamp != null 
+              final startText = startTimestamp != null
                   ? TimeOfDay.fromDateTime(
                       startTimestamp.toDate(),
                     ).format(Get.context!)
