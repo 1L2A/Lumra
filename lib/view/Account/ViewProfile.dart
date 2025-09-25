@@ -122,11 +122,7 @@ class ViewProfile extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Color.fromARGB(255, 5, 5, 5),
-              ),
+              style: BTextTheme.lightTextTheme.titleSmall,
             ),
             const SizedBox(height: 8),
             TextField(
@@ -140,14 +136,17 @@ class ViewProfile extends StatelessWidget {
                 suffixIcon: IconButton(
                   icon: Icon(enable.value ? Icons.check : Icons.edit),
                   onPressed: () {
-                    enable.value = !enable.value; // تبديل بين القراءة والتحرير
+                    enable.value = !enable.value; 
                   },
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+                border: OutlineInputBorder(),
+                 contentPadding: const EdgeInsets.symmetric(
+                   horizontal: 24,
+                   vertical: 16,
+                 )
                 ),
               ),
-            ),
+            
           ],
         ),
       ),
@@ -161,15 +160,19 @@ class ViewProfile extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Gender", style: TextStyle(fontWeight: FontWeight.bold)),
+         // const Text("Gender", style: BTextTheme.lightTextTheme.titleSmall ),
+         Text("Gender" , 
+            style:  BTextTheme.lightTextTheme.titleSmall
+         ),
           const SizedBox(height: 2),
           Row(
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    userController.gender.value = 'male';
-                  },
+                  
+                   onPressed: () {
+                   // userController.gender.value = 'male';
+                   },
                   icon: const Icon(Icons.boy, size: 25),
                   label: const Text("Male"),
                   style: ElevatedButton.styleFrom(
@@ -190,9 +193,10 @@ class ViewProfile extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: ElevatedButton.icon(
+                  
                   onPressed: () {
-                    userController.gender.value = 'female';
-                  },
+                     //userController.gender.value = 'female';
+                   },
                   icon: const Icon(Icons.girl, size: 25),
                   label: const Text("Female"),
                   style: ElevatedButton.styleFrom(
