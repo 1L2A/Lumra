@@ -115,6 +115,9 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                   basePriority: _priority,
                   isChecked: false,
                   updatedAt: Timestamp.now(),
+                  expireAt: Timestamp.fromDate(
+                    DateTime.now().add(const Duration(hours: 24)),
+                  ),
                 );
 
                 try {

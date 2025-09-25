@@ -7,16 +7,27 @@ class TaskController {
 
   TaskController({required this.userId});
 
+  // Hide expired tasks right away (TTL will delete them later) هو كذا طريقته مايتعامل بالثواني
+  //we will cancel the TTL because google cloud doesn’t allow direct billing
   Stream<List<Task>> getTasks() {
     final col = _firestore.collection('users').doc(userId).collection('tasks');
-    return col.snapshots().map(
-      (snap) => snap.docs.map((d) => Task.fromFirestore(d)).toList(),
-    );
+
+    return col
+        .where('expireAt', isGreaterThan: Timestamp.now()) // <— NEW
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => Task.fromFirestore(d)).toList());
   }
 
   Future<void> addTask(Task task) async {
     final col = _firestore.collection('users').doc(userId).collection('tasks');
-    await col.add(task.toFirestore(useServerTimestamp: true));
+
+    // Ensure every new task has expireAt = now + 24hours
+    final data = task.toFirestore(useServerTimestamp: true);
+    data['expireAt'] =
+        (data['expireAt'] as Timestamp?) ??
+        Timestamp.fromDate(DateTime.now().add(const Duration(hours: 24)));
+
+    await col.add(data);
   }
 
   /// When checked -> priority becomes 'done'.
@@ -33,7 +44,6 @@ class TaskController {
 
     final currentPriority = (data['priority'] as String?) ?? 'low';
     final basePriority = (data['basePriority'] as String?) ?? currentPriority;
-
     final newPriority = isChecked ? 'done' : basePriority;
 
     await docRef.update({
@@ -44,7 +54,6 @@ class TaskController {
     });
   }
 
-  /// Counts *all* tasks (done + not done).
   Future<int> getTaskCount() async {
     final snap = await _firestore
         .collection('users')
@@ -54,7 +63,6 @@ class TaskController {
     return snap.docs.length;
   }
 
-  /// Counts only tasks that are not marked as done.( future sprint)
   Future<int> getOpenTaskCount() async {
     final snap = await _firestore
         .collection('users')
