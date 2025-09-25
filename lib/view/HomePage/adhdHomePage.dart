@@ -29,9 +29,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _taskController = TaskController(
-      userId: authContoller.currentUser!.uid,
-    ); // users/adhdDemo
+    _taskController = TaskController(userId: authContoller.currentUser!.uid);
     if (!Get.isRegistered<UserController>()) {
       _userController = Get.put(UserController(FirebaseFirestore.instance));
       _userController.init();
