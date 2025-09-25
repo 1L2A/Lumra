@@ -64,25 +64,35 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   Form(
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // ==== Email Field ====
+                        Text(
+                          "Email Address",
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 8),
                         TextFormField(
                           controller: emailController,
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.email),
-                            labelText: 'Email Address',
                             errorText: emailError,
                           ),
                         ),
 
                         const SizedBox(height: BSizes.md),
+
                         // ==== Password Field ====
+                        Text(
+                          "Password",
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 8),
                         TextFormField(
                           controller: passwordController,
                           obscureText: _obscurePassword,
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.lock),
-                            labelText: 'Password',
                             errorText: passwordError,
                             suffixIcon: IconButton(
                               icon: Icon(

@@ -40,20 +40,28 @@ class ResetPasswordDialog {
                 width: double.maxFinite,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextFormField(
-                      controller: emailController,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.email),
-                        labelText: "Email Address",
+                    // ==== Email Label ====
+                    const Text(
+                      "Email Address",
+                      style: TextStyle(
+                        fontFamily: 'K2D',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    if (errorMessage != null)
-                      Text(
-                        errorMessage!,
-                        style: const TextStyle(color: Colors.red, fontSize: 13),
+
+                    // ==== Email Field ====
+                    TextFormField(
+                      controller: emailController,
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.email),
+                        errorText: errorMessage,
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -113,7 +121,7 @@ class ResetPasswordDialog {
                     final result = await authController.resetPassword(email);
                     if (result == null) {
                       Navigator.pop(context);
-                      Get.snackbar("Success", "Check your inbox ");
+                      Get.snackbar("Success", "Check your inbox");
                     } else {
                       setState(() {
                         errorMessage = result;
