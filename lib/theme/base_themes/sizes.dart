@@ -48,7 +48,7 @@ class BSizes {
   static const double productItemHeight = 160.0;
 
   ///Input Fields
-  static const double inputFieldRadius = 12.0;
+  static const double inputFieldRadius = 14.0;
   static const double spaceBtwinputFields = 16.0;
 
   ///Card Sizes
