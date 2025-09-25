@@ -9,6 +9,7 @@ class Task {
   // We keep it so if the user unchecks a task, we can restore it.
   final bool isChecked;
   final Timestamp updatedAt;
+  final Timestamp? expireAt; //this for (24 hours)
 
   Task({
     required this.id,
@@ -17,6 +18,7 @@ class Task {
     required this.basePriority,
     required this.isChecked,
     required this.updatedAt,
+    this.expireAt,
   });
 
   factory Task.fromFirestore(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
@@ -30,6 +32,7 @@ class Task {
       basePriority: bp,
       isChecked: (data['isChecked'] as bool?) ?? false,
       updatedAt: (data['updatedAt'] as Timestamp?) ?? Timestamp.now(),
+      expireAt: data['expireAt'] as Timestamp?,
     );
   }
 
@@ -42,6 +45,7 @@ class Task {
       'updatedAt': useServerTimestamp
           ? FieldValue.serverTimestamp()
           : updatedAt,
+      'expireAt': expireAt,
     };
   }
 }

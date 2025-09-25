@@ -12,6 +12,7 @@ import 'package:lumra_project/view/HomePage/Mood/adhdMood.dart';
 import 'package:lumra_project/view/HomePage/EncouragemenMessage/adhdMessage.dart';
 import 'package:lumra_project/view/HomePage/Tasks/tasksView.dart';
 import 'package:get/get.dart';
+import 'package:lumra_project/utils/customWidgets/toastservice.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -28,9 +29,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _taskController = TaskController(
-      userId: authContoller.currentUser!.uid,
-    ); // users/adhdDemo
+    _taskController = TaskController(userId: authContoller.currentUser!.uid);
     if (!Get.isRegistered<UserController>()) {
       _userController = Get.put(UserController(FirebaseFirestore.instance));
       _userController.init();
@@ -113,25 +112,11 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
 
-      // 10-task limit check + brand FAB colors
+      // 10-task limit check + FAB colors
       floatingActionButton: FloatingActionButton(
         backgroundColor: BColors.primary,
         foregroundColor: BColors.textwhite,
-        onPressed: () async {
-          final count = await _taskController
-              .getTaskCount(); // or getOpenTaskCount
-          if (!mounted) return;
-          if (count >= 10) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'You have reached your 10 task limit. Try finishing a task before adding more.',
-                ),
-              ),
-            );
-            return;
-          }
-          // ok to add
+        onPressed: () {
           TasksList(controller: _taskController).openAddTaskSheet(context);
         },
         child: const Icon(Icons.add),
