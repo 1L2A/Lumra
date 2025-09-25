@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:lumra_project/view/welcomePage.dart';
 import 'package:lumra_project/controller/auth/auth_controller.dart';
 import 'package:lumra_project/view/auth/resetPassword.dart';
+import 'package:flutter/services.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -74,7 +75,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: emailController,
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(120),
+                          ],
                           decoration: InputDecoration(
+                            counterText: '',
                             prefixIcon: const Icon(Icons.email),
                             errorText: emailError,
                           ),
@@ -89,9 +94,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         TextFormField(
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(120),
+                          ],
+
                           controller: passwordController,
                           obscureText: _obscurePassword,
                           decoration: InputDecoration(
+                            counterText: '',
                             prefixIcon: const Icon(Icons.lock),
                             errorText: passwordError,
                             suffixIcon: IconButton(
@@ -146,23 +156,23 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: authController.isLoading.value
                                   ? null
                                   : () async {
+                                      final email = emailController.text
+                                          .trim()
+                                          .toLowerCase();
+                                      final password = passwordController.text;
                                       setState(() {
-                                        emailError =
-                                            emailController.text.isEmpty
+                                        emailError = email.isEmpty
                                             ? "Please enter your email"
                                             : null;
-                                        passwordError =
-                                            passwordController.text.isEmpty
+                                        passwordError = password.isEmpty
                                             ? "Please enter your password"
                                             : null;
                                       });
 
                                       if (emailError == null &&
                                           passwordError == null) {
-                                        final domain = emailController.text
-                                            .split('@')
-                                            .last
-                                            .toLowerCase();
+                                        final domain = email.split('@').last;
+
                                         if (!allowedDomains.contains(domain)) {
                                           setState(() {
                                             emailError =
@@ -173,10 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         }
 
                                         final result = await authController
-                                            .login(
-                                              emailController.text.trim(),
-                                              passwordController.text.trim(),
-                                            );
+                                            .login(email, password);
 
                                         if (result != null) {
                                           setState(() {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/controller/auth/auth_controller.dart';
+import 'package:flutter/services.dart';
 
 class ResetPasswordDialog {
   static void show(BuildContext context, AuthController authController) {
@@ -56,8 +57,11 @@ class ResetPasswordDialog {
 
                     // ==== Email Field ====
                     TextFormField(
+                      inputFormatters: [LengthLimitingTextInputFormatter(120)],
+
                       controller: emailController,
                       decoration: InputDecoration(
+                        counterText: "",
                         prefixIcon: const Icon(Icons.email),
                         errorText: errorMessage,
                       ),
@@ -86,7 +90,9 @@ class ResetPasswordDialog {
                     minimumSize: const Size(90, 40),
                   ),
                   onPressed: () async {
-                    final email = emailController.text.trim();
+                    final email = emailController.text
+                        .trim()
+                        .toLowerCase(); // chech for remaz
 
                     if (email.isEmpty) {
                       setState(() {
@@ -95,13 +101,13 @@ class ResetPasswordDialog {
                       return;
                     }
 
-                    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-                    final domain = emailController.text
-                        .split('@')
-                        .last
-                        .toLowerCase();
-                    if (!emailRegex.hasMatch(email) ||
-                        !allowedDomains.contains(domain)) {
+                    final domain = email.split('@').last;
+                    final emailRegexStrict = RegExp(
+                      r"^(?!\.)[A-Za-z0-9!#\$%&'\*\+/=\?\^_`{\|}~\.-]{1,64}(?<!\.)@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z]{2,})+$",
+                    );
+
+                    if (!allowedDomains.contains(domain) ||
+                        !emailRegexStrict.hasMatch(email)) {
                       setState(() {
                         errorMessage = "The email address is not valid.";
                       });
@@ -121,7 +127,10 @@ class ResetPasswordDialog {
                     final result = await authController.resetPassword(email);
                     if (result == null) {
                       Navigator.pop(context);
-                      Get.snackbar("Success", "Check your inbox");
+                      Get.snackbar(
+                        "Email Sent",
+                        "Please check your inbox to continue.",
+                      );
                     } else {
                       setState(() {
                         errorMessage = result;

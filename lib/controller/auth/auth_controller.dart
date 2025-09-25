@@ -1,10 +1,7 @@
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lumra_project/service/auth.dart';
-import 'package:lumra_project/view/Account/AccountPage.dart';
-import 'package:lumra_project/view/welcomepage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../controller/Account/UserController.dart';
 
 class AuthController extends GetxController {
   final AuthService _authService = AuthService();
@@ -18,16 +15,14 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
       await _authService.signIn(email, password);
+      final user = currentUser;
+      if (user == null) return "User not found."; //
 
-      final uid = currentUser?.uid;
-      if (uid == null) return "User not found.";
-
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
-
-      final role = snapshot.data()?['role']?.toString().toLowerCase() ?? '';
+      /* the vervaction of the user account
+       if (!user.emailVerified) {
+        await _authService.signOut();
+        return "Please verify your email before logging in.";
+      } */
 
       // Route once cuz AppShell decides tabs based on role
       Get.offAllNamed('/app');
@@ -86,6 +81,7 @@ class AuthController extends GetxController {
       if (snapshot.docs.isEmpty) {
         return "This email is not registered with us.";
       }
+
       return null;
     } catch (e) {
       return "Something went wrong. Please try again.";
