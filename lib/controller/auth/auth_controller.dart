@@ -2,7 +2,6 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lumra_project/service/auth.dart';
 import 'package:lumra_project/view/Account/AccountPage.dart';
-import 'package:lumra_project/view/Homepage/adhdhomepage.dart';
 import 'package:lumra_project/view/welcomepage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../controller/Account/UserController.dart';
@@ -20,30 +19,19 @@ class AuthController extends GetxController {
       isLoading.value = true;
       await _authService.signIn(email, password);
 
-      final uid = currentUser?.uid; // get the uid
+      final uid = currentUser?.uid;
+      if (uid == null) return "User not found.";
 
-      if (uid == null) {
-        return "User not found.";
-      }
-
-      final snapshot = await FirebaseFirestore
-          .instance // get the user data
+      final snapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
           .get();
 
-      // final role = snapshot.data()?['role']; // get the role /edit by latifa
       final role = snapshot.data()?['role']?.toString().toLowerCase() ?? '';
 
-      if (role == 'adhd') {
-       Get.offAll(() => const HomePage()); // jana page
-       
-      } else if (role == 'caregiver') {
-        Get.offAll(() => const Welcomepage()); // jana page
-      }
-      // else {
-      //  Get.offAll(() => const Welcomepage()); ---- the admin page
-      //}
+      // Route once cuz AppShell decides tabs based on role
+      Get.offAllNamed('/app');
+
       return null;
     } on FirebaseAuthException catch (e) {
       switch (e.code) {

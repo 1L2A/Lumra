@@ -7,19 +7,27 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddEventController extends GetxController {
-  
- //for current User
+  //for current User
   final FirebaseFirestore db;
   final String currentUid;
   late final CalendarController calendarController;
 
- //The Inputs
+  //The Inputs
   final titleController = TextEditingController();
   final eventStart = Rxn<Timestamp>();
   final eventEnd = Rxn<Timestamp>();
 
-  AddEventController(this.db, this.currentUid);
+  // Validation state for my view
+  var titleFieldTouched = false.obs;
+  var titleError = RxnString();
+  var startError = RxnString();
+  var endError = RxnString();
 
+  var isFormValid = false.obs;
+
+  var isEventAdded = false.obs;
+
+  AddEventController(this.db, this.currentUid);
 
   //to get the date from the calander controller
   @override
@@ -27,15 +35,60 @@ class AddEventController extends GetxController {
     super.onInit();
     // register CalendarController if needed
     if (!Get.isRegistered<CalendarController>()) {
-      calendarController = Get.put(CalendarController(this.db, this.currentUid));
+      calendarController = Get.put(
+        CalendarController(this.db, this.currentUid),
+      );
     } else {
       calendarController = Get.find<CalendarController>();
-    } }
+    }
+  }
 
+  // ------------------ Title validate ------------------ //
+  void updateTitle(String value) {
+    titleFieldTouched.value = true;
+    validateTitle();
+    updateFormValidity();
+  }
 
- // Pick time
+  void validateTitle() {
+    final text = titleController.text.trim();
+    if (text.isEmpty) {
+      titleError.value = "Title is required";
+    } else if (text.length < 3) {
+      titleError.value = "Title must be at least 3 characters";
+    } else {
+      titleError.value = null; //when error no there, dont make red
+    }
+  }
+
+  // ------------------ Time validate ------------------ //
+
+  //whenever start or end changes
+  void validateTimes() {
+    if (eventStart.value == null) {
+      startError.value = "Start time is required";
+    } else {
+      startError.value = null;
+    }
+    if (eventEnd.value == null) {
+      endError.value = "End time is required";
+    } else if (eventStart.value != null &&
+        !eventEnd.value!.toDate().isAfter(eventStart.value!.toDate())) {
+      endError.value = "End time must be after start time";
+    } else {
+      endError.value = null; // valid
+    }
+  }
+
+  void updateFormValidity() {
+    isFormValid.value =
+        titleError.value == null &&
+        startError.value == null &&
+        endError.value == null;
+  }
+
+  // Pick time
   Future<void> pickTime({required bool isStart}) async {
-    
     // Get the day chosen from the calendar
     final baseDate = Get.find<CalendarController>().selectedDay.value;
 
@@ -83,33 +136,23 @@ class AddEventController extends GetxController {
       } else {
         eventEnd.value = Timestamp.fromDate(finalDateTime);
       }
+      validateTimes(); // run validation whenever a time is picked
+      updateFormValidity();
     }
   }
 
-  // Validation
-  bool validateEvent() {
-    if (titleController.text.trim().isEmpty) {
-      ToastService.error("Title is required");
-      return false;
-    }
-    if (eventStart.value == null) {
-      ToastService.error("Start time is required");
-      return false;
-    }
-    if (eventEnd.value == null) {
-      ToastService.error("End time is required");
-      return false;
-    }
-    if (eventEnd.value!.toDate().isBefore(eventStart.value!.toDate())) {
-      ToastService.error("End time cannot be before start time");
-      return false;
-    }
-    return true;
+  // ------------------ Form ------------------ //
+  bool validateForm() {
+    validateTitle();
+    validateTimes();
+    return titleError.value == null &&
+        startError.value == null &&
+        endError.value == null;
   }
 
   // Now adding the event
   Future<void> addEventToFirebase() async {
-    if (!validateEvent()) return;
+    if (!validateForm()) return;
 
     try {
       // Fetch the current user document
@@ -141,6 +184,7 @@ class AddEventController extends GetxController {
       ToastService.success(
         "All done! Your event just made the calendar happier",
       );
+      isEventAdded.value = true;
 
       //Clearing form when done
       titleController.clear();
@@ -149,5 +193,12 @@ class AddEventController extends GetxController {
     } catch (e) {
       ToastService.error("Couldn’t save your event. Give it another go!");
     }
+  }
+
+  @override
+  void onClose() {
+    titleController.dispose();
+    isEventAdded.value = false; // reset
+    super.onClose();
   }
 }

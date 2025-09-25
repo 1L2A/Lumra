@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumra_project/controller/Homepage/Calendar/addEventController.dart';
@@ -7,7 +6,6 @@ import 'package:lumra_project/controller/auth/auth_controller.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
 import 'package:lumra_project/theme/custom_themes/text_theme.dart';
-import 'package:intl/intl.dart';
 
 class AddEventView extends StatelessWidget {
   AddEventView({super.key});
@@ -22,6 +20,9 @@ class AddEventView extends StatelessWidget {
         authContoller.currentUser!.uid,
       ),
     );
+
+      final IsControllerAdded = controller.isEventAdded; // just assign the reactive var
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -34,6 +35,7 @@ class AddEventView extends StatelessWidget {
         titleTextStyle: BTextTheme.lightTextTheme.headlineLarge,
         backgroundColor: Colors.white,
         centerTitle: true,
+        toolbarHeight: 35,
       ),
 
       body: Padding(
@@ -43,30 +45,96 @@ class AddEventView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            
-            const SizedBox(height: BSizes.SpaceBtwItems),
+            // ------------------EVENT TITLE------------------ //
 
-            // Event Title Input
-            TextField(
-              controller: controller.titleController,
-              decoration: const InputDecoration(
-                labelText: 'Event Title',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-              ),
-            ),
+            //THE LABEL
+            Text("Title", style: BTextTheme.lightTextTheme.titleSmall),
 
-            const SizedBox(height: BSizes.SpaceBtwSections),
+            // Distance between the label and the feild
+            const SizedBox(height: 8),
 
-            // Start Time
+            //THE FEILD
+            Obx(() {
+              final hasError =
+                  controller.titleError.value != null &&
+                  controller.titleFieldTouched.value;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: controller.titleController,
+                    // this method i made in my ontroller to watch out for input validity for turning red
+                    onChanged: controller.updateTitle,
+
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                          BSizes.inputFieldRadius,
+                        ),
+                        borderSide: BorderSide(
+                          color: controller.titleError.value != null
+                              ? BColors.error
+                              : BColors.darkGrey,
+                        ),
+                      ),
+
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                          BSizes.inputFieldRadius,
+                        ),
+                        borderSide: BorderSide(
+                          color: controller.titleError.value != null
+                              ? BColors.error
+                              : BColors.darkGrey,
+                        ),
+                      ),
+
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                          BSizes.inputFieldRadius,
+                        ),
+                        borderSide: BorderSide(
+                          color: controller.titleError.value != null
+                              ? BColors.error
+                              : BColors.darkGrey,
+                          width: 1.3,
+                        ),
+                      ),
+                      errorText: null, // remove error text if correct feild
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                    ),
+                  ),
+
+                  // Error message below the field
+                  if (hasError)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 0, top: 4, left: 8),
+                      child: Text(
+                        controller.titleError.value!,
+                        style: const TextStyle(
+                          color: BColors.error,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            }),
+
+            const SizedBox(height: BSizes.spaceBtwinputFields),
+
+            // ------------------ Start Time ------------------ //
+            Text("Start time", style: BTextTheme.lightTextTheme.titleSmall),
+            const SizedBox(height: 8),
+
             //Obx is from GetX. It automatically rebuilds this widget whenever the reactive variable changes (eventStart).
             Obx(() {
               final startTimestamp = controller.eventStart.value;
-
-              //this is just for UI, to make time humen readable not timeStamp
+              //this is just for UI, to make time human readable not timeStamp
               final startText = startTimestamp != null
                   ? TimeOfDay.fromDateTime(
                       startTimestamp.toDate(),
@@ -83,8 +151,10 @@ class AddEventView extends StatelessWidget {
                     vertical: 16,
                   ),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey), // border color
-                    borderRadius: BorderRadius.circular(14), // rounded corners
+                    border: Border.all(color: BColors.darkGrey), // border color
+                    borderRadius: BorderRadius.circular(
+                      BSizes.inputFieldRadius,
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -94,9 +164,12 @@ class AddEventView extends StatelessWidget {
               );
             }),
 
-            const SizedBox(height: BSizes.SpaceBtwSections),
+            const SizedBox(height: BSizes.SpaceBtwItems),
 
-            // End Time
+            // ------------------ End Time ------------------ //
+            Text("End time", style: BTextTheme.lightTextTheme.titleSmall),
+            const SizedBox(height: 8),
+
             Obx(() {
               final endTimestamp = controller.eventEnd.value;
               final endText = endTimestamp != null
@@ -104,46 +177,72 @@ class AddEventView extends StatelessWidget {
                       endTimestamp.toDate(),
                     ).format(Get.context!)
                   : 'Select End Time';
+              final hasError = controller.endError.value != null;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () => controller.pickTime(isStart: false),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: hasError ? BColors.error : BColors.darkGrey,
+                        ),
+                        borderRadius: BorderRadius.circular(
+                          BSizes.inputFieldRadius,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(endText),
+                          const Icon(Icons.access_time),
+                        ],
+                      ),
+                    ),
+                  ),
 
-              return GestureDetector(
-                onTap: () => controller.pickTime(isStart: false),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Text(endText), const Icon(Icons.access_time)],
-                  ),
-                ),
+                  // Error message below the field
+                  if (hasError)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, left: 8),
+                      child: Text(
+                        controller.endError.value!,
+                        style: const TextStyle(
+                          color: BColors.error,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                ],
               );
             }),
 
             const SizedBox(height: BSizes.appBarHeight),
 
-            // Add Event Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Get.find<AddEventController>().addEventToFirebase();
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                child: Text(
-                  "Save",
-                  style: BTextTheme.darkTextTheme.headlineSmall,
+            // ------------------ ADD BUTTON ------------------ //
+            
+            Obx(
+              () => SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: controller.isFormValid.value
+                      ? () => controller.addEventToFirebase()
+                      : null, // null disables the button
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text(
+                    "Save",
+                    style: BTextTheme.darkTextTheme.headlineSmall,
+                  ),
                 ),
               ),
             ),
-
-            const SizedBox(height: BSizes.SpaceBtwSections),
           ],
         ),
       ),

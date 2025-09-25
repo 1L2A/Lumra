@@ -33,10 +33,10 @@ class BColors {
   static const Color borderSecondary = Color(0xFFE6E6E6);
 
   ///Error and Validation Colors
-  static const Color error = Color.fromARGB(255, 188, 96, 96);
-  static const Color warning = Color.fromARGB(255, 166, 114, 85);
-  static const Color success = Color.fromARGB(255, 68, 128, 73);
-  static const Color info = Color.fromARGB(255, 82, 127, 160);
+  static const Color error = Color.fromARGB(255, 190, 72, 72);
+  static const Color warning = Color.fromARGB(255, 166, 108, 67);
+  static const Color success = Color.fromARGB(255, 69, 135, 74);
+  static const Color info = Color.fromARGB(255, 78, 134, 173);
 
   ///Neutral Shades
   static const Color black = Color(0xFF272727);

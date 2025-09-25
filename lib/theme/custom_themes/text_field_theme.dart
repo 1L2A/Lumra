@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 
-
-
 ///This controls the appearance of all text input fields (TextFormField)
 class BTextFormFieldTheme {
   BTextFormFieldTheme._(); // private constructor
@@ -42,11 +40,11 @@ class BTextFormFieldTheme {
     ),
     errorBorder: const OutlineInputBorder().copyWith(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(width: 1, color: BColors.error),
+      borderSide: const BorderSide(width: 1, color: Color.fromARGB(255, 190, 72, 72)),
     ),
     focusedErrorBorder: const OutlineInputBorder().copyWith(/// focused and invalid (error state
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(width: 2, color: BColors.warning),
+      borderSide: const BorderSide(width: 2, color: Color.fromARGB(255, 166, 108, 67)),
     ),
 
   );
