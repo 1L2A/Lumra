@@ -27,7 +27,7 @@ final Map<UserRole, List<NavItem>> navConfig = {
       label: 'Community',
       icon: Icons.people,
       page: ComingSoonPage(
-        feature: 'Activity',
+        feature: 'Community',
       ), //  Later :replace with CommunityPage()
     ),
     NavItem(label: 'Account', icon: Icons.account_box, page: AccountPage()),

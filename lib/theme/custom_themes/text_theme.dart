@@ -10,6 +10,7 @@ class BTextTheme {
     ///this (copywith) can be used to take the same attributes of this objects and just change the ones specified
       headlineLarge: const TextStyle().copyWith(
         fontSize: 32,
+        fontFamily: 'K2D',
         fontWeight: FontWeight.bold,
         color: Colors.black,
       ),
@@ -18,12 +19,14 @@ class BTextTheme {
       fontSize: 28,
       fontWeight: FontWeight.bold,
       color: Colors.black,
+      fontFamily: 'K2D'
       ),
 
       headlineSmall: const TextStyle().copyWith(
       fontSize: 18,
       fontWeight: FontWeight.w500,
       color: Colors.black,
+      fontFamily: 'K2D'
     ),
 
 
@@ -31,30 +34,36 @@ class BTextTheme {
       fontSize: 30,
       fontWeight: FontWeight.bold,
       color: Colors.black,
+      fontFamily: 'K2D'
     ),
 
     titleMedium: const TextStyle().copyWith(
       fontSize: 16,
       fontWeight: FontWeight.w500,
       color: Colors.black,
+      fontFamily: 'K2D'
     ),
 
     titleSmall: const TextStyle().copyWith(
       fontSize: 16,
       fontWeight: FontWeight.w300,
       color: Colors.black,
+      fontFamily: 'K2D'
     ),
     
     
     labelLarge: const TextStyle().copyWith(
-      fontSize: 12,
-      fontWeight: FontWeight.normal,
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
       color: Colors.black,
+      fontFamily: 'K2D'
     ),
+
     labelMedium: const TextStyle().copyWith(
       fontSize: 12,
       fontWeight: FontWeight.normal,
       color: Colors.black.withOpacity(0.5),
+     fontFamily: 'K2D'
     ),
 
   );

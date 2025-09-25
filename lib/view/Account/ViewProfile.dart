@@ -25,7 +25,6 @@ class ViewProfile extends StatelessWidget {
   late final UserController userController;
   late final AuthController authController;
 
-  
   final enableName = false.obs;
   final enableEmail = false.obs;
   final enableDob = false.obs;
@@ -60,18 +59,15 @@ class ViewProfile extends StatelessWidget {
                   enable: enableName,
                 ),
 
-
                 _buildTextField(
                   label: "Email",
                   controller: userController.emailController,
                   enable: enableEmail,
                 ),
 
-
                 _buildGenderField(),
 
                 const SizedBox(height: 10),
-
 
                 _buildTextField(
                   label: "Date of Birth",
@@ -97,8 +93,10 @@ class ViewProfile extends StatelessWidget {
                       textStyle: BTextTheme.lightTextTheme.headlineSmall,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
-                      ), ), ),
-                )
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -113,45 +111,47 @@ class ViewProfile extends StatelessWidget {
     required String label,
     required TextEditingController controller,
     IconData? icon,
-    required RxBool enable, 
+    required RxBool enable,
     VoidCallback? onTap,
   }) {
-    return Obx(() => Padding(
-          padding: const EdgeInsets.only(bottom: 15),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color.fromARGB(255, 5, 5, 5),
+    return Obx(
+      () => Padding(
+        padding: const EdgeInsets.only(bottom: 15),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color.fromARGB(255, 5, 5, 5),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: controller,
+              readOnly: !enable.value,
+              onTap: onTap,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: BColors.softGrey,
+                prefixIcon: icon != null ? Icon(icon) : null,
+                suffixIcon: IconButton(
+                  icon: Icon(enable.value ? Icons.check : Icons.edit),
+                  onPressed: () {
+                    enable.value = !enable.value; // تبديل بين القراءة والتحرير
+                  },
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: controller,
-                readOnly: !enable.value,
-                onTap: onTap,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: BColors.softGrey,
-                  prefixIcon: icon != null ? Icon(icon) : null,
-                  suffixIcon: IconButton(
-                    icon: Icon(enable.value ? Icons.check : Icons.edit),
-                    onPressed: () {
-                      enable.value = !enable.value; // تبديل بين القراءة والتحرير
-                    },
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ));
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildGenderField() {
@@ -217,4 +217,3 @@ class ViewProfile extends StatelessWidget {
     });
   }
 }
-
