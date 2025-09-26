@@ -199,29 +199,6 @@ class FirebaseAuthService {
   //   }
   // }
 
-  /// Sign in
-  static Future<UserCredential> signInWithEmailAndPassword({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      final UserCredential userCredential = await _auth
-          .signInWithEmailAndPassword(email: email, password: password);
-      return userCredential;
-    } on FirebaseAuthException catch (e) {
-      throw Exception('Sign in failed: ${e.message}');
-    }
-  }
-
-  /// Sign out
-  static Future<void> signOut() async {
-    try {
-      await _auth.signOut();
-    } catch (e) {
-      throw Exception('Sign out failed: $e');
-    }
-  }
-
   /// Get current user
   static User? get currentUser => _auth.currentUser;
 

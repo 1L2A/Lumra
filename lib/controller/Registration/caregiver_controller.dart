@@ -419,7 +419,6 @@ class CaregiverController extends ChangeNotifier {
     }
   }
 
-  // Camera initialization method (moved from camera_scan_screen.dart)
   Future<Map<String, dynamic>> initializeCamera() async {
     try {
       final hasPermission = await checkCameraPermission();
@@ -433,7 +432,6 @@ class CaregiverController extends ChangeNotifier {
     }
   }
 
-  // Barcode detection method (moved from camera_scan_screen.dart)
   Future<Map<String, dynamic>> onDetectBarcode(String? code) async {
     print('onDetectBarcode called with code: $code');
     print(
@@ -479,7 +477,6 @@ class CaregiverController extends ChangeNotifier {
     return {'success': false, 'errorMessage': null};
   }
 
-  // Error dialog method (moved from camera_scan_screen.dart)
   void showErrorDialog(BuildContext context, String message) {
     print('showErrorDialog called with message: $message');
     showDialog(
@@ -515,7 +512,6 @@ class CaregiverController extends ChangeNotifier {
     );
   }
 
-  // Permission result dialog method (moved from permission_screen.dart)
   void showPermissionResultDialog(
     BuildContext context,
     String title,
@@ -575,7 +571,6 @@ class CaregiverController extends ChangeNotifier {
     );
   }
 
-  // Navigate to next screen method (moved from permission_screen.dart)
   void navigateToNextScreen(BuildContext context) {
     Navigator.pushAndRemoveUntil(
       context,
@@ -586,7 +581,6 @@ class CaregiverController extends ChangeNotifier {
     );
   }
 
-  // Handle camera permission with navigation (moved from permission_screen.dart)
   Future<void> handleCameraPermissionRequestWithNavigation(
     BuildContext context,
   ) async {
@@ -610,7 +604,6 @@ class CaregiverController extends ChangeNotifier {
     }
   }
 
-  // Check email verification with navigation (moved from inbox_screen.dart)
   Future<void> checkEmailVerificationWithNavigation(
     BuildContext context,
   ) async {
@@ -645,7 +638,6 @@ class CaregiverController extends ChangeNotifier {
     }
   }
 
-  // Show verification dialog (moved from inbox_screen.dart)
   void showVerificationDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -673,7 +665,6 @@ class CaregiverController extends ChangeNotifier {
     );
   }
 
-  // Resend email verification with snackbar (moved from inbox_screen.dart)
   Future<void> resendEmailVerificationWithSnackbar(BuildContext context) async {
     try {
       await resendVerificationEmail();
@@ -697,7 +688,6 @@ class CaregiverController extends ChangeNotifier {
     }
   }
 
-  // Navigate to welcome page (moved from inbox_screen.dart)
   void navigateToWelcomePage(BuildContext context) {
     Navigator.pushAndRemoveUntil(
       context,
