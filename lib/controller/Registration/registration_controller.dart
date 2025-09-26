@@ -174,7 +174,7 @@ class RegistrationController extends ChangeNotifier {
     } else if (_hasMiddleSpaces(trimmedEmail)) {
       _emailError = 'Email cannot contain spaces';
     } else if (!_isValidEmail(trimmedEmail)) {
-      _emailError = 'Please enter a valid email address';
+      _emailError = 'The email address is not valid.';
     } else {
       _emailError = null;
     }
@@ -191,7 +191,7 @@ class RegistrationController extends ChangeNotifier {
     } else if (_hasMiddleSpaces(trimmedEmail)) {
       _emailError = 'Email cannot contain spaces';
     } else if (!_isValidEmail(trimmedEmail)) {
-      _emailError = 'Please enter a valid email address';
+      _emailError = 'The email address is not valid.';
     } else {
       // We'll check email availability during account creation
       // For now, just clear any existing errors
@@ -220,8 +220,28 @@ class RegistrationController extends ChangeNotifier {
   }
 
   bool _isValidEmail(String email) {
+    // Check if email starts with a dot (invalid)
+    if (email.startsWith('.')) {
+      return false;
+    }
+
+    // Check basic email regex pattern
     final emailRegex = RegExp(r'^[\w\.-]+@([\w-]+\.)+[a-zA-Z]{2,}$');
-    return emailRegex.hasMatch(email);
+    if (!emailRegex.hasMatch(email)) {
+      return false;
+    }
+
+    // Check if email domain is in allowed domains
+    final allowedDomains = [
+      "gmail.com",
+      "outlook.com",
+      "hotmail.com",
+      "icloud.com",
+      "yahoo.com",
+    ];
+
+    final domain = email.split('@').last;
+    return allowedDomains.contains(domain);
   }
 
   void updatePassword(String password) {
