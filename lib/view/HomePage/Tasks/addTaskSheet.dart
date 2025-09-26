@@ -18,6 +18,9 @@ class AddTaskSheet extends StatefulWidget {
 class _AddTaskSheetState extends State<AddTaskSheet> {
   final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
+  final _titleFocus = FocusNode();
+  final _titleFieldKey = GlobalKey<FormFieldState<String>>();
+  bool _titleTouched = false;
 
   String? _priority;
 
@@ -25,11 +28,19 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
   void initState() {
     super.initState();
     _titleCtrl.addListener(() => setState(() {}));
+    _titleFocus.addListener(() {
+      if (!_titleFocus.hasFocus) {
+        // user left the field
+        setState(() => _titleTouched = true);
+        _titleFieldKey.currentState?.validate(); // validate just this field
+      }
+    });
   }
 
   @override
   void dispose() {
     _titleCtrl.dispose();
+    _titleFocus.dispose();
     super.dispose();
   }
 
@@ -61,27 +72,68 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
               SizedBox(height: BSizes.SpaceBtwItems),
 
               //Title field
+              // Title label
+              Text('Title', style: BTextTheme.lightTextTheme.titleMedium),
+
+              SizedBox(height: BSizes.xs),
+
+              // Title input
               TextFormField(
+                key: _titleFieldKey,
+                focusNode: _titleFocus,
                 controller: _titleCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  hintText: 'e.g., Math assignment',
+                autovalidateMode: _titleTouched
+                    ? AutovalidateMode.always
+                    : AutovalidateMode.disabled, // show error after first blur
+                decoration: InputDecoration(
+                  // hintText: 'e.g., Math assignment', كومنت عشان نوحد بين الفيلدز كنسلت هذي ممكن نرجعها اذا تبونها
+                  // filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 14,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      BSizes.inputFieldRadius,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      BSizes.inputFieldRadius,
+                    ),
+                    borderSide: const BorderSide(color: BColors.darkGrey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      BSizes.inputFieldRadius,
+                    ),
+                    borderSide: const BorderSide(
+                      color: BColors.primary,
+                      width: 1.3,
+                    ),
+                  ),
                 ),
                 textInputAction: TextInputAction.done,
                 validator: (v) => (v == null || v.trim().isEmpty)
                     ? 'Title is required'
                     : null,
               ),
-
               SizedBox(height: BSizes.spaceBtwinputFields),
+
+              // Priority label
+              Text('Priority', style: BTextTheme.lightTextTheme.titleMedium),
+              SizedBox(height: BSizes.xs),
 
               DropdownButtonFormField<String>(
                 value: _priority,
                 decoration: InputDecoration(
-                  labelText: 'Priority',
                   filled: true,
                   fillColor: Colors.white,
-
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 14,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(
                       BSizes.inputFieldRadius,
@@ -112,7 +164,6 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                 onChanged: (v) => setState(() => _priority = v),
                 validator: (v) => v == null ? 'Priority is required' : null,
               ),
-
               SizedBox(height: BSizes.appBarHeight),
 
               SizedBox(
@@ -166,9 +217,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                       const SizedBox(width: 8),
                       Text(
                         "Add",
-                        style: BTextTheme
-                            .darkTextTheme
-                            .headlineSmall, // 👈 same text style
+                        style: BTextTheme.darkTextTheme.headlineSmall,
                       ),
                     ],
                   ),
