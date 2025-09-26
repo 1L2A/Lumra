@@ -321,17 +321,30 @@ class CaregiverController extends ChangeNotifier {
 
   Future<void> validateAndCreateAccountFromBarcode(String linkedUserId) async {
     try {
-      // ONLY check if this barcode is already linked to another account
-      final QuerySnapshot existingLinks = await FirebaseFirestore.instance
+      // Check if the user document exists by the scanned linkedUserId
+      final DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('users')
-          .where('linkedUserId', isEqualTo: linkedUserId)
+          .doc(linkedUserId)
           .get();
 
-      if (existingLinks.docs.isNotEmpty) {
-        // Barcode is already linked to another account
+      if (!userDoc.exists) {
+        // Document doesn't exist - this is not a valid user ID
         isProcessing = false;
         notifyListeners();
-        throw Exception('This QR code is already linked to another account.');
+        throw Exception('Invalid QR code. User not found.');
+      }
+
+      // Get the user data to check the linkedUserId field
+      final userData =
+          userDoc.data() as Map<String, dynamic>? ?? <String, dynamic>{};
+      final existingLinkedUserId = (userData['linkedUserId'] as String?)
+          ?.trim();
+
+      if (existingLinkedUserId != null && existingLinkedUserId.isNotEmpty) {
+        // The user is already linked to another account
+        isProcessing = false;
+        notifyListeners();
+        throw Exception('The user is already linked to another account.');
       }
 
       // If barcode validation passes, just store the linkedUserId and return success
@@ -482,6 +495,22 @@ class CaregiverController extends ChangeNotifier {
       }
 
       print('Processing new barcode: $code');
+
+      // Preflight: check if scanned value corresponds to a real user doc.
+      try {
+        final DocumentSnapshot preDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(code)
+            .get();
+        if (!preDoc.exists) {
+          // Not a valid userId → ignore silently (no UI state changes)
+          return {'success': false, 'errorMessage': null};
+        }
+      } catch (_) {
+        // Any error in preflight → ignore silently
+        return {'success': false, 'errorMessage': null};
+      }
+
       lastProcessedCode = code;
       isScanning = false;
       isProcessing = true;
@@ -515,9 +544,15 @@ class CaregiverController extends ChangeNotifier {
 
   void showErrorDialog(BuildContext context, String message) {
     print('showErrorDialog called with message: $message');
+    if (_isShowingErrorDialog) {
+      print('Dialog already showing, skipping');
+      return;
+    }
+    _isShowingErrorDialog = true;
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
+      barrierColor: Colors.transparent,
       builder: (BuildContext context) {
         print('Building error dialog...');
         return AlertDialog(
@@ -533,6 +568,7 @@ class CaregiverController extends ChangeNotifier {
             TextButton(
               onPressed: () {
                 print('Error dialog OK button pressed');
+                _isShowingErrorDialog = false;
                 Navigator.of(context).pop();
                 // Reset scanning state to allow retry
                 resetScanningForError();
@@ -545,7 +581,13 @@ class CaregiverController extends ChangeNotifier {
           ],
         );
       },
-    );
+    ).then((_) {
+      // Ensure flag cleared if dismissed by tapping outside
+      if (_isShowingErrorDialog) {
+        _isShowingErrorDialog = false;
+        resetScanningForError();
+      }
+    });
   }
 
   void showPermissionResultDialog(
