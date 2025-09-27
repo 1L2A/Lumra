@@ -144,7 +144,7 @@ class Welcomepage extends StatelessWidget {
                           Get.to(LoginScreen());
                         },
                         child: const Text(
-                          "Login",
+                          "Sign In",
                           style: TextStyle(
                             fontFamily: 'K2D',
                             fontWeight: FontWeight.w600,

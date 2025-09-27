@@ -255,7 +255,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     )
                                   : const Text(
-                                      "Sign In",
+                                      "Log In",
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontFamily: 'K2D',
