@@ -19,6 +19,13 @@ class CaregiverController extends ChangeNotifier {
   bool _cameraPermissionGranted = false;
   String? _scannedQRCode;
 
+  // Store registration data directly in CaregiverController
+  String _email = '';
+  String _password = '';
+  String _name = '';
+  String _gender = '';
+  DateTime? _dob;
+
   bool isScanning = true;
   bool hasPermission = false;
   bool isProcessing = false;
@@ -43,8 +50,31 @@ class CaregiverController extends ChangeNotifier {
   String? get lastErrorMessage => _lastErrorMessage;
   bool get isShowingErrorDialog => _isShowingErrorDialog;
 
+  // Getters for registration data
+  String get email => _email;
+  String get password => _password;
+  String get name => _name;
+  String get gender => _gender;
+  DateTime? get dob => _dob;
+
   void setHasChildAccount(bool hasAccount) {
     _hasChildAccount = hasAccount;
+    notifyListeners();
+  }
+
+  // Methods to store registration data
+  void setRegistrationData({
+    required String email,
+    required String password,
+    required String name,
+    required String gender,
+    required DateTime? dob,
+  }) {
+    _email = email;
+    _password = password;
+    _name = name;
+    _gender = gender;
+    _dob = dob;
     notifyListeners();
   }
 
@@ -279,14 +309,8 @@ class CaregiverController extends ChangeNotifier {
     }
 
     // linkedUserId is empty - proceed with linking
-    // Confirm that registration data from previous screens is available
-    final regController = Get.find<RegistrationController>();
-    final nameController = Get.find<NameController>();
-
-    // Validate that all required data is available
-    if (regController.emailController.text.trim().isEmpty ||
-        regController.passwordController.text.isEmpty ||
-        nameController.nameController.text.trim().isEmpty) {
+    // Use stored registration data from CaregiverController
+    if (_email.trim().isEmpty || _password.isEmpty || _name.trim().isEmpty) {
       throw Exception(
         'Registration data is missing. Please restart the registration process.',
       );
@@ -294,11 +318,11 @@ class CaregiverController extends ChangeNotifier {
 
     // Create the caregiver account immediately with bidirectional linking
     await FirebaseAuthService.createCaregiverAccountWithLink(
-      email: regController.emailController.text.trim().toLowerCase(),
-      password: regController.passwordController.text,
-      name: nameController.nameController.text.trim(),
-      gender: regController.gender ?? '',
-      dob: regController.dob,
+      email: _email.trim().toLowerCase(),
+      password: _password,
+      name: _name.trim(),
+      gender: _gender,
+      dob: _dob,
       linkedUserId: scannedUID,
     );
 
