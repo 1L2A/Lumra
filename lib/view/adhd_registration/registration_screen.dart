@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:get/get.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
@@ -155,6 +156,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           controller: controller.emailController,
                           focusNode: controller.emailFocusNode,
                           keyboardType: TextInputType.emailAddress,
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(128),
+                          ],
                           onChanged: controller.updateEmail,
                           decoration: InputDecoration(
                             filled: true,
@@ -278,6 +282,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           controller: controller.passwordController,
                           focusNode: controller.passwordFocusNode,
                           obscureText: controller.obscurePassword,
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(128),
+                          ],
                           onChanged: (value) {
                             controller.onPasswordChanged(value);
                             controller.updatePassword(value);

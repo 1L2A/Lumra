@@ -326,6 +326,9 @@ class _CaregiverCreateAccountScreenState
                           controller: regController.emailController,
                           focusNode: regController.emailFocusNode,
                           keyboardType: TextInputType.emailAddress,
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(128),
+                          ],
                           onChanged: regController.updateEmail,
                           decoration: InputDecoration(
                             filled: true,
@@ -455,6 +458,9 @@ class _CaregiverCreateAccountScreenState
                           controller: regController.passwordController,
                           focusNode: regController.passwordFocusNode,
                           obscureText: regController.obscurePassword,
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(128),
+                          ],
                           onChanged: (value) {
                             regController.onPasswordChanged(value);
                             regController.updatePassword(value);

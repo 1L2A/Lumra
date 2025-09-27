@@ -52,22 +52,14 @@ class _CaregiverCameraScanScreenState extends State<CaregiverCameraScanScreen> {
   }
 
   void _onDetect(BarcodeCapture capture) async {
-    print('_onDetect called with ${capture.barcodes.length} barcodes');
     if (capture.barcodes.isNotEmpty) {
       final String? code = capture.barcodes.first.rawValue;
-      print('Detected barcode: $code');
-      print(
-        'Controller state: isShowingErrorDialog=${_controller.isShowingErrorDialog}',
-      );
 
       if (code != null && mounted && !_controller.isShowingErrorDialog) {
-        print('Processing barcode in controller...');
         final result = await _controller.onDetectBarcode(code);
-        print('Controller returned result: $result');
 
         if (mounted) {
           if (result['success'] == true) {
-            print('Account creation successful, navigating to inbox...');
             // Account creation was successful
             Navigator.pushReplacement(
               context,
@@ -76,30 +68,18 @@ class _CaregiverCameraScanScreenState extends State<CaregiverCameraScanScreen> {
               ),
             );
           } else {
-            print('Account creation failed, showing error dialog...');
             // Show error dialog with the stored error message
             final errorMessage = result['errorMessage'];
-            print('Error message: $errorMessage');
-            print('isShowingErrorDialog: ${_controller.isShowingErrorDialog}');
             if (errorMessage != null) {
-              print('Showing error dialog with message: $errorMessage');
-              _controller.setShowingErrorDialog(true);
               _showErrorDialog(errorMessage);
-            } else {
-              print('No error message to show');
-            }
+            } else {}
           }
         }
-      } else {
-        print(
-          'Barcode detection skipped - code: $code, mounted: $mounted, isShowingErrorDialog: ${_controller.isShowingErrorDialog}',
-        );
-      }
+      } else {}
     }
   }
 
   void _showErrorDialog(String message) {
-    print('_showErrorDialog called with message: $message');
     _controller.showErrorDialog(context, message);
   }
 
