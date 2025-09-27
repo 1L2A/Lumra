@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lumra_project/service/auth.dart';
@@ -18,11 +19,9 @@ class AuthController extends GetxController {
       final user = currentUser;
       if (user == null) return "User not found."; //
 
-      /* the vervaction of the user account
-       if (!user.emailVerified) {
-        await _authService.signOut();
-        return "Please verify your email before logging in.";
-      } */
+      if (!user.emailVerified) {
+        return "EMAIL_NOT_VERIFIED";
+      }
 
       // Route once cuz AppShell decides tabs based on role
       Get.offAllNamed('/app');

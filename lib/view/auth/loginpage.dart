@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
@@ -23,6 +25,9 @@ class _LoginScreenState extends State<LoginScreen> {
   String? emailError;
   String? passwordError;
 
+  int _resendCooldown = 0;
+  Timer? _resendTimer;
+
   final allowedDomains = [
     "gmail.com",
     "outlook.com",
@@ -30,6 +35,29 @@ class _LoginScreenState extends State<LoginScreen> {
     "icloud.com",
     "yahoo.com",
   ];
+
+  void _startResendCooldown() {
+    setState(() {
+      _resendCooldown = 60; // 60 seconds cooldown
+    });
+
+    _resendTimer?.cancel();
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_resendCooldown == 0) {
+        timer.cancel();
+      } else {
+        setState(() {
+          _resendCooldown--;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _resendTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +109,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           decoration: InputDecoration(
                             counterText: '',
                             prefixIcon: const Icon(Icons.email),
-                            errorText: emailError,
+                            errorText:
+                                (emailError != null &&
+                                    emailError != "EMAIL_NOT_VERIFIED")
+                                ? emailError
+                                : null,
                           ),
                         ),
 
@@ -97,7 +129,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           inputFormatters: [
                             LengthLimitingTextInputFormatter(128),
                           ],
-
                           controller: passwordController,
                           obscureText: _obscurePassword,
                           decoration: InputDecoration(
@@ -121,6 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: BSizes.sm),
 
+                        // ==== Forgot Password Button ====
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
@@ -156,10 +188,20 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: authController.isLoading.value
                                   ? null
                                   : () async {
+                                      // Reset messages and cooldown on every Sign In press
+                                      setState(() {
+                                        emailError = null;
+                                        passwordError = null;
+                                        _resendCooldown = 0;
+                                        _resendTimer?.cancel();
+                                        _resendTimer = null;
+                                      });
+
                                       final email = emailController.text
                                           .trim()
                                           .toLowerCase();
                                       final password = passwordController.text;
+
                                       setState(() {
                                         emailError = email.isEmpty
                                             ? "Please enter your email"
@@ -188,11 +230,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                         if (result != null) {
                                           setState(() {
                                             if (result ==
+                                                "EMAIL_NOT_VERIFIED") {
+                                              emailError = "EMAIL_NOT_VERIFIED";
+                                              passwordError = null;
+                                            } else if (result ==
                                                 "The email address is not valid.") {
                                               emailError = result;
                                               passwordError = null;
                                             } else {
-                                              emailError = "";
+                                              emailError = null;
                                               passwordError = result;
                                             }
                                           });
@@ -200,8 +246,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                       }
                                     },
                               child: authController.isLoading.value
-                                  ? const CircularProgressIndicator(
-                                      color: Colors.white,
+                                  ? const SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2.5,
+                                      ),
                                     )
                                   : const Text(
                                       "Sign In",
@@ -215,6 +266,105 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
+
+                        // ==== Email not verified message ====
+                        if (emailError == "EMAIL_NOT_VERIFIED")
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Center(
+                              child: (_resendCooldown == 0)
+                                  ? (_resendTimer == null
+                                        // First time
+                                        ? RichText(
+                                            textAlign: TextAlign.center,
+                                            text: TextSpan(
+                                              style: const TextStyle(
+                                                fontFamily: 'K2D',
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              children: [
+                                                TextSpan(
+                                                  text:
+                                                      "Your email is not verified ",
+                                                  style: TextStyle(
+                                                    color: Theme.of(context)
+                                                        .textTheme
+                                                        .titleSmall!
+                                                        .color,
+                                                  ),
+                                                ),
+                                                TextSpan(
+                                                  text: "Tap here to verify",
+                                                  style: const TextStyle(
+                                                    color: BColors.primary,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontFamily: 'K2D',
+                                                  ),
+                                                  recognizer: TapGestureRecognizer()
+                                                    ..onTap = () async {
+                                                      final user =
+                                                          authController
+                                                              .currentUser;
+                                                      if (user != null &&
+                                                          !user.emailVerified) {
+                                                        await user
+                                                            .sendEmailVerification();
+                                                        _startResendCooldown();
+                                                        setState(() {
+                                                          emailError =
+                                                              "EMAIL_NOT_VERIFIED";
+                                                        });
+                                                      }
+                                                    },
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        // After timer finishes
+                                        : TextButton(
+                                            onPressed: () async {
+                                              final user =
+                                                  authController.currentUser;
+                                              if (user != null &&
+                                                  !user.emailVerified) {
+                                                await user
+                                                    .sendEmailVerification();
+                                                _startResendCooldown();
+                                                setState(() {
+                                                  emailError =
+                                                      "EMAIL_NOT_VERIFIED";
+                                                });
+                                              }
+                                            },
+                                            style: TextButton.styleFrom(
+                                              padding: EdgeInsets.zero,
+                                              minimumSize: const Size(0, 0),
+                                              tapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                            ),
+                                            child: const Text(
+                                              "Resend verification email",
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: BColors.primary,
+                                                fontFamily: 'K2D',
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ))
+                                  // During cooldown
+                                  : Text(
+                                      "Verification email sent. Resend in ${_resendCooldown}s",
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: BColors.primary,
+                                        fontFamily: 'K2D',
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                            ),
+                          ),
 
                         const SizedBox(height: BSizes.md + BSizes.sm),
                         // ==== Register Text ====
