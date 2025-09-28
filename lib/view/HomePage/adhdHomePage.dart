@@ -50,9 +50,9 @@ class _HomePageState extends State<HomePage> {
         elevation: 0,
         centerTitle: false,
         title: Obx(() {
-          final name = _userController.user.value?.name;
+          final name = _userController.user.value?.firstName;
           return Text(
-            'Good Morning, ${name?.trim().isNotEmpty == true ? name : '...'}',
+            'Hello, ${name?.trim().isNotEmpty == true ? name : '...'}',
             style: tt.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
               color: BColors.textwhite,

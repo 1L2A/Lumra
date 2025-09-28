@@ -8,7 +8,7 @@ import 'package:lumra_project/controller/Registration/name_controller.dart';
 import 'package:lumra_project/view/adhd_registration/widgets/segmented_progress_bar.dart';
 import 'package:lumra_project/view/adhd_registration/widgets/app_button.dart';
 import 'package:lumra_project/view/adhd_registration/widgets/password_strength_indicator.dart';
-import 'package:lumra_project/view/caregiver_registration/child_account_check_screen.dart';
+import 'package:lumra_project/view/caregiver_registration/permission_screen.dart';
 import 'package:intl/intl.dart';
 
 class CaregiverCreateAccountScreen extends StatefulWidget {
@@ -19,34 +19,57 @@ class CaregiverCreateAccountScreen extends StatefulWidget {
       _CaregiverCreateAccountScreenState();
 }
 
-class _CaregiverCreateAccountScreenState
-    extends State<CaregiverCreateAccountScreen> {
+class _CaregiverCreateAccountScreenState extends State<CaregiverCreateAccountScreen> {
   late RegistrationController _registrationController;
   late CaregiverController _caregiverController;
   late NameController _nameController;
+  bool _isNextLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // Register controllers with GetX so they're available throughout the flow
     _registrationController = Get.put(RegistrationController());
     _caregiverController = Get.put(CaregiverController());
     _nameController = Get.put(NameController());
+
+    _caregiverController.resetForNewSession();
+
+    _registrationController.addListener(_onControllerChange);
+    _nameController.addListener(_onControllerChange);
+  }
+
+  void _onControllerChange() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _waitForKeyboardToClose() async {
+    if (MediaQuery.of(context).viewInsets.bottom > 0) {
+      FocusScope.of(context).unfocus();
+      while (MediaQuery.of(context).viewInsets.bottom > 0) {
+        await Future.delayed(const Duration(milliseconds: 16));
+      }
+    }
+  }
+
+  Future<void> _navigateSafely(Function action) async {
+    await _waitForKeyboardToClose();
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) {
+      action();
+    }
   }
 
   Future<void> _selectDateOfBirth() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate:
-          _registrationController.dob ??
-          DateTime(1980), // Default to middle of allowed range
-      firstDate: DateTime(1955, 1, 1), // January 1, 1955
-      lastDate: DateTime(2007, 12, 31), // December 31, 2007
+      initialDate: _registrationController.dob ?? DateTime(1980),
+      firstDate: DateTime(1955, 1, 1),
+      lastDate: DateTime(2007, 12, 31),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFF5F8C85), // BColors.buttonPrimary
+              primary: Color(0xFF5F8C85),
               onPrimary: Colors.white,
               onSurface: Colors.black,
             ),
@@ -63,13 +86,24 @@ class _CaregiverCreateAccountScreenState
   @override
   Widget build(BuildContext context) {
     final regController = _registrationController;
+
     return Scaffold(
       backgroundColor: BColors.white,
       appBar: AppBar(
         backgroundColor: BColors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: BColors.darkGrey),
-          onPressed: () => Navigator.pop(context),
+        leading: Padding(
+          padding: const EdgeInsets.only(top: 17),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: BColors.darkGrey),
+            onPressed: () {
+              _navigateSafely(() {
+                _caregiverController.clearAllCaregiverData();
+                _registrationController.clearAllData();
+                _nameController.clearAllData();
+                Navigator.pop(context);
+              });
+            },
+          ),
         ),
       ),
       body: SafeArea(
@@ -79,12 +113,12 @@ class _CaregiverCreateAccountScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Progress Bar
-                SegmentedProgressBar(currentStep: 1, totalSteps: 4),
+                SegmentedProgressBar(currentStep: 1, totalSteps: 3),
                 const SizedBox(height: 32),
-                Text(
+
+                const Text(
                   'Create your caregiver account',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: BColors.black,
@@ -92,164 +126,76 @@ class _CaregiverCreateAccountScreenState
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Fill in your details to get started',
-                  style: const TextStyle(
+
+                const Text(
+                  'Note that a caregiver account requires linking with an unlinked ADHD account',
+                  style: TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.w600,
                     color: BColors.black,
                     fontFamily: 'K2D',
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Name Field
+
+                // First Name
                 Text.rich(
                   TextSpan(
                     children: [
-                      TextSpan(
-                        text: 'Name',
-                        style:
-                            const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                              color: BColors.black,
-                              fontFamily: 'K2D',
-                            ).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: BColors.darkGrey,
-                            ),
+                      const TextSpan(
+                        text: 'First Name',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: BColors.black,
+                          fontFamily: 'K2D',
+                        ),
                       ),
                       TextSpan(
                         text: ' *',
-                        style:
-                            const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                              color: BColors.black,
-                              fontFamily: 'K2D',
-                            ).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.red,
-                            ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'K2D',
+                        ).copyWith(color: Colors.red),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 8),
-                // Name Field Container with Character Counter
+
                 Stack(
                   children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: BColors.darkGrey.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: TextFormField(
-                        controller: _nameController.nameController,
-                        focusNode: _nameController.nameFocusNode,
-                        maxLength: 16,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'[A-Za-z ]'),
-                          ),
-                        ],
-                        onChanged: _nameController.updateName,
-                        onTapOutside: (event) =>
-                            FocusScope.of(context).unfocus(),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 24,
-                            horizontal: 16,
-                          ),
-                          hintText: 'Enter your name',
-                          hintStyle: TextStyle(color: BColors.darkGrey),
-                          counterText: '', // Hide the default counter
-                          errorText: _nameController.nameFieldTouched
-                              ? _nameController.nameError
-                              : null,
-                          errorStyle: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.red,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color:
-                                  _nameController.nameFieldTouched &&
-                                      _nameController.nameError != null
-                                  ? BColors.error
-                                  : Colors.grey,
-                              width: 1,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color:
-                                  _nameController.nameFieldTouched &&
-                                      _nameController.nameError != null
-                                  ? BColors.error
-                                  : Colors.grey,
-                              width: 1,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color:
-                                  _nameController.nameFieldTouched &&
-                                      _nameController.nameError != null
-                                  ? BColors.error
-                                  : Colors.grey,
-                              width: 1,
-                            ),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
-                              color: BColors.error,
-                              width: 1,
-                            ),
-                          ),
-                          focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
-                              color: BColors.error,
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.normal,
-                          color: BColors.black,
-                          fontFamily: 'K2D',
-                        ),
+                    TextFormField(
+                      controller: _nameController.firstNameController,
+                      focusNode: _nameController.firstNameFocusNode,
+                      maxLength: 12,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z]')),
+                      ],
+                      onChanged: _nameController.updateFirstName,
+                      onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                      decoration: InputDecoration(
+                        counterText: '',
+                        hintText: 'Sarah',
+                        hintStyle: const TextStyle(color: BColors.darkGrey),
+                        errorText: _nameController.firstNameFieldTouched
+                            ? _nameController.firstNameError
+                            : null,
                       ),
                     ),
-                    // Character Counter positioned at top-right
                     Positioned(
                       top: 8,
                       right: 12,
                       child: ValueListenableBuilder<int>(
-                        valueListenable: _nameController.characterCount,
+                        valueListenable: _nameController.firstNameCharacterCount,
                         builder: (context, count, child) {
                           return Text(
-                            '$count/16',
+                            '$count/12',
                             style: const TextStyle(
                               fontSize: 12,
-                              fontWeight: FontWeight.normal,
                               color: BColors.darkGrey,
                               fontFamily: 'K2D',
-                            ).copyWith(fontSize: 12, color: BColors.darkGrey),
+                            ),
                           );
                         },
                       ),
@@ -257,49 +203,107 @@ class _CaregiverCreateAccountScreenState
                   ],
                 ),
                 const SizedBox(height: 24),
-                // Email Field
+
+                // Last Name
                 Text.rich(
                   TextSpan(
                     children: [
-                      TextSpan(
-                        text: 'Email address',
-                        style:
-                            const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                              color: BColors.black,
-                              fontFamily: 'K2D',
-                            ).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: BColors.darkGrey,
-                            ),
+                      const TextSpan(
+                        text: 'Last Name',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: BColors.black,
+                          fontFamily: 'K2D',
+                        ),
                       ),
                       TextSpan(
                         text: ' *',
-                        style:
-                            const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                              color: BColors.black,
-                              fontFamily: 'K2D',
-                            ).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.red,
-                            ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'K2D',
+                        ).copyWith(color: Colors.red),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 8),
+
+                Stack(
+                  children: [
+                    TextFormField(
+                      controller: _nameController.lastNameController,
+                      focusNode: _nameController.lastNameFocusNode,
+                      maxLength: 12,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z]')),
+                      ],
+                      onChanged: _nameController.updateLastName,
+                      onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                      decoration: InputDecoration(
+                        counterText: '',
+                        hintText: 'Aljohani',
+                        hintStyle: const TextStyle(color: BColors.darkGrey),
+                        errorText: _nameController.lastNameFieldTouched
+                            ? _nameController.lastNameError
+                            : null,
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 12,
+                      child: ValueListenableBuilder<int>(
+                        valueListenable: _nameController.lastNameCharacterCount,
+                        builder: (context, count, child) {
+                          return Text(
+                            '$count/12',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: BColors.darkGrey,
+                              fontFamily: 'K2D',
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Email
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      const TextSpan(
+                        text: 'Email address',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: BColors.black,
+                          fontFamily: 'K2D',
+                        ),
+                      ),
+                      TextSpan(
+                        text: ' *',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'K2D',
+                        ).copyWith(color: Colors.red),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    boxShadow:
-                        regController.emailFieldTouched &&
-                            regController.emailError != null
+                    boxShadow: regController.emailFieldTouched && regController.emailError != null
                         ? [
                             BoxShadow(
-                              color: BColors.darkGrey.withValues(alpha: 0.1),
+                              color: BColors.darkGrey.withOpacity(0.1),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -313,121 +317,52 @@ class _CaregiverCreateAccountScreenState
                     inputFormatters: [LengthLimitingTextInputFormatter(128)],
                     onChanged: regController.updateEmail,
                     decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 24,
-                        horizontal: 16,
-                      ),
-                      hintText: 'example@email.com',
-                      hintStyle: TextStyle(color: BColors.darkGrey),
+                      counterText: '',
+                      hintText: 'example@gmail.com',
+                      hintStyle: const TextStyle(color: BColors.darkGrey),
                       errorText: regController.emailFieldTouched
                           ? regController.emailError
                           : null,
-                      errorStyle: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.red,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color:
-                              regController.emailFieldTouched &&
-                                  regController.emailError != null
-                              ? BColors.error
-                              : Colors.grey,
-                          width: 1,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color:
-                              regController.emailFieldTouched &&
-                                  regController.emailError != null
-                              ? BColors.error
-                              : Colors.grey,
-                          width: 1,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color:
-                              regController.emailFieldTouched &&
-                                  regController.emailError != null
-                              ? BColors.error
-                              : Colors.grey,
-                          width: 1,
-                        ),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(
-                          color: BColors.error,
-                          width: 1,
-                        ),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(
-                          color: BColors.error,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.normal,
-                      color: BColors.black,
-                      fontFamily: 'K2D',
+                      filled: true,
+                      fillColor: Colors.white,
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Password Field
+
+                // Password
                 Text.rich(
                   TextSpan(
                     children: [
-                      TextSpan(
+                      const TextSpan(
                         text: 'Password',
-                        style:
-                            const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                              color: BColors.black,
-                              fontFamily: 'K2D',
-                            ).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: BColors.darkGrey,
-                            ),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: BColors.black,
+                          fontFamily: 'K2D',
+                        ),
                       ),
                       TextSpan(
                         text: ' *',
-                        style:
-                            const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                              color: BColors.black,
-                              fontFamily: 'K2D',
-                            ).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.red,
-                            ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'K2D',
+                        ).copyWith(color: Colors.red),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 8),
+
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    boxShadow:
-                        regController.passwordFieldTouched &&
-                            regController.passwordError != null
+                    boxShadow: regController.passwordFieldTouched && regController.passwordError != null
                         ? [
                             BoxShadow(
-                              color: BColors.darkGrey.withValues(alpha: 0.1),
+                              color: BColors.darkGrey.withOpacity(0.1),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -444,158 +379,78 @@ class _CaregiverCreateAccountScreenState
                       regController.updatePassword(value);
                     },
                     decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 24,
-                        horizontal: 16,
-                      ),
-                      hintText: 'Enter your password',
-                      hintStyle: TextStyle(color: BColors.darkGrey),
+                      counterText: '',
+                      hintText: '••••••••',
+                      hintStyle: const TextStyle(color: BColors.darkGrey),
                       errorText: regController.passwordFieldTouched
                           ? regController.passwordError
                           : null,
-                      errorStyle: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.red,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color:
-                              regController.passwordFieldTouched &&
-                                  regController.passwordError != null
-                              ? BColors.error
-                              : Colors.grey,
-                          width: 1,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color:
-                              regController.passwordFieldTouched &&
-                                  regController.passwordError != null
-                              ? BColors.error
-                              : Colors.grey,
-                          width: 1,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color:
-                              regController.passwordFieldTouched &&
-                                  regController.passwordError != null
-                              ? BColors.error
-                              : Colors.grey,
-                          width: 1,
-                        ),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(
-                          color: BColors.error,
-                          width: 1,
-                        ),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(
-                          color: BColors.error,
-                          width: 2,
-                        ),
-                      ),
+                      filled: true,
+                      fillColor: Colors.white,
                       suffixIcon: IconButton(
                         icon: Icon(
                           regController.obscurePassword
                               ? Icons.visibility
                               : Icons.visibility_off,
-                          color: BColors.darkGrey,
                         ),
                         onPressed: regController.togglePasswordVisibility,
                       ),
                     ),
-                    style:
-                        const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.normal,
-                          color: BColors.black,
-                          fontFamily: 'K2D',
-                        ).copyWith(
-                          fontSize: MediaQuery.of(context).size.width * 0.04,
-                        ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                // Password Strength Indicator (only show after typing)
+
                 if (regController.showPasswordStrength) ...[
-                  PasswordStrengthIndicator(
-                    password: regController.passwordController.text,
-                  ),
+                  PasswordStrengthIndicator(password: regController.passwordController.text),
                   const SizedBox(height: 12),
                 ],
-                // Password Rules
+
                 Padding(
                   padding: const EdgeInsets.only(left: 12),
                   child: Text(
                     'Password must include:\n• At least 8 characters\n• Include a number\n• Include a capital letter\n• Include a symbol',
-                    style:
-                        const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.normal,
-                          color: BColors.darkGrey,
-                          fontFamily: 'K2D',
-                        ).copyWith(
-                          fontSize: MediaQuery.of(context).size.width * 0.03,
-                          color: BColors.darkGrey,
-                        ),
+                    style: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width * 0.03,
+                      color: BColors.darkGrey,
+                      fontFamily: 'K2D',
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Confirm Password Field
+
+                // Confirm Password
                 Text.rich(
                   TextSpan(
                     children: [
-                      TextSpan(
+                      const TextSpan(
                         text: 'Confirm Password',
-                        style:
-                            const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                              color: BColors.black,
-                              fontFamily: 'K2D',
-                            ).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: BColors.darkGrey,
-                            ),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: BColors.black,
+                          fontFamily: 'K2D',
+                        ),
                       ),
                       TextSpan(
                         text: ' *',
-                        style:
-                            const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                              color: BColors.black,
-                              fontFamily: 'K2D',
-                            ).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.red,
-                            ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'K2D',
+                        ).copyWith(color: Colors.red),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 8),
+
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    boxShadow:
-                        regController.confirmPasswordFieldTouched &&
-                            regController.confirmPasswordError != null
+                    boxShadow: regController.confirmPasswordFieldTouched && regController.confirmPasswordError != null
                         ? [
                             BoxShadow(
-                              color: BColors.darkGrey.withValues(alpha: 0.1),
+                              color: BColors.darkGrey.withOpacity(0.1),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -608,143 +463,70 @@ class _CaregiverCreateAccountScreenState
                     obscureText: regController.obscureConfirmPassword,
                     onChanged: regController.onConfirmPasswordChanged,
                     decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 24,
-                        horizontal: 16,
-                      ),
-                      hintText: 'Confirm your password',
-                      hintStyle: TextStyle(color: BColors.darkGrey),
+                      counterText: '',
+                      hintText: '••••••••',
+                      hintStyle: const TextStyle(color: BColors.darkGrey),
                       errorText: regController.confirmPasswordFieldTouched
                           ? regController.confirmPasswordError
                           : null,
-                      errorStyle: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.red,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color:
-                              regController.confirmPasswordFieldTouched &&
-                                  regController.confirmPasswordError != null
-                              ? BColors.error
-                              : Colors.grey,
-                          width: 1,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color:
-                              regController.confirmPasswordFieldTouched &&
-                                  regController.confirmPasswordError != null
-                              ? BColors.error
-                              : Colors.grey,
-                          width: 1,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color:
-                              regController.confirmPasswordFieldTouched &&
-                                  regController.confirmPasswordError != null
-                              ? BColors.error
-                              : Colors.grey,
-                          width: 1,
-                        ),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(
-                          color: BColors.error,
-                          width: 1,
-                        ),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(
-                          color: BColors.error,
-                          width: 2,
-                        ),
-                      ),
+                      filled: true,
+                      fillColor: Colors.white,
                       suffixIcon: IconButton(
                         icon: Icon(
                           regController.obscureConfirmPassword
                               ? Icons.visibility
                               : Icons.visibility_off,
-                          color: BColors.darkGrey,
                         ),
-                        onPressed:
-                            regController.toggleConfirmPasswordVisibility,
+                        onPressed: regController.toggleConfirmPasswordVisibility,
                       ),
-                    ),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.normal,
-                      color: BColors.black,
-                      fontFamily: 'K2D',
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Gender Selection
+
+                // Gender
                 Text.rich(
                   TextSpan(
                     children: [
-                      TextSpan(
+                      const TextSpan(
                         text: 'Gender',
-                        style:
-                            const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                              color: BColors.black,
-                              fontFamily: 'K2D',
-                            ).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: BColors.darkGrey,
-                            ),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: BColors.black,
+                          fontFamily: 'K2D',
+                        ),
                       ),
                       TextSpan(
                         text: ' *',
-                        style:
-                            const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                              color: BColors.black,
-                              fontFamily: 'K2D',
-                            ).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.red,
-                            ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'K2D',
+                        ).copyWith(color: Colors.red),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 8),
+
                 Row(
                   children: [
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
-                          regController.setGender('Male');
-                          regController.onGenderFieldTouched();
+                          _registrationController.setGender('Male');
+                          _registrationController.onGenderFieldTouched();
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                            horizontal: 16,
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
                           decoration: BoxDecoration(
-                            color: regController.gender == 'Male'
-                                ? BColors.primary.withValues(alpha: 0.2)
+                            color: _registrationController.gender == 'Male'
+                                ? BColors.primary.withOpacity(0.2)
                                 : Colors.white,
                             border: Border.all(
-                              color:
-                                  regController.genderFieldTouched &&
-                                      regController.genderError != null
+                              color: _registrationController.genderFieldTouched &&
+                                      _registrationController.genderError != null
                                   ? BColors.error
                                   : Colors.grey,
                               width: 1.0,
@@ -752,35 +534,13 @@ class _CaregiverCreateAccountScreenState
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
-                                color: BColors.darkGrey.withValues(alpha: 0.1),
+                                color: BColors.darkGrey.withOpacity(0.1),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
                             ],
                           ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Male',
-                                  textAlign: TextAlign.center,
-                                  style:
-                                      const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.normal,
-                                        color: BColors.black,
-                                        fontFamily: 'K2D',
-                                      ).copyWith(
-                                        color: BColors.darkGrey,
-                                        fontWeight:
-                                            regController.gender == 'Male'
-                                            ? FontWeight.w500
-                                            : FontWeight.w400,
-                                      ),
-                                ),
-                              ),
-                            ],
-                          ),
+                          child: const Center(child: Text('Male')),
                         ),
                       ),
                     ),
@@ -788,22 +548,18 @@ class _CaregiverCreateAccountScreenState
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
-                          regController.setGender('Female');
-                          regController.onGenderFieldTouched();
+                          _registrationController.setGender('Female');
+                          _registrationController.onGenderFieldTouched();
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                            horizontal: 16,
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
                           decoration: BoxDecoration(
-                            color: regController.gender == 'Female'
-                                ? BColors.primary.withValues(alpha: 0.3)
+                            color: _registrationController.gender == 'Female'
+                                ? BColors.primary.withOpacity(0.3)
                                 : Colors.white,
                             border: Border.all(
-                              color:
-                                  regController.genderFieldTouched &&
-                                      regController.genderError != null
+                              color: _registrationController.genderFieldTouched &&
+                                      _registrationController.genderError != null
                                   ? BColors.error
                                   : Colors.grey,
                               width: 1.0,
@@ -811,234 +567,127 @@ class _CaregiverCreateAccountScreenState
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
-                                color: BColors.darkGrey.withValues(alpha: 0.1),
+                                color: BColors.darkGrey.withOpacity(0.1),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
                             ],
                           ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Female',
-                                  textAlign: TextAlign.center,
-                                  style:
-                                      const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.normal,
-                                        color: BColors.black,
-                                        fontFamily: 'K2D',
-                                      ).copyWith(
-                                        color: BColors.darkGrey,
-                                        fontWeight:
-                                            regController.gender == 'Female'
-                                            ? FontWeight.w500
-                                            : FontWeight.w400,
-                                      ),
-                                ),
-                              ),
-                            ],
-                          ),
+                          child: const Center(child: Text('Female')),
                         ),
                       ),
                     ),
                   ],
                 ),
-                // Gender error (if any)
-                if (regController.genderFieldTouched &&
-                    regController.genderError != null) ...[
+
+                if (_registrationController.genderFieldTouched &&
+                    _registrationController.genderError != null) ...[
                   const SizedBox(height: 8),
                   Text(
-                    regController.genderError!,
-                    style:
-                        const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.normal,
-                          color: BColors.darkGrey,
-                          fontFamily: 'K2D',
-                        ).copyWith(
-                          color: Colors.red,
-                          fontSize: MediaQuery.of(context).size.width * 0.03,
-                        ),
+                    _registrationController.genderError!,
+                    style: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width * 0.03,
+                      color: Colors.red,
+                      fontFamily: 'K2D',
+                    ),
                   ),
                 ],
                 const SizedBox(height: 24),
-                // Date of Birth Field
+
+                // Date of Birth
                 Text.rich(
                   TextSpan(
                     children: [
-                      TextSpan(
+                      const TextSpan(
                         text: 'Date of Birth',
-                        style:
-                            const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                              color: BColors.black,
-                              fontFamily: 'K2D',
-                            ).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: BColors.darkGrey,
-                            ),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: BColors.black,
+                          fontFamily: 'K2D',
+                        ),
                       ),
                       TextSpan(
                         text: ' *',
-                        style:
-                            const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                              color: BColors.black,
-                              fontFamily: 'K2D',
-                            ).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.red,
-                            ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'K2D',
+                        ).copyWith(color: Colors.red),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: BColors.darkGrey.withValues(alpha: 0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+
+                TextFormField(
+                  readOnly: true,
+                  onTap: _selectDateOfBirth,
+                  controller: TextEditingController(
+                    text: regController.dob != null
+                        ? DateFormat('yyyy-MM-dd').format(regController.dob!)
+                        : '',
                   ),
-                  child: TextFormField(
-                    readOnly: true,
-                    onTap: _selectDateOfBirth,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 24,
-                        horizontal: 16,
-                      ),
-                      hintText: 'Select Date of Birth',
-                      hintStyle: TextStyle(color: BColors.darkGrey),
-                      errorText: regController.dobFieldTouched
-                          ? regController.dobError
-                          : null,
-                      errorStyle: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.red,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color:
-                              regController.dobFieldTouched &&
-                                  regController.dobError != null
-                              ? BColors.error
-                              : Colors.grey,
-                          width: 1,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color:
-                              regController.dobFieldTouched &&
-                                  regController.dobError != null
-                              ? BColors.error
-                              : Colors.grey,
-                          width: 1,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color:
-                              regController.dobFieldTouched &&
-                                  regController.dobError != null
-                              ? BColors.error
-                              : Colors.grey,
-                          width: 1,
-                        ),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(
-                          color: BColors.error,
-                          width: 1,
-                        ),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(
-                          color: BColors.error,
-                          width: 2,
-                        ),
-                      ),
-                      suffixIcon: Icon(
-                        Icons.calendar_today,
-                        color: BColors.darkGrey,
-                        size: 20,
-                      ),
-                    ),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.normal,
-                      color: BColors.black,
-                      fontFamily: 'K2D',
-                    ),
-                    controller: TextEditingController(
-                      text: regController.dob != null
-                          ? DateFormat('yyyy-MM-dd').format(regController.dob!)
-                          : '',
-                    ),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    hintText: 'YYYY/MM/DD',
+                    hintStyle: const TextStyle(color: BColors.darkGrey),
+                    errorText:
+                        regController.dobFieldTouched ? regController.dobError : null,
+                    suffixIcon: const Icon(Icons.calendar_today),
                   ),
                 ),
                 const SizedBox(height: 40),
-                // Create Account Button
+
+                // Next Button
                 AppButton(
                   enabled:
-                      _nameController.isNextButtonEnabled &&
-                      regController.validateForm(),
+                      _nameController.isNextButtonEnabled && regController.validateForm(),
                   text: 'Next',
-                  onPressed: () async {
-                    if (_nameController.isNextButtonEnabled &&
-                        regController.validateForm()) {
-                      // Call controller to validate email
-                      final result = await _caregiverController
-                          .validateEmailForRegistration(
-                            regController.emailController.text,
+                  isLoading: _isNextLoading,
+                  onPressed: () {
+                    _navigateSafely(() async {
+                      if (_nameController.isNextButtonEnabled &&
+                          regController.validateForm()) {
+                        setState(() {
+                          _isNextLoading = true;
+                        });
+
+                        final result = await _caregiverController.validateEmailForRegistration(
+                          regController.emailController.text,
+                        );
+
+                        if (result['success'] == true) {
+                          _nameController.saveName();
+                          regController.saveRegistrationData();
+
+                          _caregiverController.setRegistrationData(
+                            email: regController.emailController.text.trim(),
+                            password: regController.passwordController.text,
+                            firstName: _nameController.firstNameController.text.trim(),
+                            lastName: _nameController.lastNameController.text.trim(),
+                            gender: regController.gender ?? '',
+                            dob: regController.dob,
                           );
 
-                      if (result['success'] == true) {
-                        // Email is valid and available, proceed to next step
-                        // Save the data for later use
-                        _nameController.saveName();
-                        regController.saveRegistrationData();
+                          setState(() {
+                            _isNextLoading = false;
+                          });
 
-                        // Store registration data in CaregiverController for persistence
-                        _caregiverController.setRegistrationData(
-                          email: regController.emailController.text.trim(),
-                          password: regController.passwordController.text,
-                          name: _nameController.nameController.text.trim(),
-                          gender: regController.gender ?? '',
-                          dob: regController.dob,
-                        );
-
-                        // Navigate to camera scan screen
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const ChildAccountCheckScreen(),
-                          ),
-                        );
-                      } else {
-                        // Email validation failed, show error message
-                        regController.emailError = result['error'];
-                        setState(() {});
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CaregiverPermissionScreen(),
+                            ),
+                          );
+                        } else {
+                          setState(() {
+                            _isNextLoading = false;
+                            regController.emailError = result['error'];
+                          });
+                        }
                       }
-                    }
+                    });
                   },
                 ),
                 const SizedBox(height: 32),
@@ -1052,9 +701,8 @@ class _CaregiverCreateAccountScreenState
 
   @override
   void dispose() {
-    // Don't manually dispose GetX-managed controllers
-    // GetX will handle their lifecycle
+    _registrationController.removeListener(_onControllerChange);
+    _nameController.removeListener(_onControllerChange);
     super.dispose();
   }
 }
-// fix conflict!!!!!
