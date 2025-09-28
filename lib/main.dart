@@ -10,7 +10,6 @@ import 'package:lumra_project/view/welcomepage.dart';
 import 'package:lumra_project/theme/custom_themes/text_field_theme.dart';
 import 'package:lumra_project/view/homepage/adhdHomePage.dart';
 import 'package:lumra_project/theme/theme.dart';
-import 'package:lumra_project/routes.dart';
 import 'package:flutter/services.dart';
 
 void main() async {

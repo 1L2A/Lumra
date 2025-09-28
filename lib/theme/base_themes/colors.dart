@@ -6,7 +6,8 @@ class BColors {
   ///App Basic Colors
   static const Color primary = Color(0xFF5F8C85);
   static const Color secondry = Color(0xFFC1DFC9);
-  static const Color accent = Color(0xFFE9B8A9);
+  static const Color accent = Color.fromARGB(255, 233, 199, 169);
+  // old accent color 9B8A9 
 
   ///more brightness and saturation
   //icon color

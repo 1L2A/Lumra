@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../theme/custom_themes/appbar_theme.dart';
 import '../../theme/base_themes/colors.dart';
-import 'package:lumra_project/view/navbar_widget.dart';
 
 class Qrcode extends StatelessWidget {
   const Qrcode({super.key});
@@ -55,7 +54,6 @@ class Qrcode extends StatelessWidget {
           ),
         ),
       ),
-      // bottomNavigationBar: const NavbarAdhd(),
     );
   }
 }
