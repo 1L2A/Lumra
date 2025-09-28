@@ -170,7 +170,7 @@ class _CaregiverCreateAccountScreenState extends State<CaregiverCreateAccountScr
                       focusNode: _nameController.firstNameFocusNode,
                       maxLength: 12,
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z ]')),
+                        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z]')),
                       ],
                       onChanged: _nameController.updateFirstName,
                       onTapOutside: (_) => FocusScope.of(context).unfocus(),
@@ -237,7 +237,7 @@ class _CaregiverCreateAccountScreenState extends State<CaregiverCreateAccountScr
                       focusNode: _nameController.lastNameFocusNode,
                       maxLength: 12,
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z ]')),
+                        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z]')),
                       ],
                       onChanged: _nameController.updateLastName,
                       onTapOutside: (_) => FocusScope.of(context).unfocus(),

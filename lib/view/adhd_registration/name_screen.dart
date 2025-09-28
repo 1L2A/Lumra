@@ -120,7 +120,7 @@ class _NameScreenState extends State<NameScreen> {
                                       textInputAction: TextInputAction.next,
                                       maxLength: 12,
                                       inputFormatters: [
-                                        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z ]')),
+                                        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z]')),
                                       ],
                                       onTapOutside: (_) => FocusScope.of(context).unfocus(),
                                       onFieldSubmitted: (_) => FocusScope.of(context)
@@ -174,7 +174,7 @@ class _NameScreenState extends State<NameScreen> {
                                       textInputAction: TextInputAction.done,
                                       maxLength: 12,
                                       inputFormatters: [
-                                        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z ]')),
+                                        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z]')),
                                       ],
                                       onTapOutside: (_) => FocusScope.of(context).unfocus(),
                                       onFieldSubmitted: (_) => _controller.lastNameFocusNode.unfocus(),
