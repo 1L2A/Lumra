@@ -4,7 +4,8 @@ import 'package:lumra_project/service/auth_signup.dart';
 
 class RegistrationFlowController extends GetxController {
   // Collected data from all screens
-  final RxString _name = ''.obs;
+  final RxString _firstName = ''.obs;
+  final RxString _lastName = ''.obs;
   final RxString _email = ''.obs;
   final RxString _password = ''.obs;
   final RxString _gender = ''.obs;
@@ -17,7 +18,8 @@ class RegistrationFlowController extends GetxController {
   final RxMap<int, int> _questionPoints = <int, int>{}.obs;
 
   // Getters
-  String get name => _name.value;
+  String get firstName => _firstName.value;
+  String get lastName => _lastName.value;
   String get email => _email.value;
   String get password => _password.value;
   String get gender => _gender.value;
@@ -27,8 +29,9 @@ class RegistrationFlowController extends GetxController {
   bool get isLoading => _isLoading.value;
 
   // Update data from each screen
-  void updateFromNameScreen(String name) {
-    _name.value = name;
+  void updateFromNameScreen(String firstName, String lastName) {
+    _firstName.value = firstName;
+    _lastName.value = lastName;
   }
 
   void updateFromQuestionsScreen(List<int> answers) {
@@ -68,12 +71,17 @@ class RegistrationFlowController extends GetxController {
     _isLoading.value = true;
 
     try {
-      // Use Firebase Auth service - create account with verification only
-      final bool success =
-          await FirebaseAuthService.createAccountWithVerification(
-            email: _email.value,
-            password: _password.value,
-          );
+      // Use Firebase Auth service - create complete account (Auth + Firestore + Email Verification)
+      final bool success = await FirebaseAuthService.createCompleteAccount(
+        email: _email.value,
+        password: _password.value,
+        role: _role.value,
+        firstName: _firstName.value,
+        lastName: _lastName.value,
+        gender: _gender.value,
+        dob: _dob.value,
+        totalPoints: _totalPoints.value,
+      );
 
       _isLoading.value = false;
       return success;
@@ -88,29 +96,6 @@ class RegistrationFlowController extends GetxController {
       return false;
     } catch (e) {
       // Handle any other unexpected errors
-      _isLoading.value = false;
-      return false;
-    }
-  }
-
-  // Save user data after email verification
-  Future<bool> saveUserDataAfterVerification() async {
-    _isLoading.value = true;
-
-    try {
-      final bool success =
-          await FirebaseAuthService.saveUserDataAfterVerification(
-            role: _role.value,
-            name: _name.value,
-            gender: _gender.value,
-            dob: _dob.value,
-            totalPoints: _totalPoints.value,
-            linkedUserId: null,
-          );
-
-      _isLoading.value = false;
-      return success;
-    } catch (e) {
       _isLoading.value = false;
       return false;
     }

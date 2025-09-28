@@ -145,32 +145,35 @@ class AddEventView extends StatelessWidget {
                         startTimestamp.toDate(),
                       ).format(Get.context!)
                     : 'Select Start Time';
-
-                return GestureDetector(
-                  //To show the TimePicker when user Clicks
-                  onTap: () => controller.pickTime(isStart: true),
-
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: BColors.darkGrey,
-                      ), // border color
-                      borderRadius: BorderRadius.circular(
-                        BSizes.inputFieldRadius,
+                return Column(
+               crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      //To show the TimePicker when user Clicks
+                      onTap: () => controller.pickTime(isStart: true),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: BColors.darkGrey,
+                          ), // border color
+                          borderRadius: BorderRadius.circular(
+                            BSizes.inputFieldRadius,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(startText),
+                            const Icon(Icons.access_time),
+                          ],
+                        ),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(startText),
-                        const Icon(Icons.access_time),
-                      ],
-                    ),
-                  ),
+                  ],
                 );
               }),
 

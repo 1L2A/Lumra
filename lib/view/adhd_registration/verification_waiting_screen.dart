@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
@@ -5,6 +6,7 @@ import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/controller/Registration/registration_flow_controller.dart';
 import 'package:lumra_project/view/adhd_registration/widgets/app_button.dart';
 import 'package:lumra_project/view/adhd_registration/verified_screen.dart';
+import 'package:lumra_project/view/welcomePage.dart';
 import 'dart:async';
 
 class VerificationWaitingScreen extends StatefulWidget {
@@ -16,15 +18,8 @@ class VerificationWaitingScreen extends StatefulWidget {
 }
 
 class _VerificationWaitingScreenState extends State<VerificationWaitingScreen> {
-  Timer? _resendTimer;
   int _resendCooldown = 0;
-  bool _isResendDisabled = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _startResendCooldown();
-  }
+  Timer? _resendTimer;
 
   @override
   void dispose() {
@@ -33,19 +28,18 @@ class _VerificationWaitingScreenState extends State<VerificationWaitingScreen> {
   }
 
   void _startResendCooldown() {
-    _isResendDisabled = true;
-    _resendCooldown = 60; // 1 minute in seconds
+    setState(() {
+      _resendCooldown = 60; // 60 seconds cooldown
+    });
 
+    _resendTimer?.cancel();
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_resendCooldown > 0) {
+      if (_resendCooldown == 0) {
+        timer.cancel();
+      } else {
         setState(() {
           _resendCooldown--;
         });
-      } else {
-        setState(() {
-          _isResendDisabled = false;
-        });
-        timer.cancel();
       }
     });
   }
@@ -58,31 +52,12 @@ class _VerificationWaitingScreenState extends State<VerificationWaitingScreen> {
       final isVerified = await controller.checkEmailVerification();
 
       if (isVerified) {
-        // Email is verified - save user data and navigate to next step
-        try {
-          final success = await controller.saveUserDataAfterVerification();
-          if (success && context.mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const VerifiedScreen()),
-            );
-          } else if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Failed to save user data. Please try again.'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(e.toString().replaceFirst('Exception: ', '')),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
+        // Email is verified - navigate to next step (Firestore document already created)
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const VerifiedScreen()),
+          );
         }
       } else {
         // Email is not verified - show popup dialog
@@ -109,7 +84,6 @@ class _VerificationWaitingScreenState extends State<VerificationWaitingScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Email Not Verified'),
           content: const Text('You have not verified your email yet.'),
           actions: [
             TextButton(
@@ -160,75 +134,164 @@ class _VerificationWaitingScreenState extends State<VerificationWaitingScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // SVG Image
-              Center(
-                child: SvgPicture.asset(
-                  'assets/images/checkinbox.svg',
-                  width: 270,
-                  height: 200,
+          child: Transform.translate(
+            offset: const Offset(0, -25),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // SVG Image (slightly down-left)
+                SizedBox(
+                  width: double.infinity,
+                  child: Align(
+                    alignment: const Alignment(0, 0.0),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 1),
+                      child: SvgPicture.asset(
+                        'assets/images/checkinbox.svg',
+                        width: 270,
+                        height: 205,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 32),
-              Text(
-                'Almost there!',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: BColors.black,
-                  fontFamily: 'K2D',
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'To create your account please confirm your e-mail address by clicking the link in the e-mail we\'ve just sent you.',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: BColors.black,
-                  fontFamily: 'K2D',
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
-              // Check Verification Button
-              AppButton(
-                text: 'Check Verification',
-                onPressed: () async {
-                  await _checkEmailVerification(context);
-                },
-              ),
-              const SizedBox(height: 16),
-              // Resend Verification Email Button
-              AppButton(
-                text: _isResendDisabled
-                    ? 'Resend verification email'
-                    : 'Resend verification email',
-                enabled: !_isResendDisabled,
-                onPressed: _isResendDisabled
-                    ? null
-                    : () async {
-                        await _resendEmailVerification(context);
-                      },
-              ),
-              // Show cooldown message when disabled
-              if (_isResendDisabled) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Text(
-                  'To resend, please wait 1 minute.',
+                  'Almost there!',
                   style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                    color: BColors.darkGrey,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: BColors.black,
                     fontFamily: 'K2D',
                   ),
                   textAlign: TextAlign.center,
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  'To create your account please confirm your e-mail address by clicking the link in the e-mail we\'ve just sent you.',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: BColors.black,
+                    fontFamily: 'K2D',
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 35),
+                // Check Verification Button
+                AppButton(
+                  text: 'Check verification',
+                  onPressed: () async {
+                    await _checkEmailVerification(context);
+                  },
+                ),
+                const SizedBox(height: 16),
+                // Exit Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const Welcomepage(),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: BColors.lightGrey,
+                      foregroundColor: BColors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        side: const BorderSide(
+                          color: BColors.lightGrey,
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: const Text(
+                      'Exit',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'K2D',
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Resend email verification text link (exact same as loginpage.dart)
+                Center(
+                  child: (_resendCooldown == 0)
+                      ? (_resendTimer == null
+                            // First time
+                            ? RichText(
+                                textAlign: TextAlign.center,
+                                text: TextSpan(
+                                  style: const TextStyle(
+                                    fontFamily: 'K2D',
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: "To resend email, click ",
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).textTheme.titleSmall!.color,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: "here",
+                                      style: const TextStyle(
+                                        color: BColors.primary,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'K2D',
+                                      ),
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () async {
+                                          await _resendEmailVerification(
+                                            context,
+                                          );
+                                        },
+                                    ),
+                                  ],
+                                ),
+                              )
+                            // After timer finishes
+                            : TextButton(
+                                onPressed: () async {
+                                  await _resendEmailVerification(context);
+                                },
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: const Size(0, 0),
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text(
+                                  "To resend email, click here",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: BColors.primary,
+                                    fontFamily: 'K2D',
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ))
+                      // During cooldown
+                      : Text(
+                          "Verification email sent. Resend in ${_resendCooldown}s",
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: BColors.black,
+                            fontFamily: 'K2D',
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
               ],
-            ],
+            ),
           ),
         ),
       ),

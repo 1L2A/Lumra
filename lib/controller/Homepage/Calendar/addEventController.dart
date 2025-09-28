@@ -54,9 +54,7 @@ class AddEventController extends GetxController {
     final text = value.trim();
     if (text.isEmpty) {
       titleError.value = "Title is required";
-    } else if (text.length < 3) {
-      titleError.value = "Title must be at least 3 characters";
-    } else {
+    }else {
       titleError.value = null; //when error no there, dont make red
     }
   }
