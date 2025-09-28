@@ -54,40 +54,67 @@ class AddEventController extends GetxController {
     final text = value.trim();
     if (text.isEmpty) {
       titleError.value = "Title is required";
-    }else {
+    } else {
       titleError.value = null; //when error no there, dont make red
     }
   }
 
-
   // ------------------ Time validate ------------------ //
 
   //whenever start or end changes
- void validateTimes() {
-  // 🔹 validate start
-  if (eventStart.value == null) {
-    startError.value = "Start time is required";
-  } else {
-    startError.value = null;
-  }
+  void validateTimes() {
+    final now = DateTime.now();
+    final nowRounded = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute,
+    );
 
-  // 🔹 validate / default end
-  if (eventStart.value != null) {
-    if (eventEnd.value == null) {
-      // default: start + 1h
-      final startDate = eventStart.value!.toDate();
-      eventEnd.value = Timestamp.fromDate(startDate.add(const Duration(hours: 1)));
-      endError.value = null;
-    } else if (!eventEnd.value!.toDate().isAfter(eventStart.value!.toDate())) {
-      endError.value = "End time must be after start time";
+    // Validate start
+    if (eventStart.value == null) {
+      startError.value = "Start time is required";
     } else {
+      final startDate = eventStart.value!.toDate();
+      final startRounded = DateTime(
+        startDate.year,
+        startDate.month,
+        startDate.day,
+        startDate.hour,
+        startDate.minute,
+      );
+
+      if (startRounded.isBefore(nowRounded)) {
+        startError.value = "Start time cannot be in the past.";
+      } else {
+        startError.value = null;
+      }
+    }
+
+    // validate & default end
+    if (eventStart.value != null) {
+      if (eventEnd.value == null) {
+        // default will be start + 1h
+        final startDate = eventStart.value!.toDate();
+        eventEnd.value = Timestamp.fromDate(
+          startDate.add(const Duration(hours: 1)),
+        );
+        endError.value = null;
+      } else if (!eventEnd.value!.toDate().isAfter(
+        eventStart.value!.toDate(),
+      )) {
+        endError.value = "End time must be after start time";
+      } else if (eventEnd.value!.toDate().isBefore(now)) {
+        endError.value = "End time cannot be in the past";
+      } else {
+        endError.value = null;
+      }
+    } else {
+      // if no start, don't force end
       endError.value = null;
     }
-  } else {
-    // if no start, don't force end
-    endError.value = null;
   }
-}
 
   void updateFormValidity() {
     isFormValid.value =
@@ -152,8 +179,8 @@ class AddEventController extends GetxController {
 
   // ------------------ Form ------------------ //
   bool validateForm() {
-  // Mark title as touched so error shows
-  titleFieldTouched.value = true;
+    // Mark title as touched so error shows
+    titleFieldTouched.value = true;
 
     validateTitle(titleController.text);
     validateTimes();
@@ -161,7 +188,9 @@ class AddEventController extends GetxController {
     // Update form validity (for the button)
     updateFormValidity();
 
-    return  endError.value == null &&  startError.value == null && titleError.value == null ;
+    return endError.value == null &&
+        startError.value == null &&
+        titleError.value == null;
   }
 
   // Now adding the event
@@ -211,14 +240,14 @@ class AddEventController extends GetxController {
 
   @override
   void onClose() {
-  titleController.dispose();
-  eventStart.value = null;
-  eventEnd.value = null;
-  titleError.value = null;
-  startError.value = null;
-  endError.value = null;
-  isFormValid.value = false;
-  isEventAdded.value = false;
-  super.onClose();
+    titleController.dispose();
+    eventStart.value = null;
+    eventEnd.value = null;
+    titleError.value = null;
+    startError.value = null;
+    endError.value = null;
+    isFormValid.value = false;
+    isEventAdded.value = false;
+    super.onClose();
   }
 }
