@@ -139,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   emailError != "EMAIL_NOT_VERIFIED" &&
                                   emailError != "TOO_MANY_REQUESTS")
                               ? emailError
-                              : null,
+                              : (passwordError != null ? '' : null),
                         ),
                       ),
 
@@ -224,7 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                             children: [
                                               TextSpan(
                                                 text:
-                                                    "Your email is not verified \n reset your password or ",
+                                                    "Your email is not verified",
                                                 style: TextStyle(
                                                   fontSize: BSizes.md,
                                                   color: BColors.error,
