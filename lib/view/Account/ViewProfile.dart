@@ -6,7 +6,6 @@ import '../../controller/auth/auth_controller.dart';
 import '../../theme/base_themes/colors.dart';
 import '../../theme/custom_themes/text_theme.dart';
 import '../../theme/custom_themes/appbar_theme.dart';
-import 'package:lumra_project/view/navbar_widget.dart';
 
 class ViewProfile extends StatelessWidget {
   ViewProfile({super.key}) {
@@ -108,7 +107,6 @@ class ViewProfile extends StatelessWidget {
           ),
         ),
 
-        //bottomNavigationBar: const NavbarAdhd(),
       );
     });
   }

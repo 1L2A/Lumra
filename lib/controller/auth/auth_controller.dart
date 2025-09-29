@@ -47,7 +47,6 @@ class AuthController extends GetxController {
   // Logout
   Future<void> logout() async {
     await _authService.signOut();
-    Get.snackbar("Signed out", "You have been signed out");
   }
 
   // Reset password

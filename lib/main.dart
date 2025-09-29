@@ -10,7 +10,6 @@ import 'package:lumra_project/view/welcomepage.dart';
 import 'package:lumra_project/theme/custom_themes/text_field_theme.dart';
 import 'package:lumra_project/view/homepage/adhdHomePage.dart';
 import 'package:lumra_project/theme/theme.dart';
-import 'package:lumra_project/routes.dart';
 import 'package:flutter/services.dart';
 
 void main() async {
@@ -33,7 +32,7 @@ class MyApp extends StatelessWidget {
 
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Lumra Project',
+      title: 'Lumra',
       theme: LumraAppTheme.lightTheme,
       home: SplashGifScreen(
         nextScreen: Welcomepage(),
@@ -41,16 +40,6 @@ class MyApp extends StatelessWidget {
       getPages: [
         GetPage(name: '/app', page: () => RoleAwareRoot()), // NEW
       ],
-      // initialRoute: R.home,
-      // routes: {
-      //   //   // R.home: (_) => isCaregiver
-      //   //   //   ? const CaregiverHomePage()    // shows caregiver navbar
-      //   //   //    : const AdhdHomePage(),        // shows ADHD navbar
-      //   //   //R.dashboard: (_) => const CaregiverDashboardPage(),
-      //   //   //R.activity: (_) => const ActivityPage(),
-      //   //   //R.community: (_) => const CommunityPage(),
-      //   //   R.account: (_) => const AccountPage(),
-      // },
     );
   }
 }

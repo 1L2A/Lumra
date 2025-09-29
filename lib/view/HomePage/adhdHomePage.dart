@@ -4,7 +4,6 @@ import 'package:lumra_project/controller/task/taskController.dart';
 import 'package:lumra_project/model/task/task.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
-import 'package:lumra_project/view/navbar_widget.dart';
 import 'package:lumra_project/view/Homepage/Calendar/calendarWidgets/openCalendar.dart';
 import 'package:lumra_project/controller/auth/auth_controller.dart';
 import 'package:lumra_project/controller/Account/UserController.dart';

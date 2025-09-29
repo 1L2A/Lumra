@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/controller/auth/auth_controller.dart';
 import 'package:flutter/services.dart';
+import 'package:lumra_project/utils/customWidgets/toastservice.dart';
 
 class ResetPasswordDialog {
   static void show(BuildContext context, AuthController authController) {
@@ -81,7 +82,7 @@ class ResetPasswordDialog {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: BColors.primary,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
@@ -127,9 +128,9 @@ class ResetPasswordDialog {
                     final result = await authController.resetPassword(email);
                     if (result == null) {
                       Navigator.pop(context);
-                      Get.snackbar(
+                      ToastService.info(
                         "Email Sent",
-                        "Please check your inbox to continue.",
+                        "Please check your inbox to continue. If you don't see the email, please check your Junk folder.",
                       );
                     } else {
                       setState(() {

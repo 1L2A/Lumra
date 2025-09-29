@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
-
 import 'package:lumra_project/controller/task/taskController.dart';
 import 'package:lumra_project/model/task/task.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
 import 'package:lumra_project/utils/customWidgets/toastservice.dart';
-// import 'package:lumra_project/view/navbar_widget.dart'; // handled by AppShell
 import 'package:lumra_project/view/Homepage/Calendar/calendarWidgets/openCalendar.dart';
 import 'package:lumra_project/controller/auth/auth_controller.dart';
 import 'package:lumra_project/controller/Account/UserController.dart';
@@ -76,22 +74,12 @@ class _CareGiverHomePageState extends State<CareGiverHomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "How’s your mood today?",
-                style: tt.titleLarge?.copyWith(
-                  fontSize: BSizes.lg,
-                  color: BColors.black,
-                ),
-              ),
-
-              const MoodRow(),
-
               SizedBox(height: BSizes.md),
 
               // Encouragement banner
-              const EncouragementMessage(),
+              const EncouragementMessage(text: 'Write a message you would like you\'re linked Adhd user to read!'),
 
-              SizedBox(height: BSizes.sm),
+              SizedBox(height: BSizes.SpaceBtwSections),
 
               Row(
                 children: [
@@ -129,8 +117,6 @@ class _CareGiverHomePageState extends State<CareGiverHomePage> {
         },
         child: const Icon(Icons.add),
       ),
-
-      // bottomNavigationBar: const NavbarAdhd(), // handled by AppShell
     );
   }
 }

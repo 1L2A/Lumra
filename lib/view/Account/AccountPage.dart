@@ -5,12 +5,11 @@ import '../../theme/base_themes/colors.dart';
 import '../../theme/custom_themes/text_theme.dart';
 import '../../theme/custom_themes/appbar_theme.dart';
 import '../Account/viewProfile.dart';
-import 'package:lumra_project/view/navbar_widget.dart';
 import 'package:lumra_project/controller/auth/auth_controller.dart';
 import 'package:lumra_project/view/auth/loginPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../Account/QRCode.dart';
-import 'package:lumra_project/view/navbar_widget.dart';
+import 'package:lumra_project/view/Account/SignOutDialog.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -130,8 +129,7 @@ class AccountPage extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () async {
-                  await authController.logout();
-                  Get.offAll(() => const LoginScreen());
+                  Signoutdialog.show(context, authController);
                 },
                 icon: const Icon(Icons.logout),
                 label: const Text("Sign Out"),
@@ -152,7 +150,6 @@ class AccountPage extends StatelessWidget {
           ],
         ),
       ),
-      // bottomNavigationBar: const NavbarAdhd(),
     );
   }
 
