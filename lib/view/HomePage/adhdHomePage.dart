@@ -121,8 +121,9 @@ class _HomePageState extends State<HomePage> {
           final count = await _taskController
               .getActiveTaskCount(); // or getOpenActiveTaskCount() in next sprint
           if (count >= 10) {
-            ToastService.error(
-              "You have reached your 10 task limit. Try finishing a task before adding more.",
+            ToastService.info(
+              "You have reached your 10 task limit.",
+              " Try finishing a task before adding more.",
             );
             return; // don't open the sheet
           }

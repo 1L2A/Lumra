@@ -77,7 +77,10 @@ class _CareGiverHomePageState extends State<CareGiverHomePage> {
               SizedBox(height: BSizes.md),
 
               // Encouragement banner
-              const EncouragementMessage(text: 'Write a message you would like you\'re linked Adhd user to read!'),
+              const EncouragementMessage(
+                text:
+                    'Write a message you would like you\'re linked Adhd user to read!',
+              ),
 
               SizedBox(height: BSizes.SpaceBtwSections),
 
@@ -107,8 +110,9 @@ class _CareGiverHomePageState extends State<CareGiverHomePage> {
           final count = await _taskController
               .getActiveTaskCount(); // or getOpenActiveTaskCount()
           if (count >= 10) {
-            ToastService.error(
-              "You have reached your 10 task limit. Try finishing a task before adding more.",
+            ToastService.info(
+              "You have reached your 10 task limit.",
+              " Try finishing a task before adding more.",
             );
             return; // don't open the sheet
           }

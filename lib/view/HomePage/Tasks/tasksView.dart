@@ -23,9 +23,9 @@ class TasksList extends StatelessWidget {
       ),
       builder: (context) => DraggableScrollableSheet(
         expand: false,
-        initialChildSize: 0.6, // 80% tall when first shown
+        initialChildSize: 0.7, // 80% tall when first shown
         minChildSize: 0.5, // can shrink down to 50%
-        maxChildSize: 0.6, // can grow up to 60% max (no white sheet appears)
+        maxChildSize: 0.7, // can grow up to 60% max (no white sheet appears)
         builder: (context, scrollController) {
           return SingleChildScrollView(
             controller: scrollController,

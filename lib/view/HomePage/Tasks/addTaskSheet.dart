@@ -48,181 +48,156 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedPadding(
-      ///for the sheet with the real device (KEYBOARD)
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(
-        left: BSizes.md,
-        right: BSizes.md,
-        top: BSizes.md,
-        bottom: MediaQuery.of(context).viewInsets.bottom + BSizes.md,
-      ),
-      child: SingleChildScrollView(
-        //REEM ADDED THIS SO FEILDS AS SCROLLABLE WHILE WRITING KEBOARD
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Title
-              Text(
-                'Add Task',
-                textAlign: TextAlign.center,
-                style: BTextTheme.lightTextTheme.headlineLarge,
-              ),
-              SizedBox(height: BSizes.SpaceBtwItems),
+    final maxHeight = MediaQuery.of(context).size.height * 0.7;
 
-              //Title field
-              // Title label
-              Text('Title', style: BTextTheme.lightTextTheme.titleMedium),
-
-              SizedBox(height: BSizes.xs),
-
-              // Title input
-              TextFormField(
-                key: _titleFieldKey,
-                focusNode: _titleFocus,
-                controller: _titleCtrl,
-                autovalidateMode: _titleTouched
-                    ? AutovalidateMode.always
-                    : AutovalidateMode.disabled, // show error after first blur
-                decoration: InputDecoration(
-                  // hintText: 'e.g., Math assignment', كومنت عشان نوحد بين الفيلدز كنسلت هذي ممكن نرجعها اذا تبونها
-                  // filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 14,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      BSizes.inputFieldRadius,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      BSizes.inputFieldRadius,
-                    ),
-                    borderSide: const BorderSide(color: BColors.darkGrey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      BSizes.inputFieldRadius,
-                    ),
-                    borderSide: const BorderSide(
-                      color: BColors.primary,
-                      width: 1.3,
+    return SafeArea(
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.only(
+          left: BSizes.md,
+          right: BSizes.md,
+          bottom: MediaQuery.of(
+            context,
+          ).viewInsets.bottom, // shifts for keyboard
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: CustomScrollView(
+            slivers: [
+              // Pinned title
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _PinnedHeaderDelegate(
+                  child: Center(
+                    child: Text(
+                      "Add Task",
+                      style: BTextTheme.lightTextTheme.headlineLarge,
                     ),
                   ),
                 ),
-                textInputAction: TextInputAction.done,
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Title is required'
-                    : null,
               ),
-              SizedBox(height: BSizes.spaceBtwinputFields),
 
-              // Priority label
-              Text('Priority', style: BTextTheme.lightTextTheme.titleMedium),
-              SizedBox(height: BSizes.xs),
+              // Scrollable body
+              SliverFillRemaining(
+                hasScrollBody: true,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          "Title",
+                          style: BTextTheme.lightTextTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          focusNode: _titleFocus,
+                          controller: _titleCtrl,
+                          autovalidateMode: _titleTouched
+                              ? AutovalidateMode.always
+                              : AutovalidateMode
+                                    .disabled, // show error after first blur
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? "Title is required"
+                              : null,
+                        ),
+                        const SizedBox(height: 20),
 
-              DropdownButtonFormField<String>(
-                value: _priority,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 14,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      BSizes.inputFieldRadius,
+                        Text(
+                          "Priority",
+                          style: BTextTheme.lightTextTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<String>(
+                          value: _priority,
+                          items: const [
+                            DropdownMenuItem(
+                              value: "high",
+                              child: Text("High"),
+                            ),
+                            DropdownMenuItem(
+                              value: "medium",
+                              child: Text("Medium"),
+                            ),
+                            DropdownMenuItem(value: "low", child: Text("Low")),
+                          ],
+                          onChanged: (v) => setState(() => _priority = v),
+                          validator: (v) =>
+                              v == null ? "Priority is required" : null,
+                        ),
+                        const SizedBox(height: BSizes.SpaceBtwItems),
+
+                        SizedBox(height: BSizes.appBarHeight),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _canSubmit
+                                ? () async {
+                                    if (!_formKey.currentState!.validate())
+                                      return;
+
+                                    //  at 10 tasks
+                                    final count = await widget.controller
+                                        .getTaskCount(); // or getOpenTaskCount()
+                                    if (count >= 10) {
+                                      if (!mounted) return;
+                                      ToastService.show(
+                                        "You have reached your 10 task limit.",
+                                        " Try finishing a task before adding more.",
+                                      );
+
+                                      return;
+                                    }
+
+                                    final newTask = Task(
+                                      id: '',
+                                      tasksTitle: _titleCtrl.text.trim(),
+                                      priority: _priority!,
+                                      basePriority:
+                                          _priority!, // keep basePriority in sync
+                                      isChecked: false,
+                                      updatedAt: Timestamp.now(),
+                                    );
+
+                                    try {
+                                      await widget.controller.addTask(newTask);
+                                      if (!mounted) return;
+                                      Navigator.pop(context);
+                                      //  ToastService.success("Task added successfully!");
+                                    } on FirebaseException catch (e) {
+                                      if (!mounted) return;
+                                      ToastService.error(
+                                        "Write error: ${e.code}",
+                                      );
+                                    }
+                                  }
+                                : null, // disabled 'Add' button
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              foregroundColor:
+                                  Colors.white, // keep icon/text white
+                              disabledForegroundColor: Colors.white.withOpacity(
+                                0.6,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.check),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Add",
+                                  style: BTextTheme.darkTextTheme.headlineSmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      BSizes.inputFieldRadius,
-                    ),
-                    borderSide: const BorderSide(color: BColors.darkGrey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      BSizes.inputFieldRadius,
-                    ),
-                    borderSide: const BorderSide(
-                      color: BColors.primary,
-                      width: 1.3,
-                    ),
-                  ),
-                ),
-                dropdownColor: Colors.white,
-                items: const [
-                  DropdownMenuItem(value: 'high', child: Text('High')),
-                  DropdownMenuItem(value: 'medium', child: Text('Medium')),
-                  DropdownMenuItem(value: 'low', child: Text('Low')),
-                ],
-                onChanged: (v) => setState(() => _priority = v),
-                validator: (v) => v == null ? 'Priority is required' : null,
-              ),
-              SizedBox(height: BSizes.appBarHeight),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _canSubmit
-                      ? () async {
-                          if (!_formKey.currentState!.validate()) return;
-
-                          //  at 10 tasks
-                          final count = await widget.controller
-                              .getTaskCount(); // or getOpenTaskCount()
-                          if (count >= 10) {
-                            if (!mounted) return;
-                            ToastService.error(
-                              "You have reached your 10 task limit. Try finishing a task before adding more.",
-                            );
-                            return;
-                          }
-
-                          final newTask = Task(
-                            id: '',
-                            tasksTitle: _titleCtrl.text.trim(),
-                            priority: _priority!,
-                            basePriority:
-                                _priority!, // keep basePriority in sync
-                            isChecked: false,
-                            updatedAt: Timestamp.now(),
-                          );
-
-                          try {
-                            await widget.controller.addTask(newTask);
-                            if (!mounted) return;
-                            Navigator.pop(context);
-                            //  ToastService.success("Task added successfully!");
-                          } on FirebaseException catch (e) {
-                            if (!mounted) return;
-                            ToastService.error("Write error: ${e.code}");
-                          }
-                        }
-                      : null, // disabled 'Add' button
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    foregroundColor: Colors.white, // keep icon/text white
-                    disabledForegroundColor: Colors.white.withOpacity(0.6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.check),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Add",
-                        style: BTextTheme.darkTextTheme.headlineSmall,
-                      ),
-                    ],
                   ),
                 ),
               ),
@@ -232,4 +207,31 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
       ),
     );
   }
+}
+
+//small widget for ADD Task header
+class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  _PinnedHeaderDelegate({required this.child});
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: Colors.white, //  avoid transparency when scrolling
+      alignment: Alignment.center,
+      child: child,
+    );
+  }
+
+  @override
+  double get maxExtent => 60;
+  @override
+  double get minExtent => 60;
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) =>
+      false;
 }

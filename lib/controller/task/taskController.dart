@@ -8,26 +8,37 @@ class TaskController {
   TaskController({required this.userId});
   CollectionReference<Map<String, dynamic>> get _col =>
       _firestore.collection('users').doc(userId).collection('tasks');
-
+  //DONOT REMOVE THE COMMENTS
   // Hide expired tasks right away (TTL will delete them later) هو كذا طريقته مايتعامل بالثواني
   //we will cancel the TTL because google cloud doesn’t allow direct billing
+  // Stream<List<Task>> getTasks() {
+  //   return _col
+  //       .where('expireAt', isGreaterThan: Timestamp.now()) // filter only
+  //       .orderBy('order', descending: true) // single sort key
+  //       .snapshots()
+  //       .map((snap) => snap.docs.map(Task.fromFirestore).toList());
+  // }
+  // FREE REORDERING: sort by 'order' only; filter expired in memory.
   Stream<List<Task>> getTasks() {
-    return _col
-        .where('expireAt', isGreaterThan: Timestamp.now())
-        .orderBy('expireAt', descending: true)
-        .orderBy('order', descending: true)
-        .snapshots()
-        .map((snap) => snap.docs.map(Task.fromFirestore).toList());
+    return _col.orderBy('order', descending: true).snapshots().map((snap) {
+      final now = DateTime.now();
+      final all = snap.docs.map(Task.fromFirestore).toList();
+
+      return all.where((t) {
+        final ts = t.expireAt; // may be null
+        if (ts == null) return true; // keep if no expireAt (NEXT SPRINT)
+        return ts.toDate().isAfter(now); // filter only when non null
+      }).toList();
+    });
   }
 
   Future<void> addTask(Task task) async {
     final data = task.toFirestore(useServerTimestamp: true);
     data['createdAt'] = FieldValue.serverTimestamp();
-    data['order'] = DateTime.now().millisecondsSinceEpoch;
+    data['order'] = DateTime.now().microsecondsSinceEpoch; // higher = higher
     data['expireAt'] =
         (data['expireAt'] as Timestamp?) ??
         Timestamp.fromDate(DateTime.now().add(const Duration(hours: 24)));
-
     await _col.add(data);
   }
 
@@ -37,25 +48,20 @@ class TaskController {
     int newIndex,
   ) async {
     if (newIndex > oldIndex) newIndex -= 1;
-
     final moved = tasks.removeAt(oldIndex);
     tasks.insert(newIndex, moved);
 
     final batch = _firestore.batch();
-
-    // highest order = top
-    int base = DateTime.now().millisecondsSinceEpoch;
+    int base = DateTime.now().millisecondsSinceEpoch; // newest at top
     for (int i = 0; i < tasks.length; i++) {
-      final t = tasks[i];
-      final doc = _col.doc(t.id);
-      batch.update(doc, {
+      batch.update(_col.doc(tasks[i].id), {
         'order': base - i,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     }
-
     await batch.commit();
   }
+
   //DO NOT DELETEeeeeee!!!!
   // Stream<List<Task>> getTasks() {
   //   final col = _firestore.collection('users').doc(userId).collection('tasks');
