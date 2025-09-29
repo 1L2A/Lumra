@@ -290,7 +290,7 @@ class RegistrationController extends ChangeNotifier {
     if (password.length < 8) return false;
     if (!password.contains(RegExp(r'[A-Z]'))) return false;
     if (!password.contains(RegExp(r'[0-9]'))) return false;
-    if (!password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) return false;
+    if (!password.contains(RegExp(r'[^a-zA-Z0-9]'))) return false;
     return true;
   }
 
