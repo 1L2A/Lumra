@@ -69,8 +69,8 @@ class TasksList extends StatelessWidget {
               background: const _SwipeDeleteBg(),
               confirmDismiss: (dir) async {
                 if (dir == DismissDirection.endToStart) {
-                  await controller.deleteTask(t.id);
-                  return true; // remove from list
+                  // await controller.deleteTask(t.id);
+                  return false; // for now false to disable deletion, next sprint we have to change it to true
                 }
                 return false;
               },
