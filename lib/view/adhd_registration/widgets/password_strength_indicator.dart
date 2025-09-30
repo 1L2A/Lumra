@@ -53,7 +53,8 @@ class PasswordStrengthIndicator extends StatelessWidget {
     if (password.length >= 8) rulesMet++;
     if (password.contains(RegExp(r'[A-Z]'))) rulesMet++;
     if (password.contains(RegExp(r'[0-9]'))) rulesMet++;
-    if (password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) rulesMet++;
+    // Treat any non-alphanumeric character as a symbol
+    if (password.contains(RegExp(r'[^a-zA-Z0-9]'))) rulesMet++;
 
     // Map to 3 states: 1=Weak, 2=Medium, 3=Strong
     if (rulesMet <= 1) return 1; // Weak: 1 rule met
