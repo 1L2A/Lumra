@@ -6,38 +6,38 @@ import 'package:flutter_gemini/flutter_gemini.dart';
 import "package:lumra_project/theme/base_themes/api_constants.dart";
 
 class ChatController extends GetxController {
-  List<dynamic>? _cases; // 🟩 Stores the cases and activities from JSON
+  List<dynamic>? _cases; //  Stores the cases and activities from JSON
 
   @override
   void onInit() {
     super.onInit();
 
     Gemini.init(apiKey: APIsConstants.Gimini_API, enableDebugging: true);
-    print('✅ Gemini initialized successfully');
+    print(' Gemini initialized successfully');
 
-    _loadJsonCases(); // 🟩 Load your JSON file once when the controller starts
+    _loadJsonCases(); //  Load your JSON file once when the controller starts
   }
 
-  // 🟩 New method: Load the ADHD cases and activities from JSON file
+  //  New method: Load the ADHD cases and activities from JSON file
   Future<void> _loadJsonCases() async {
     try {
       final data = await rootBundle.loadString(
         'assets/adhd_cases/AdhdActivites.json',
       );
-      final jsonList = json.decode(data); // ✅ root is a list
-      _cases = jsonList; // ✅ assign directly
-      print('✅ JSON loaded successfully, found ${_cases!.length} cases.');
+      final jsonList = json.decode(data); //  root is a list
+      _cases = jsonList; //  assign directly
+      print('JSON loaded successfully, found ${_cases!.length} cases.');
     } catch (e) {
-      print('❌ Failed to load JSON: $e');
+      print(' Failed to load JSON: $e');
       _cases = null;
     }
   }
 
-  // 🧠 Main sendMessage function
+  //  Main sendMessage function
   Future<String> sendMessage(String userMessage) async {
-    print('🟢 Step 1: sendMessage() entered');
+    print(' Step 1: sendMessage() entered');
     try {
-      // 🧩 Lumra’s instruction prompt
+      //  Lumra’s instruction prompt
       final instruction = """
 You are Lumra, a personal assistant that supports individuals with ADHD.  
 You are not a medical professional and must never provide diagnostic or clinical information.  
@@ -72,7 +72,7 @@ If no mental state applies, respond normally with empathy and kindness.
 
 """;
 
-      // 🟩 Include your JSON as context for Gemini
+      //  Include your JSON as context for Gemini
       final contextBlock = _cases != null
           ? """
 
@@ -82,7 +82,7 @@ ${json.encode(_cases)}
 """
           : "";
 
-      // 🧩 Combine everything into the full prompt
+      //  Combine everything into the full prompt
       final fullPrompt =
           """
 $instruction
@@ -91,15 +91,15 @@ User message: $userMessage
 $contextBlock
 """;
 
-      // ✉️ Send to Gemini
+      //  Send to Gemini
       final response = await Gemini.instance.text(fullPrompt);
 
       final output = response?.output ?? "No response";
-      print('✅ Step 3: Gemini replied: $output');
+      print(' Step 3: Gemini replied: $output');
       return output;
     } catch (e, s) {
-      print('❌ Error: $e');
-      print('📄 Stack trace: $s');
+      print(' Error: $e');
+      print(' Stack trace: $s');
       return 'Error: $e';
     }
   }
