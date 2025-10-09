@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:lumra_project/controller/task/taskController.dart';
-import 'package:lumra_project/model/task/task.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
 import 'package:lumra_project/utils/customWidgets/toastservice.dart';
 import 'package:lumra_project/view/Homepage/Calendar/calendarWidgets/openCalendar.dart';
 import 'package:lumra_project/controller/auth/auth_controller.dart';
 import 'package:lumra_project/controller/Account/UserController.dart';
-import 'package:lumra_project/view/HomePage/Mood/adhdMood.dart';
 import 'package:lumra_project/view/HomePage/EncouragemenMessage/adhdMessage.dart';
 import 'package:lumra_project/view/HomePage/Tasks/tasksView.dart';
+import 'package:lumra_project/view/HomePage/Reminders/upcomingReminders.dart';
+import 'package:lumra_project/controller/Homepage/Reminders/reminderController.dart';
 
 class CareGiverHomePage extends StatefulWidget {
   const CareGiverHomePage({super.key});
@@ -34,6 +34,14 @@ class _CareGiverHomePageState extends State<CareGiverHomePage> {
       _userController.init();
     } else {
       _userController = Get.find<UserController>();
+    }
+
+    // Initialize ReminderController
+    if (!Get.isRegistered<ReminderController>()) {
+      final uid = authContoller.currentUser?.uid;
+      if (uid != null && uid.isNotEmpty) {
+        Get.put(ReminderController(currentUid: uid));
+      }
     }
   }
 
@@ -82,7 +90,12 @@ class _CareGiverHomePageState extends State<CareGiverHomePage> {
                     'Write a message you would like you\'re linked Adhd user to read!',
               ),
 
-              SizedBox(height: BSizes.SpaceBtwSections),
+              SizedBox(height: BSizes.sm),
+
+              // Reminders section
+              const UpcomingReminders(),
+
+              SizedBox(height: BSizes.sm),
 
               Row(
                 children: [
