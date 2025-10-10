@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -7,9 +8,11 @@ import 'package:lumra_project/controller/auth/auth_controller.dart';
 // ---------------------------------------------------------------------------
 // ActivityController Goal:
 // 1. Merging: Show CHATBOT activities + INITIAL non-completed activities permanently.
-// 2. 24h Expiry: Both CHATBOT activities and INITIAL activity status docs are deleted
-//    24 hours after completion.
-// 3. Fallback: Only switch to _initialsStream if the merged list is totally empty.
+// 2. 24h Expiry:
+//    • CHATBOT docs: DELETE after 24h.
+//    • INITIAL status docs: SOFT-RESET after 24h (keep `wasCompleted:true`).
+// 3. Fallback: INITIAL activities that were completed reappear ONLY when all initials are completed.
+// 4. Realtime: React to changes in BOTH 'activities' and 'activityStatus'.
 // ---------------------------------------------------------------------------
 
 class Activitycontroller {
@@ -26,7 +29,13 @@ class Activitycontroller {
   late TextEditingController categoryController;
   late TextEditingController timeController;
 
-  
+  int? _lastBand; // 1..4 or 0 (default)
+  bool _bandChanged = false;
+  bool _suppressInitials =
+      false; //when I have initial + chatbot activities displayed and the points have changed remove the initial.
+  bool _emitting =
+      false; //make sure emitCombined runs one at a time (no overlap)
+
   void init() {
     titleController = TextEditingController();
     descriptionController = TextEditingController();
@@ -34,99 +43,177 @@ class Activitycontroller {
     timeController = TextEditingController();
   }
 
+  //this is a helper to know if I do not have any chatbot activities, do I show same old initial or did the points change?
+  int _bandForPoints(int totalPoints) {
+    if (totalPoints >= 5 && totalPoints <= 8) return 1;
+    if (totalPoints >= 9 && totalPoints <= 12) return 2;
+    if (totalPoints >= 13 && totalPoints <= 16) return 3;
+    if (totalPoints >= 17 && totalPoints <= 20) return 4;
+    return 0;
+  }
+
   // MAIN Stream: Merges CHATBOT (realtime) with INITIAL (non-completed, sync fetch)
-  Stream<List<Activitymodel>> activities$() async* {
+  Stream<List<Activitymodel>> activities$() {
     final uid = authController.currentUser?.uid;
     if (uid == null) {
-      yield const <Activitymodel>[];
-      return;
+      return Stream<List<Activitymodel>>.value(const <Activitymodel>[]);
     }
 
-    // 1. Fetch INITIAL activities (synchronously) that are NOT checked yet (fallbackMode: false)
-    final initialItems = await getinitialActivity(fallbackMode: false); 
+    final controller = StreamController<List<Activitymodel>>();
+    StreamSubscription? subActivities;
+    StreamSubscription? subStatus;
+    StreamSubscription? subUser; //listen to user doc for totalPoints
 
-    // 2. Listen to CHATBOT activities in realtime
-    await for (final q
-        in db
+    // This function recomputes the full merged list each time anything changes.
+    Future<void> emitCombined() async {
+      if (_emitting) return; // already running; skip to avoid overlap
+      _emitting = true; // lock: run this function alone
+      try {
+        final now = DateTime.now();
+        final toDeleteChatbot = <DocumentReference>[];
+
+        // A. Process CHATBOT items
+        final q = await db
             .collection('users')
             .doc(uid)
             .collection('activities')
             .orderBy('title')
-            .snapshots()) {
-      final now = DateTime.now();
-      final toDelete = <DocumentReference>[];
-      final userItems = <Activitymodel>[];
+            .get();
 
-      // A. Process CHATBOT items
-      for (final d in q.docs) {
-        final m = Activitymodel.fromUserActivityDoc(d);
+        final userItems = <Activitymodel>[];
 
-        // Delete CHATBOT docs AFTER 24h passes (based on expireAt)
-        final isExpired = m.expireAt != null && m.expireAt!.toDate().isBefore(now);
-        if (isExpired) {
-          toDelete.add(d.reference);
-          continue; 
+        for (final d in q.docs) {
+          final m = Activitymodel.fromUserActivityDoc(d);
+
+          // Delete CHATBOT docs AFTER 24h passes (based on expireAt)
+          final isExpired =
+              m.expireAt != null && m.expireAt!.toDate().isBefore(now);
+          if (isExpired) {
+            toDeleteChatbot.add(d.reference); // Will be deleted below
+            continue;
+          }
+
+          userItems.add(m);
         }
 
-        userItems.add(m);
-      }
-      
-      // B. Process INITIAL Status docs for 24h expiry
-      // Query for initial activity status docs that have expired
-      final statusSnap = await db
-          .collection('users')
-          .doc(uid)
-          .collection('activityStatus')
-          .where('expireAt', isLessThan: Timestamp.fromDate(now))
-          .get();
+        // B. Process INITIAL Status docs
+        // Instead of deleting expired status docs, we soft-reset them: clear their checked/expiry fields but keep `wasCompleted:true`
+        final statusSnap = await db
+            .collection('users')
+            .doc(uid)
+            .collection('activityStatus')
+            .where('expireAt', isLessThan: Timestamp.fromDate(now))
+            .get();
 
-      for (final doc in statusSnap.docs) {
-        toDelete.add(doc.reference); // Add expired status docs to the batch delete
-      }
+        if (statusSnap.docs.isNotEmpty) {
+          Future(() async {
+            final batch = db.batch();
+            for (final doc in statusSnap.docs) {
+              batch.update(doc.reference, {
+                'isChecked': false,
+                'checkedAt': null,
+                'expireAt': null,
+                // keep 'wasCompleted:true'
+              });
+            }
+            await batch.commit();
+          });
+        }
 
-      // C. Batch delete all expired docs (CHATBOT activities + INITIAL status)
-      if (toDelete.isNotEmpty) {
-        final batch = db.batch();
-        for (final ref in toDelete) batch.delete(ref);
-        await batch.commit();
-      }
+        // C. Band (range of points) change handeling:
+        // If points band changed, start suppression and delete all initial statuses now (async)
+        if (_bandChanged && userItems.isEmpty) {
+          // points changed & no chatbot - > switch to new initials right now
+          _bandChanged = false;
+          _suppressInitials = false;
+          await _removeAllInitialStatus(uid); // clear old statuses first
+          final initialItemsFresh = await getinitialActivity();
+          controller.add(initialItemsFresh); // show initials only
+          if (toDeleteChatbot.isNotEmpty) {
+            final b = db.batch();
+            for (final ref in toDeleteChatbot) b.delete(ref);
+            await b.commit();
+          }
+          return;
+        }
 
-      // 3. Merge the lists (CHATBOT items + INITIAL non-completed items)
-      final combinedList = [...userItems, ...initialItems];
+        if (_bandChanged && userItems.isNotEmpty) {
+          // points changed & chatbot exists
+          // delete old initials immediately
+          _bandChanged = false;
+          _suppressInitials = true;
 
-      if (combinedList.isNotEmpty) {
-        yield combinedList;
-      } else {
-        // Fallback: Only switch to the fallback stream if the combined list is COMPLETELY empty
-        yield* _initialsStream(uid); 
+          await _removeAllInitialStatus(uid); // delete immediately
+
+          // show chatbot only for now
+          controller.add(userItems);
+        }
+
+        // D) Decide what to show
+        List<Activitymodel> toEmit;
+        if (_suppressInitials && userItems.isNotEmpty) {
+          // show chatbot only while we’re hiding initials
+          toEmit = userItems;
+        } else {
+          // show chatbot + initials (or only initials if chatbot is empty)
+          final initialItems = await getinitialActivity();
+          toEmit = [...userItems, ...initialItems];
+
+          // stop hiding initials once chatbot becomes empty
+          if (_suppressInitials && userItems.isEmpty) {
+            _suppressInitials = false; // next updates will show new initials
+          }
+        }
+        controller.add(toEmit);
+
+        //E. Delete chatbot expired activities
+        if (toDeleteChatbot.isNotEmpty) {
+          Future(() async {
+            final batch = db.batch();
+            for (final ref in toDeleteChatbot) batch.delete(ref);
+            await batch.commit();
+          });
+        }
+      } finally {
+        _emitting = false; //unlock: allow next run
       }
     }
-  }
 
-  // Realtime fallback stream for INITIAL templates:
-  Stream<List<Activitymodel>> _initialsStream(String uid) async* {
-    final templates = await _loadInitialTemplates(uid); // based on points
+    subActivities = db
+        .collection('users')
+        .doc(uid)
+        .collection('activities')
+        .snapshots()
+        .listen((_) => emitCombined());
 
-    await for (final statusSnap
-        in db.collection('users').doc(uid).collection('activityStatus').snapshots()) {
-      final Map<String, Map<String, dynamic>> statusMap = {
-        for (final d in statusSnap.docs) d.id: d.data(),
-      };
+    subStatus = db
+        .collection('users')
+        .doc(uid)
+        .collection('activityStatus')
+        .snapshots()
+        .listen((_) => emitCombined());
 
-      final items = <Activitymodel>[];
-      for (final t in templates) {
-        final status = statusMap[t.id];
-        final bool checked = (status?['isChecked'] ?? false) as bool;
-        
-        items.add(
-          t.copyWith(
-            isInitial: true,
-            isChecked: checked, 
-          ),
-        );
+    subUser = db.collection('users').doc(uid).snapshots().listen((snap) {
+      final data = snap.data();
+      final int points = (data?['totalPoints'] ?? 0) as int;
+      final int band = _bandForPoints(points);
+      if (_lastBand != null && _lastBand != band) {
+        _bandChanged = true; //flag that band changed
       }
-      yield items;
-    }
+      _lastBand = band; // remember current band
+      emitCombined(); // update list now
+    });
+
+    // first run
+    emitCombined();
+
+    controller.onCancel = () async {
+      await subActivities?.cancel();
+      await subStatus?.cancel();
+      await subUser?.cancel();
+    };
+
+    return controller.stream;
   }
 
   // Loads initial templates once, filtered by the user's points band.
@@ -134,6 +221,11 @@ class Activitycontroller {
     // 1. Get points
     final userDoc = await db.collection('users').doc(uid).get();
     final int totalPoints = userDoc.data()?['totalPoints'] ?? 0;
+
+    //!!!!!!!!!ADDED
+    final currentBand = _bandForPoints(totalPoints);
+    _bandChanged = (_lastBand != null && _lastBand != currentBand);
+    _lastBand = currentBand;
 
     // 2. Fetch all templates
     final tplSnap = await db.collection('initialActivities').get();
@@ -146,25 +238,41 @@ class Activitycontroller {
     if (totalPoints >= 5 && totalPoints <= 8) {
       filtered = all
           .where(
-            (a) => ['Short Walk', 'Light Yoga', 'Small Art'].contains(a.title.trim()),
+            (a) => [
+              'Short Walk',
+              'Light Yoga',
+              'Small Art',
+            ].contains(a.title.trim()),
           )
           .toList();
     } else if (totalPoints >= 9 && totalPoints <= 12) {
       filtered = all
           .where(
-            (a) => ['Short Run', 'Brain Games', 'Cooking'].contains(a.title.trim()),
+            (a) => [
+              'Short Run',
+              'Brain Games',
+              'Cooking',
+            ].contains(a.title.trim()),
           )
           .toList();
     } else if (totalPoints >= 13 && totalPoints <= 16) {
       filtered = all
           .where(
-            (a) => ['Team Sports', 'Fun Exercises', 'Journaling'].contains(a.title.trim()),
+            (a) => [
+              'Team Sports',
+              'Fun Exercises',
+              'Journaling',
+            ].contains(a.title.trim()),
           )
           .toList();
     } else if (totalPoints >= 17 && totalPoints <= 20) {
       filtered = all
           .where(
-            (a) => ['Advanced Yoga', 'Large Puzzle', 'Gardening'].contains(a.title.trim()),
+            (a) => [
+              'Advanced Yoga',
+              'Large Puzzle',
+              'Gardening',
+            ].contains(a.title.trim()),
           )
           .toList();
     }
@@ -172,48 +280,93 @@ class Activitycontroller {
     return filtered.isNotEmpty ? filtered : all;
   }
 
+  // remove the ENTIRE activityStatus subcollection (handles band changes safely)
+  Future<void> _removeAllInitialStatus(String uid) async {
+    final statusCol = db
+        .collection('users')
+        .doc(uid)
+        .collection('activityStatus');
+    final snap = await statusCol.get(); // fetch all
+    if (snap.docs.isEmpty) return;
+
+    final batch = db.batch();
+    for (final d in snap.docs) {
+      batch.delete(d.reference); // delete all in a single batch
+    }
+    await batch.commit();
+  }
+
   // Fetches initial activities (non-realtime): used for the initialItems list in activities$().
-  Future<List<Activitymodel>> getinitialActivity({
-    bool fallbackMode = false,
-  }) async {
+  // Logic:
+  // PRIMARY list: new or not-expired initials (to display).
+  // RESERVE list: previously completed ones (wasCompleted:true).
+  // If PRIMARY is empty (ALL initials completed), delete ALL statuses for current templates so the next tick reloads fresh (useful if points band changes).
+  Future<List<Activitymodel>> getinitialActivity()
+  //({bool fallbackMode = false,})
+  async {
     final uid = authController.currentUser?.uid;
     if (uid == null) return [];
 
     // 1) Load Templates filtered by points
-    final candidates = await _loadInitialTemplates(uid); 
+    final candidates = await _loadInitialTemplates(uid);
 
-    // 2) Merge with per-user status 
+    // 2) Merge with per-user status
     final statusDocs = await db
         .collection('users')
         .doc(uid)
-        .collection('activityStatus') 
+        .collection('activityStatus')
         .get();
 
     final Map<String, Map<String, dynamic>> statusMap = {
       for (final d in statusDocs.docs) d.id: d.data(),
     };
 
-    final result = <Activitymodel>[];
+    final primary = <Activitymodel>[]; // fresh initials to show
+    final reserve = <Activitymodel>[]; // completed initials
 
     for (final a in candidates) {
       final status = statusMap[a.id];
-      final bool checked = (status?['isChecked'] ?? false) as bool;
 
-      if (!fallbackMode) {
-        // Normal Merging Mode: Hide completed initial activities
-        if (checked) continue; 
-        
-        result.add(a.copyWith(isInitial: true, isChecked: false));
+      final bool checked = status?['isChecked'] == true;
+
+      final Timestamp? expireTs = status?['expireAt'] as Timestamp?;
+      final DateTime? expireAt = expireTs?.toDate();
+      final bool expired =
+          expireAt != null && expireAt.isBefore(DateTime.now());
+      final bool wasCompleted = status?['wasCompleted'] == true;
+
+      // Normal Merging Mode: hide only completed (checked + expired)
+      if (checked && expired) continue;
+
+      if (checked && !expired) {
+        //still 24h not done so display
+        primary.add(a.copyWith(isInitial: true, isChecked: checked));
       } else {
-        // Fallback Mode: Show ALL initials (used by _initialsStream)
-        result.add(a.copyWith(isInitial: true, isChecked: checked));
+        //unchecked: either because completed or because fresh item
+        if (wasCompleted) {
+          //completed before
+          reserve.add(a.copyWith(isInitial: true, isChecked: false));
+        } else //fresh item
+        {
+          primary.add(a.copyWith(isInitial: true, isChecked: false));
+        }
       }
     }
 
-    return result;
+    //Case A: Still have items to display
+    if (primary.isNotEmpty) return primary;
+
+    //Case B: All completed, check
+    Future(() async {
+      await _removeAllInitialStatus(uid);
+    });
+
+    return reserve; //keep something on screen; emitCombined will reload next snapshot
   }
 
   // Toggles completion for either INITIAL or CHATBOT items.
+  // - INITIAL: write per-user status with 24h expiry (soft reset after expiry).
+  // - CHATBOT: update and delete after 24h automatically.
   Future<void> toggle(Activitymodel item) async {
     final uid = authController.currentUser?.uid;
     if (uid == null) return;
@@ -234,7 +387,8 @@ class Activitycontroller {
         await ref.set({
           'isChecked': true,
           'checkedAt': Timestamp.fromDate(now),
-          'expireAt': Timestamp.fromDate(expire), 
+          'expireAt': Timestamp.fromDate(expire),
+          'wasCompleted': true,
         }, SetOptions(merge: true));
       } else {
         // Uncheck: clear status and expiry fields
@@ -242,6 +396,7 @@ class Activitycontroller {
           'isChecked': false,
           'checkedAt': null,
           'expireAt': null,
+          'wasCompleted': false,
         }, SetOptions(merge: true));
       }
     } else {
@@ -256,7 +411,7 @@ class Activitycontroller {
         await ref.update({
           'isChecked': true,
           'checkedAt': Timestamp.fromDate(now),
-          'expireAt': Timestamp.fromDate(expire), 
+          'expireAt': Timestamp.fromDate(expire),
         });
       } else {
         await ref.update({
@@ -264,10 +419,9 @@ class Activitycontroller {
           'checkedAt': null,
           'expireAt': null,
         });
-   }
-}
-}
-
+      }
+    }
+  }
 
   /// Calculates the number of activities completed in the last 24 hours.
   /// This count naturally works well with the 24-hour expiry logic.
@@ -281,7 +435,7 @@ class Activitycontroller {
     int count = 0;
 
     // 1. Check completed INITIAL activities (via activityStatus)
-    
+
     final statusSnap = await db
         .collection('users')
         .doc(uid)
@@ -316,7 +470,7 @@ class Activitycontroller {
     int count = 0;
 
     // 1. Check completed INITIAL activities (via activityStatus)
-    
+
     final statusSnap = await db
         .collection('users')
         .doc(uid)
