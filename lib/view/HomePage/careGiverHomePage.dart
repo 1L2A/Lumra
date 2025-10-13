@@ -122,32 +122,39 @@ class _CareGiverHomePageState extends State<CareGiverHomePage> {
             ),
           ),
 
-          //  Overlay the chatbot on top of the page
+          //  Overlay the chatbot on top of the pages
           const ChatBotWidget(role: 'caregiver'),
         ],
       ),
 
       // FAB+ 10 limitation
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: BColors.primary,
-        foregroundColor: BColors.textwhite,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(BSizes.lg),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(right: 7, bottom: 0),
+        child: SizedBox(
+          // width: 50,
+          // height: 50,
+          child: FloatingActionButton(
+            backgroundColor: BColors.primary,
+            foregroundColor: BColors.textwhite,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(32),
+            ),
+            onPressed: () async {
+              final count = await _taskController
+                  .getActiveTaskCount(); // or getOpenActiveTaskCount()
+              if (count >= 10) {
+                ToastService.info(
+                  "You have reached your 10 task limit.",
+                  " Try finishing a task before adding more.",
+                );
+                return; // don't open the sheet
+              }
+              // allowed -> open the add sheet
+              TasksList.openAddTaskSheet(context, _taskController);
+            },
+            child: const Icon(Icons.add, size: 23, color: Colors.white),
+          ),
         ),
-        onPressed: () async {
-          final count = await _taskController
-              .getActiveTaskCount(); // or getOpenActiveTaskCount()
-          if (count >= 10) {
-            ToastService.info(
-              "You have reached your 10 task limit.",
-              " Try finishing a task before adding more.",
-            );
-            return; // don't open the sheet
-          }
-          // allowed -> open the add sheet
-          TasksList.openAddTaskSheet(context, _taskController);
-        },
-        child: const Icon(Icons.add),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
       bottomNavigationBar: const SizedBox(

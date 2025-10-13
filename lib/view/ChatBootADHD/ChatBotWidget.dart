@@ -92,18 +92,22 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
       children: [
         Positioned(
           bottom: 0,
-          right: 20,
-          child: FloatingActionButton(
-            backgroundColor: BColors.primary,
-            elevation: 6,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-            onPressed: _toggleChat,
-            child: Icon(
-              _isChatOpen ? Icons.close_rounded : Icons.chat_bubble_rounded,
-              size: 26,
-              color: Colors.white,
+          right: 23,
+          child: SizedBox(
+            width: 50,
+            height: 50,
+            child: FloatingActionButton(
+              backgroundColor: BColors.primary,
+              elevation: 6,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(32),
+              ),
+              onPressed: _toggleChat,
+              child: Icon(
+                _isChatOpen ? Icons.close_rounded : Icons.chat_bubble_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
             ),
           ),
         ),

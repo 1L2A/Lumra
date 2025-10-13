@@ -135,24 +135,31 @@ class _HomePageState extends State<HomePage> {
 
       // 10-task limit check + FAB colors
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 65),
-        child: FloatingActionButton(
-          backgroundColor: BColors.primary,
-          foregroundColor: BColors.textwhite,
-          onPressed: () async {
-            final count = await _taskController
-                .getActiveTaskCount(); // or getOpenActiveTaskCount() in next sprint
-            if (count >= 10) {
-              ToastService.info(
-                "You have reached your 10 task limit.",
-                " Try finishing a task before adding more.",
-              );
-              return; // don't open the sheet
-            }
-            //open the add sheet
-            // TasksList(controller: _taskController).openAddTaskSheet(context);
-          },
-          child: const Icon(Icons.add),
+        padding: const EdgeInsets.only(right: 7, bottom: 60),
+        child: SizedBox(
+          width: 50,
+          height: 50,
+          child: FloatingActionButton(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(32),
+            ),
+            backgroundColor: BColors.primary,
+            foregroundColor: BColors.textwhite,
+            onPressed: () async {
+              final count = await _taskController
+                  .getActiveTaskCount(); // or getOpenActiveTaskCount() in next sprint
+              if (count >= 10) {
+                ToastService.info(
+                  "You have reached your 10 task limit.",
+                  " Try finishing a task before adding more.",
+                );
+                return; // don't open the sheet
+              }
+              //open the add sheet
+              //TasksList(controller: _taskController).openAddTaskSheet(context);
+            },
+            child: const Icon(Icons.add, size: 23, color: Colors.white),
+          ),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
