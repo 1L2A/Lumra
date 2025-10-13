@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:lumra_project/view/Activity/ActivityWidgets/SportTimer.dart';
 import '../../model/Activity/ActivityModel.dart';
 import 'package:lumra_project/controller/auth/auth_controller.dart';
 
@@ -491,5 +492,32 @@ class Activitycontroller {
     count += activitySnap.docs.length;
 
     return count;
+  }
+
+  //added this for timer:
+  void onActivityTimeTap(Activitymodel item, BuildContext context) {
+    final time = item.time.trim();
+    if (time.isEmpty) return;
+
+    // Extract integer minutes
+    final match = RegExp(r'(\d+)').firstMatch(time);
+    final minutes = match != null ? int.tryParse(match.group(1)!) ?? 0 : 0;
+
+    if (minutes <= 0) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Invalid time value')));
+      return;
+    }
+
+    // Action differs by category
+    final category = item.category.toLowerCase().trim();
+
+    if (category.contains('sport')) {
+      // ⏱ Open sport timer
+      Get.to(() => SportTimer(duration: Duration(minutes: minutes)));
+    } else if (category.contains('')) {
+      //for now nothing until the rest is added
+    }
   }
 }

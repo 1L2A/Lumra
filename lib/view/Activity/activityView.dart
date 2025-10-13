@@ -80,6 +80,7 @@ class _ActivityViewState extends State<ActivityView> {
               item: items[i],
               textTheme: t,
               onToggle: () => activityController.toggle(items[i]),
+              activityController: activityController,
             ),
           );
         },
@@ -90,25 +91,27 @@ class _ActivityViewState extends State<ActivityView> {
 
 /// Activity Tile (NOW REACTIVE)
 // Converted to StatefulWidget to listen to the completion status of Initial Activities
-class _ActivityTile extends StatefulWidget { 
+class _ActivityTile extends StatefulWidget {
   final Activitymodel item;
   final TextTheme textTheme;
   final VoidCallback onToggle;
+  final Activitycontroller activityController;
 
   const _ActivityTile({
-    super.key, 
+    super.key,
     required this.item,
     required this.textTheme,
     required this.onToggle,
+    required this.activityController,
   });
-  
+
   @override
   State<_ActivityTile> createState() => _ActivityTileState();
 }
 
 class _ActivityTileState extends State<_ActivityTile> {
   // Variable to store the current completion status for Initial Templates
-  bool _isInitialItemChecked = false; 
+  bool _isInitialItemChecked = false;
   StreamSubscription? _statusSubscription;
   final db = FirebaseFirestore.instance;
   final AuthController authController = Get.find<AuthController>();
@@ -136,7 +139,8 @@ class _ActivityTileState extends State<_ActivityTile> {
       } else {
         _isInitialItemChecked = widget.item.isChecked;
       }
-    } else if (!widget.item.isInitial && widget.item.isChecked != oldWidget.item.isChecked) {
+    } else if (!widget.item.isInitial &&
+        widget.item.isChecked != oldWidget.item.isChecked) {
       // Update chatbot status (since it doesn't listen to Firestore)
       _isInitialItemChecked = widget.item.isChecked;
     }
@@ -146,7 +150,7 @@ class _ActivityTileState extends State<_ActivityTile> {
   void _listenToStatus() {
     final uid = authController.currentUser?.uid;
     if (uid == null) return;
-    
+
     _statusSubscription = db
         .collection('users')
         .doc(uid)
@@ -174,15 +178,14 @@ class _ActivityTileState extends State<_ActivityTile> {
   @override
   Widget build(BuildContext context) {
     final style = CategoryStyles.byKey(widget.item.category);
-    final item = widget.item; 
-    
+    final item = widget.item;
+
     // The variable that reflects the correct real-time status:
-    final isDone = item.isInitial ? _isInitialItemChecked : item.isChecked; 
-    
+    final isDone = item.isInitial ? _isInitialItemChecked : item.isChecked;
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 180),
-      opacity: isDone ? 0.65 : 1.0, 
+      opacity: isDone ? 0.65 : 1.0,
       child: Container(
         // Each activity card container
         decoration: BoxDecoration(
@@ -264,8 +267,12 @@ class _ActivityTileState extends State<_ActivityTile> {
                           style: widget.textTheme.titleMedium?.copyWith(
                             fontFamily: 'K2D',
                             fontSize: BSizes.fontSizeMd,
-                            color: isDone ? BColors.darkGrey : BColors.textprimary, // Update color
-                            decoration: isDone ? TextDecoration.lineThrough : null, // Add strikethrough
+                            color: isDone
+                                ? BColors.darkGrey
+                                : BColors.textprimary, // Update color
+                            decoration: isDone
+                                ? TextDecoration.lineThrough
+                                : null, // Add strikethrough
                             decorationColor: BColors.textprimary,
                             decorationThickness: 2,
                           ),
@@ -296,7 +303,9 @@ class _ActivityTileState extends State<_ActivityTile> {
                       activeColor: BColors.primary, // checkmark color
                       checkColor: BColors.textwhite, // inside check color
                       side: BorderSide(
-                        color: isDone ? BColors.darkGrey : BColors.borderPrimary, // Update border color
+                        color: isDone
+                            ? BColors.darkGrey
+                            : BColors.borderPrimary, // Update border color
                       ),
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
@@ -311,36 +320,42 @@ class _ActivityTileState extends State<_ActivityTile> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: BSizes.sm + 2,
-                        vertical: BSizes.xs + 2,
+                    GestureDetector(
+                      onTap: () => widget.activityController.onActivityTimeTap(
+                        widget.item,
+                        context,
                       ),
-                      decoration: BoxDecoration(
-                        color: BColors.secondry.withOpacity(0.40),
-                        borderRadius: BorderRadius.circular(
-                          BSizes.borderRadiusLg,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: BSizes.sm + 2,
+                          vertical: BSizes.xs + 2,
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.timer_outlined,
-                            size: BSizes.iconSm + 2,
-                            color: BColors.primary,
+                        decoration: BoxDecoration(
+                          color: BColors.secondry.withOpacity(0.40),
+                          borderRadius: BorderRadius.circular(
+                            BSizes.borderRadiusLg,
                           ),
-                          SizedBox(width: BSizes.xs + 2),
-                          Text(
-                            item.time, // like "10 min"
-                            style: const TextStyle(
-                              fontFamily: 'K2D',
-                              fontSize: BSizes.fontSizeSm,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.timer_outlined,
+                              size: BSizes.iconSm + 2,
                               color: BColors.primary,
-                              fontWeight: FontWeight.w600,
                             ),
-                          ),
-                        ],
+                            SizedBox(width: BSizes.xs + 2),
+                            Text(
+                              '${widget.item.time} minute', //Show "X minute"
+                              style: const TextStyle(
+                                fontFamily: 'K2D',
+                                fontSize: BSizes.fontSizeSm,
+                                color: BColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
