@@ -135,7 +135,7 @@ class _HomePageState extends State<HomePage> {
 
       // 10-task limit check + FAB colors
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(right: 7, bottom: 60),
+        padding: const EdgeInsets.only(right: 7, bottom: 59),
         child: SizedBox(
           width: 50,
           height: 50,
@@ -156,7 +156,7 @@ class _HomePageState extends State<HomePage> {
                 return; // don't open the sheet
               }
               //open the add sheet
-              //TasksList(controller: _taskController).openAddTaskSheet(context);
+              TasksList.openAddTaskSheet(context, _taskController);
             },
             child: const Icon(Icons.add, size: 23, color: Colors.white),
           ),
