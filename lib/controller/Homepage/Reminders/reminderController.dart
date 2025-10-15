@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:lumra_project/model/Homepage/Reminders/reminderModel.dart';
@@ -8,78 +9,72 @@ class ReminderController extends GetxController {
 
   ReminderController({required this.currentUid});
 
-  // Observable list of upcoming reminders
-  final upcomingReminders = <ReminderModel>[].obs;
-  final isLoading = false.obs;
-  final hasError = false.obs;
-  final errorMessage = ''.obs;
+  /// Stream of upcoming reminders for real-time updates.
+  /// Firestore listener combined with a 1-minute tick ensures items
+  /// disappear exactly when they end, even without writes.
+  Stream<List<ReminderModel>> get upcomingRemindersStream {
+    final StreamController<List<ReminderModel>> controller =
+        StreamController<List<ReminderModel>>.broadcast();
 
-  @override
-  void onInit() {
-    super.onInit();
-    _fetchUpcomingReminders();
-  }
+    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? firestoreSub;
+    Timer? tickTimer;
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> latestDocs = const [];
 
-  /// Fetches events that start within the next 24 hours
-  Future<void> _fetchUpcomingReminders() async {
-    try {
-      isLoading.value = true;
-      hasError.value = false;
-      errorMessage.value = '';
+    void emitFilteredNow() {
+      final DateTime now = DateTime.now();
+      final DateTime next24Hours = now.add(const Duration(hours: 24));
 
-      final now = DateTime.now();
-      final next24Hours = now.add(const Duration(hours: 24));
+      final List<ReminderModel> reminders =
+          latestDocs
+              .map((doc) {
+                try {
+                  return ReminderModel.fromFirestore(doc);
+                } catch (_) {
+                  return null;
+                }
+              })
+              .where((r) => r != null)
+              .cast<ReminderModel>()
+              .where((r) => r.end.isAfter(now) || r.end.isAtSameMomentAs(now))
+              .where((r) => r.start.isBefore(next24Hours))
+              .toList()
+            ..sort((a, b) => a.start.compareTo(b.start));
 
-      // Query events that start within the next 24 hours
-      final query = _firestore
+      if (!controller.isClosed) {
+        controller.add(reminders);
+      }
+    }
+
+    controller.onListen = () {
+      firestoreSub = _firestore
           .collection('events')
           .where('participants', arrayContains: currentUid)
-          .where('start', isGreaterThanOrEqualTo: Timestamp.fromDate(now))
-          .where('start', isLessThanOrEqualTo: Timestamp.fromDate(next24Hours))
-          .orderBy('start', descending: false);
+          .snapshots()
+          .listen(
+            (snapshot) {
+              latestDocs = snapshot.docs;
+              emitFilteredNow();
+            },
+            onError: (error, stack) {
+              if (!controller.isClosed) {
+                controller.addError(error, stack);
+              }
+            },
+          );
 
-      final snapshot = await query.get();
+      tickTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+        emitFilteredNow();
+      });
 
-      final reminders = snapshot.docs
-          .map((doc) => ReminderModel.fromFirestore(doc))
-          .toList();
+      emitFilteredNow();
+    };
 
-      upcomingReminders.assignAll(reminders);
-    } catch (e) {
-      hasError.value = true;
-      errorMessage.value = 'Failed to load reminders: ${e.toString()}';
-      upcomingReminders.clear();
-    } finally {
-      isLoading.value = false;
-    }
-  }
+    controller.onCancel = () async {
+      await firestoreSub?.cancel();
+      tickTimer?.cancel();
+      await controller.close();
+    };
 
-  /// Stream of upcoming reminders for real-time updates
-  Stream<List<ReminderModel>> get upcomingRemindersStream {
-    final now = DateTime.now();
-    final next24Hours = now.add(const Duration(hours: 24));
-
-    return _firestore
-        .collection('events')
-        .where('participants', arrayContains: currentUid)
-        .where('start', isGreaterThanOrEqualTo: Timestamp.fromDate(now))
-        .where('start', isLessThanOrEqualTo: Timestamp.fromDate(next24Hours))
-        .orderBy('start', descending: false)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => ReminderModel.fromFirestore(doc))
-              .toList();
-        });
-  }
-
-  /// Refresh reminders manually
-  Future<void> refreshReminders() async {
-    await _fetchUpcomingReminders();
-  }
-
-  @override
-  void onClose() {
-    super.onClose();
+    return controller.stream;
   }
 }

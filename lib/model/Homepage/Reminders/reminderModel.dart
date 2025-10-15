@@ -22,16 +22,19 @@ class ReminderModel {
   factory ReminderModel.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {
-    final data = doc.data()!;
+    final data = doc.data();
+    if (data == null) {
+      throw Exception('Document data is null');
+    }
 
     return ReminderModel(
       id: doc.id,
       title: (data['title'] ?? '') as String,
-      start: (data['start'] as Timestamp).toDate(),
-      end: (data['end'] as Timestamp).toDate(),
+      start: (data['start'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      end: (data['end'] as Timestamp?)?.toDate() ?? DateTime.now(),
       participants: List<String>.from(data['participants'] ?? const <String>[]),
       createdBy: (data['created_by'] ?? '') as String,
-      createdAt: (data['created_at'] as Timestamp).toDate(),
+      createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 

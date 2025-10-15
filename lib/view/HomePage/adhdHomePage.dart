@@ -82,50 +82,53 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: Stack(
           children: [
-            Padding(
-              padding: EdgeInsets.all(BSizes.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "How’s your mood today?",
-                    style: tt.titleLarge?.copyWith(
-                      fontSize: BSizes.lg,
-                      color: BColors.black,
+            // Main scrollable content
+            SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.all(BSizes.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "How's your mood today?",
+                      style: tt.titleLarge?.copyWith(
+                        fontSize: BSizes.lg,
+                        color: BColors.black,
+                      ),
                     ),
-                  ),
 
-                  const MoodRow(),
+                    const MoodRow(),
 
-                  SizedBox(height: BSizes.xs),
+                    SizedBox(height: BSizes.xs),
 
-                  // Encouragement banner
-                  const EncouragementMessage(),
+                    // Encouragement banner
+                    const EncouragementMessage(),
 
-                  SizedBox(height: BSizes.sm),
+                    SizedBox(height: BSizes.sm),
 
-                  // Reminders section
-                  const UpcomingReminders(),
+                    // Reminders section
+                    const UpcomingReminders(),
 
-                  SizedBox(height: BSizes.sm),
+                    SizedBox(height: BSizes.sm),
 
-                  // Section headers
-                  Row(
-                    children: [
-                      const SizedBox(width: 8),
-                      const Icon(Icons.swap_vert, color: BColors.black),
-                      const SizedBox(width: 8), // spacing between icon and text
-                      Expanded(child: _SectionLabel(text: 'To Do list: ')),
-                    ],
-                  ),
+                    // Section headers
+                    Row(
+                      children: [
+                        const SizedBox(width: 8),
+                        const Icon(Icons.swap_vert, color: BColors.black),
+                        const SizedBox(
+                          width: 8,
+                        ), // spacing between icon and text
+                        Expanded(child: _SectionLabel(text: 'To Do list: ')),
+                      ],
+                    ),
 
-                  SizedBox(height: BSizes.xs),
+                    SizedBox(height: BSizes.xs),
 
-                  // Tasks list
-                  Expanded(child: TasksList(controller: _taskController)),
-
-                  SizedBox(height: BSizes.sm),
-                ],
+                    // Tasks list
+                    TasksList(controller: _taskController),
+                  ],
+                ),
               ),
             ),
             const ChatBotWidget(role: 'adhd'),

@@ -214,6 +214,7 @@ class _TasksListState extends State<TasksList> {
         if (activeTasks.isEmpty && completedTasks.isNotEmpty) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: const EdgeInsets.all(BSizes.md),
@@ -240,6 +241,7 @@ class _TasksListState extends State<TasksList> {
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             if (activeTasks.isNotEmpty)
               _TasksReorderableList(
@@ -318,7 +320,6 @@ class _TasksReorderableListState extends State<_TasksReorderableList> {
       key: const ValueKey('tasks_reorderable_list'),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.only(bottom: BSizes.md),
       itemCount: _displayTasks.length,
       onReorder: _onReorder,
       proxyDecorator: (child, index, animation) {
@@ -468,7 +469,6 @@ class _CompletedTasksListState extends State<_CompletedTasksList> {
       key: const ValueKey('completed_tasks_reorderable_list'),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.only(bottom: BSizes.md),
       itemCount: _displayTasks.length,
       onReorder: _onReorder,
       proxyDecorator: (child, index, animation) {

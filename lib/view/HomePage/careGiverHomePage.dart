@@ -77,18 +77,17 @@ class _CareGiverHomePageState extends State<CareGiverHomePage> {
         ],
       ),
 
-      body: Stack(
-        children: [
-          // Main scrollable content
-          SafeArea(
-            child: SingleChildScrollView(
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Main scrollable content
+            SingleChildScrollView(
               child: Padding(
                 padding: EdgeInsets.all(BSizes.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: BSizes.md),
-
+                    // Encouragement banner
                     const EncouragementMessage(
                       text:
                           'Write a message you would like you\'re linked Adhd user to read!',
@@ -96,52 +95,52 @@ class _CareGiverHomePageState extends State<CareGiverHomePage> {
 
                     SizedBox(height: BSizes.sm),
 
+                    // Reminders section
                     const UpcomingReminders(),
 
-                    Transform.translate(
-                      offset: const Offset(0, -8),
-                      child: Row(
-                        children: [
-                          const SizedBox(width: 8),
-                          const Icon(Icons.swap_vert, color: BColors.black),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: _SectionLabel(text: 'To Do list '),
-                          ),
-                        ],
-                      ),
+                    SizedBox(height: BSizes.sm),
+
+                    // Section headers
+                    Row(
+                      children: [
+                        const SizedBox(width: 8),
+                        const Icon(Icons.swap_vert, color: BColors.black),
+                        const SizedBox(
+                          width: 8,
+                        ), // spacing between icon and text
+                        Expanded(child: _SectionLabel(text: 'To Do list: ')),
+                      ],
                     ),
 
+                    SizedBox(height: BSizes.xs),
+
+                    // Tasks list
                     TasksList(controller: _taskController),
-                    SizedBox(
-                      height: 96,
-                    ), // leave space at bottom so content doesn't sit under FABs
                   ],
                 ),
               ),
             ),
-          ),
-
-          //  Overlay the chatbot on top of the pages
-          const ChatBotWidget(role: 'caregiver'),
-        ],
+            //  Overlay the chatbot on top of the pages
+            const ChatBotWidget(role: 'caregiver'),
+          ],
+        ),
       ),
 
-      // FAB+ 10 limitation
+      // 10-task limit check + FAB colors
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(right: 7, bottom: 0),
+        padding: const EdgeInsets.only(right: 7, bottom: 59),
         child: SizedBox(
-          // width: 50,
-          // height: 50,
+          width: 50,
+          height: 50,
           child: FloatingActionButton(
-            backgroundColor: BColors.primary,
-            foregroundColor: BColors.textwhite,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(32),
             ),
+            backgroundColor: BColors.primary,
+            foregroundColor: BColors.textwhite,
             onPressed: () async {
               final count = await _taskController
-                  .getActiveTaskCount(); // or getOpenActiveTaskCount()
+                  .getActiveTaskCount(); // or getOpenActiveTaskCount() in next sprint
               if (count >= 10) {
                 ToastService.info(
                   "You have reached your 10 task limit.",
@@ -149,7 +148,7 @@ class _CareGiverHomePageState extends State<CareGiverHomePage> {
                 );
                 return; // don't open the sheet
               }
-              // allowed -> open the add sheet
+              //open the add sheet
               TasksList.openAddTaskSheet(context, _taskController);
             },
             child: const Icon(Icons.add, size: 23, color: Colors.white),
@@ -158,8 +157,8 @@ class _CareGiverHomePageState extends State<CareGiverHomePage> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
       bottomNavigationBar: const SizedBox(
-        height: 72,
-      ), /////note for remaz :it was 23
+        height: 23,
+      ), // i returned the old values so it remains consistent with the ADHD user homapage
     );
   }
 }
