@@ -94,13 +94,13 @@ class AdhdChatController extends BaseChatController {
   }
 
   // Ask Gemini to classify the user message into one of the mental states
-  Future<String?> _classifyState(String userMessage) async {
+  Future<String?> _classifyState(String contextMessage) async {
     await ensureJsonLoaded();
     final options = _allMentalStates();
     if (options.isEmpty) return null;
 
     // quick local : greetings / very short messages -> NONE
-    final msg = userMessage
+    final msg = contextMessage
         .trim()
         .toLowerCase(); // لان البرومت حقك ليان شوي خبص مع الستور ، ف هذا أفضل واذا تحسين حقك أزين جربيه بس بيطلع غريب اللوجيك ترى
     const greetings = [
@@ -116,20 +116,36 @@ class AdhdChatController extends BaseChatController {
 
     final sys =
         """
-You are a careful classifier. Choose one mental state from this list:
+You are a careful emotional classifier.
+You will analyze the user's message and decide which one mental state (from the list below)
+best describes the emotion or need behind the message — even if th
+
+For example:
+- "I'm bored" → could mean "Less Motivation"
+- "I can't focus" → could mean "Distracted"
+- "I feel stressed" → could mean "Anxious"
+
+Choose the single best match from this list:
 ${options.join(' | ')}
 
-Return ONLY the state name IF the user's message clearly indicates it.
-If not clearly indicated, return EXACTLY: NONE
+If you are not sure, or the message does not fit any state, return EXACTLY: NONE
 Do not add any extra words.
+
+otherwise return ONLY the state name , Do not add any extra words.
+
 """;
     // النون هذي مارح تطلع لليوزر بس عشان نستخدمها بالميثود الثانية ويطلع له كلام
-    final resp = await Gemini.instance.text(
-      'System:\n$sys\n\nUser:\n$userMessage',
-    );
-    final raw = resp?.output?.trim() ?? '';
-    final one = raw.split('\n').first.replaceAll(RegExp(r'^"+|"+$'), '').trim();
-
+    String one = "";
+    try {
+      final resp = await Gemini.instance.text(
+        'System:\n$sys\n\nUser:\n$contextMessage',
+      );
+      print("🔥responce mental state is $resp");
+      final raw = resp?.output?.trim() ?? '';
+      one = raw.split('\n').first.replaceAll(RegExp(r'^"+|"+$'), '').trim();
+    } catch (e) {
+      return "Error";
+    }
     // Accept "NONE" explicitly
     if (one.toUpperCase() == 'NONE') return 'NONE';
 
@@ -149,8 +165,16 @@ Do not add any extra words.
     await ensureJsonLoaded();
     lastSuggested = [];
 
+    final memory = _buildMemory(limit: 4); // remeber the chat before classufing
+    final contextMessage = memory.isNotEmpty
+        ? 'Previous conversation:\n$memory\n\nUser:\n$userMessage'
+        : userMessage;
+
     // 1) classify first
-    final state = await _classifyState(userMessage);
+    final state = await _classifyState(contextMessage);
+    if (state == 'Error') {
+      return "Sorry, I'm having trouble connecting right now. Please try again in a moment 💫";
+    }
 
     // i move it outside if in order to use it later
     const casualPrompt = """ 
@@ -168,10 +192,7 @@ Keep the reply short and in ENGLISH.
 
     // 2) No clear state -> chat normally using your previous instruction prompt (NO JSON here)
     if (state == 'NONE' || state == null) {
-      //  Add memory to make Gemini aware of past context
-      final memory = _buildMemory(
-        limit: 4,
-      ); // must be the same with the others promt (number of remebred masseges)
+      // must be the same with the others promt (number of remebred masseges)
       final fullPrompt =
           '''
 System:
@@ -182,8 +203,12 @@ User:
 $userMessage
 ''';
 
-      final resp = await Gemini.instance.text(fullPrompt);
-      return resp?.output?.trim() ?? "Got it! How’s your day going?";
+      try {
+        final resp = await Gemini.instance.text(fullPrompt);
+        return resp?.output?.trim() ?? "Got it! How’s your day going?";
+      } catch (e) {
+        return "Sorry, I'm having trouble connecting right now. Please try again in a moment 💫";
+      }
     }
 
     // 3) Clear state -> fetch strictly from JSON (no gemini suggestions)
@@ -196,8 +221,9 @@ $userMessage
     final wantsActivity = await _detectNeedForActivity(
       userMessage,
     ); // Ask Gemini if the user actually wants help or an activity
-
+    print("wants activit? $wantsActivity");
     if (!wantsActivity) {
+      // no need to remeber the full conersation
       final memory = _buildMemory(
         limit: 4,
       ); // for jano (here you can control the number of remembred masseges ) -- dont chnage the method only here also in the normal case (no detected mental state must change with this)
@@ -211,20 +237,73 @@ User:
 $userMessage
 ''';
 
-      final resp = await Gemini.instance.text(fullPrompt);
-      return resp?.output?.trim() ??
-          "That sounds like it’s been a lot to deal with. I’m here with you.";
+      try {
+        final resp = await Gemini.instance.text(fullPrompt);
+        return resp?.output?.trim() ??
+            "That sounds like it’s been a lot to deal with. I’m here with you.";
+      } catch (e) {
+        return "Sorry, I'm having trouble connecting right now. Please try again in a moment 💫";
+      }
     }
 
     if (picked.isEmpty) {
+      // for us to check
       return 'I recognized your state as "$state", but I couldn’t find activities for it.';
     }
 
     // store for saving to Firestore
     lastSuggested = picked;
 
+    //  Prepare text for Gemini — include titles & raw descriptions (for rephrasing)
+    final activitiesText = picked
+        .map((a) {
+          final title = (a['title'] ?? '').trim();
+          final desc = (a['description'] ?? '').trim();
+          return "- $title${desc.isNotEmpty ? "\n  (description: $desc)" : ""}";
+        })
+        .join('\n\n---\n\n'); // ← adds clear separation between activities
+
+    //  Gemini prompt — rephrase descriptions & keep spacing
+    final systemPrompt =
+        """
+You are Lumra, a warm and empathetic assistant that supports individuals with ADHD.
+
+The user's current mental state is: $state
+
+Below are two activities Lumra found in her library.
+Each activity includes a short description (inside parentheses).
+
+Your task:
+- Rephrase each description smoothly in your own warm and encouraging tone, keeping the same meaning.
+- Keep each activity clearly separated from the other with a blank line between them.
+- Mention the activity name first, then its rephrased description on the next line.
+
+$activitiesText
+
+Write a friendly 3-part message for the user:
+1️ Start with an empathetic, natural sentence that mentions the mental state ($state) — do NOT use quotes.  
+   Then, add a short connecting phrase that gently leads into the activities  
+   (for example: “Maybe these ideas could bring you a little balance” or “Let’s try a couple of things that might help”).  
+
+2️ Present the two activities one by one, separated clearly with a blank line, each having its short rewritten description.  
+
+3️ End by reminding the user they can find these activities in the Activities section of Lumra.
+
+Keep your tone kind, calm, and human-like.
+Avoid quotes, emojis, or bold formatting.
+Write in English only.
+""";
+
+    try {
+      final resp = await Gemini.instance.text('System:\n$systemPrompt');
+      return resp?.output?.trim() ??
+          "It seems you’re feeling $state. You can check some helpful activities in your Activities section ";
+    } catch (e) {
+      return "NONE";
+    }
+
     // build friendly  reply
-    final b = StringBuffer();
+    /* final b = StringBuffer();
     b.writeln('I hear you, it seems you might be feeling "$state".');
     b.writeln('Maybe these could help you feel a bit better:');
     for (final a in picked) {
@@ -237,7 +316,7 @@ $userMessage
       'Would you like me to suggest more ideas like these, or try one?',
     );
 
-    return b.toString();
+    return b.toString(); */
   }
 
   Future<bool> _detectNeedForActivity(String userMessage) async {
@@ -245,6 +324,14 @@ $userMessage
     final prompt = """
 You are analyzing a user's message sent to a self-care assistant.
 Decide if the user is *asking for help*, *asking for a solution*, or *wants an activity*.
+
+Instructions:
+- You only need to check whether the user is currently asking for help or guidance.
+- The user might say general things like "help me", "please help", or "I need something" without specifying what — these still count as asking for help.
+- The user might also ask questions that imply a need for guidance (e.g., "what should I do", "how can I fix this").
+
+
+
 
 Return exactly:
 - "YES" → if the user clearly wants help, advice, or an activity.
@@ -257,14 +344,20 @@ User: "I'm tired" → NO
 User: "Can you suggest something to calm me down?" → YES  
 User: "Help me focus please" → YES  
 User: "I'm just chatting" → NO
+User: "Please help" → YES  
+User: "Can you help me?" → YES  
+User: "I need help" → YES  
 """;
-
-    final resp = await Gemini.instance.text(
-      'System:\n$prompt\n\nUser:\n$userMessage',
-    );
-    print(" [Lumra Debug] Gemini raw response: ${resp?.output}"); // debug
-    final output = resp?.output?.trim().toUpperCase() ?? 'NO';
-    return output.contains('YES');
+    try {
+      final resp = await Gemini.instance.text(
+        'System:\n$prompt\n\nUser:\n$userMessage',
+      );
+      print(" [Lumra Debug] Gemini raw response: ${resp?.output}"); // debug
+      final output = resp?.output?.trim().toUpperCase() ?? 'NO';
+      return output.contains('YES');
+    } catch (e) {
+      return false;
+    }
   }
 
   ///  Build a short memory for Gemini (recent messages)  to remember the chat

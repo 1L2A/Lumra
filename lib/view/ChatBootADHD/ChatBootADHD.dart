@@ -180,7 +180,7 @@ class _ChatViewState extends State<ChatView>
     // 6) STORE (no retrieval here)
     final savedCount = await _autoSaveSuggestions();
     if (!mounted) return;
-    if (savedCount > 0) {
+    /* if (savedCount > 0) {  no need 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -188,7 +188,7 @@ class _ChatViewState extends State<ChatView>
           ),
         ),
       );
-    }
+    } */
   }
 
   // UI
