@@ -14,21 +14,25 @@ class SportTimer extends StatefulWidget {
   State<SportTimer> createState() => _SportTimerState();
 }
 
-class _SportTimerState extends State<SportTimer> {
+class _SportTimerState extends State<SportTimer>
+    with SingleTickerProviderStateMixin {
   Timer? _ticker;
   late int _remaining; // seconds left
   bool _isRunning = false;
+  late final AnimationController _lottieCtrl;
 
   @override
   void initState() {
     super.initState();
     _remaining = widget.duration.inSeconds;
+    _lottieCtrl = AnimationController(vsync: this);
   }
 
   @override
   void dispose() {
     _ticker?.cancel();
     super.dispose();
+    _lottieCtrl.dispose();
   }
 
   void _start() {
@@ -42,17 +46,22 @@ class _SportTimerState extends State<SportTimer> {
           _remaining = 0;
           _isRunning = false;
         });
+        _lottieCtrl.stop();
       } else {
         setState(() {
           _remaining -= 1;
         });
       }
     });
+    if (_lottieCtrl.duration != null) {
+      _lottieCtrl.repeat();
+    }
   }
 
   void _pause() {
     _ticker?.cancel();
     setState(() => _isRunning = false);
+    _lottieCtrl.stop();
   }
 
   void _restart() {
@@ -61,6 +70,10 @@ class _SportTimerState extends State<SportTimer> {
       _remaining = widget.duration.inSeconds;
       _isRunning = false;
     });
+    _lottieCtrl
+      ..stop()
+      ..value = 0.0;
+
     _start(); // auto-start after restart; remove this line if you prefer manual start
   }
 
@@ -106,7 +119,6 @@ class _SportTimerState extends State<SportTimer> {
                   alignment: Alignment.center,
                   children: [
                     SizedBox(
-                      // 💡
                       height: 240,
                       width: 240,
                       child: CircularProgressIndicator(
@@ -119,6 +131,18 @@ class _SportTimerState extends State<SportTimer> {
                     Lottie.asset(
                       "assets/animation/sportTimer.json",
                       height: 190,
+                      controller: _lottieCtrl,
+                      onLoaded: (composition) {
+                        _lottieCtrl.duration =
+                            composition.duration; // Capture duration
+                        if (!_isRunning) {
+                          _lottieCtrl
+                            ..stop()
+                            ..value = 0.0; // Stay still when not running
+                        } else {
+                          _lottieCtrl.repeat();
+                        }
+                      },
                     ),
                   ],
                 ),
