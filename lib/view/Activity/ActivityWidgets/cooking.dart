@@ -3,14 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
 
+
 class Cooking extends StatefulWidget {
-  final int userAge; // العمر لازم تجيبه من مكان ما
+  final int userAge; 
   const Cooking({super.key, required this.userAge});
 
   @override
   State<Cooking> createState() => _CookingState();
 }
-
+// https://thenutritionjunky.com/50-adhd-friendly-recipes/
 class _CookingState extends State<Cooking> {
   final List recipes = [
     {
@@ -91,13 +92,13 @@ class _CookingState extends State<Cooking> {
   void _showCaregiverAlert() {
   showDialog(
     context: context,
-    barrierDismissible: false, // تمنع الإغلاق بالضغط برا
+    barrierDismissible: false, 
     builder: (context) => Dialog(
-      backgroundColor: Colors.transparent, // عشان يكون الخلفية شفافة
+      backgroundColor: Colors.transparent, 
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(30), // نفس البوكس في Cooking
+          borderRadius: BorderRadius.circular(30), 
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
@@ -143,7 +144,7 @@ class _CookingState extends State<Cooking> {
                   ),
                 ),
                 onPressed: () {
-                  Navigator.pop(context); // غلق البوكس
+                  Navigator.pop(context); 
                 },
                 child: const Text(
                   "OK",
