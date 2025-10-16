@@ -8,12 +8,22 @@ import 'package:lumra_project/theme/base_themes/api_constants.dart';
 import 'baseController.dart';
 
 class AdhdChatController extends BaseChatController {
+  String? userName;
+  void setUserName(String? name) {
+    // to use the yser name in the chat
+
+    final n = name?.trim();
+    userName = (n == null || n.isEmpty) ? null : n;
+  }
+
   List<dynamic>? _cases; // JSON data
   final Random _rng = Random();
 
   /// Stores the last two selected activities from JSON,
   /// each element: {title, category, description, time}
   List<Map<String, String>> lastSuggested = [];
+  // Tracks which activities have already been shown per mental state (in-memory per session)
+  final Map<String, Set<String>> _usedActivitiesByState = {};
 
   List<Map<String, dynamic>> chatHistory = [];
 
@@ -72,8 +82,8 @@ class AdhdChatController extends BaseChatController {
     return [];
   }
 
-  // Pick two random activities (preferably from different categories) مهمممة
-  List<Map<String, String>> _pickTwo(List<Map<String, String>> all) {
+  // Pick two random activities (preferably from different categories)    --- use another one
+  /* List<Map<String, String>> _pickTwo(List<Map<String, String>> all) {
     if (all.isEmpty) return [];
 
     final byCat = <String, List<Map<String, String>>>{};
@@ -91,6 +101,64 @@ class AdhdChatController extends BaseChatController {
 
     final copy = [...all]..shuffle(_rng);
     return copy.take(2).toList();
+  } */
+
+  String _activityKey(Map<String, String> a) {
+    final cat = (a['category'] ?? '').trim();
+    final title = (a['title'] ?? '').trim();
+    return '$cat|$title'; // used to identify duplicates
+  }
+
+  /// Picks up to 2 new activities for a given state, avoiding repeats in the same session.
+  List<Map<String, String>> _pickTwoUnique(
+    String state,
+    List<Map<String, String>> all,
+  ) {
+    if (all.isEmpty) return [];
+
+    // 1️ Get or create a used-set for this mental state
+    final used = _usedActivitiesByState.putIfAbsent(state, () => <String>{});
+
+    // 2️ Filter out already used activities
+    final unseen = all.where((a) => !used.contains(_activityKey(a))).toList();
+    if (unseen.isEmpty) return [];
+
+    // 3️ Group unseen by category
+    final byCat = <String, List<Map<String, String>>>{};
+    for (final a in unseen) {
+      final c = (a['category'] ?? '').toLowerCase();
+      byCat.putIfAbsent(c, () => []).add(a);
+    }
+
+    // 4️ Try to pick two from different categories when possible
+    final cats = byCat.keys.toList()..shuffle(_rng);
+    final picked = <Map<String, String>>[];
+
+    if (cats.isNotEmpty) {
+      byCat[cats[0]]!..shuffle(_rng);
+      picked.add(byCat[cats[0]]!.first);
+    }
+    if (cats.length >= 2) {
+      byCat[cats[1]]!..shuffle(_rng);
+      picked.add(byCat[cats[1]]!.first);
+    }
+
+    // 5️ If there’s only one category, try to pick two from it (if possible)
+    if (picked.length < 2 && cats.isNotEmpty) {
+      final sameCatPool = byCat[cats[0]]!..shuffle(_rng);
+      final next = sameCatPool.firstWhere(
+        (a) => _activityKey(a) != _activityKey(picked.first),
+        orElse: () => {},
+      );
+      if (next.isNotEmpty) picked.add(next as Map<String, String>);
+    }
+
+    // 6️ Mark selected ones as used
+    for (final a in picked) {
+      used.add(_activityKey(a));
+    }
+
+    return picked;
   }
 
   // Ask Gemini to classify the user message into one of the mental states
@@ -100,9 +168,7 @@ class AdhdChatController extends BaseChatController {
     if (options.isEmpty) return null;
 
     // quick local : greetings / very short messages -> NONE
-    final msg = contextMessage
-        .trim()
-        .toLowerCase(); // لان البرومت حقك ليان شوي خبص مع الستور ، ف هذا أفضل واذا تحسين حقك أزين جربيه بس بيطلع غريب اللوجيك ترى
+    final msg = contextMessage.trim().toLowerCase();
     const greetings = [
       'hi',
       'hello',
@@ -134,13 +200,13 @@ Do not add any extra words.
 otherwise return ONLY the state name , Do not add any extra words.
 
 """;
-    // النون هذي مارح تطلع لليوزر بس عشان نستخدمها بالميثود الثانية ويطلع له كلام
+
     String one = "";
     try {
       final resp = await Gemini.instance.text(
         'System:\n$sys\n\nUser:\n$contextMessage',
       );
-      print("🔥responce mental state is $resp");
+      print("responce mental state is $resp");
       final raw = resp?.output?.trim() ?? '';
       one = raw.split('\n').first.replaceAll(RegExp(r'^"+|"+$'), '').trim();
     } catch (e) {
@@ -164,6 +230,7 @@ otherwise return ONLY the state name , Do not add any extra words.
   Future<String> sendMessage(String userMessage) async {
     await ensureJsonLoaded();
     lastSuggested = [];
+    final displayName = userName ?? "friend";
 
     final memory = _buildMemory(limit: 4); // remeber the chat before classufing
     final contextMessage = memory.isNotEmpty
@@ -177,7 +244,8 @@ otherwise return ONLY the state name , Do not add any extra words.
     }
 
     // i move it outside if in order to use it later
-    const casualPrompt = """ 
+    final casualPrompt =
+        """
 You are Lumra, a personal assistant that supports individuals with ADHD.
 You are not a medical professional and must never provide diagnostic or clinical information.
 Your role is to offer warm emotional support and simple guidance related only to ADHD, self-care, focus, organization, and emotional well-being.
@@ -187,7 +255,7 @@ If the user talks about topics outside ADHD, mental health, or personal improvem
 
 Engage in natural, friendly conversation. If the user is simply chatting or sharing thoughts that don’t clearly indicate a mental state,
 respond normally — be kind, supportive, and keep the flow natural. Do NOT suggest activities here.
-Keep the reply short and in ENGLISH.
+Keep the reply short and in ENGLISH. The user's name is "$displayName". Use it naturally when appropriate (e.g., greetings or empathy).
 """;
 
     // 2) No clear state -> chat normally using your previous instruction prompt (NO JSON here)
@@ -213,7 +281,7 @@ $userMessage
 
     // 3) Clear state -> fetch strictly from JSON (no gemini suggestions)
     final all = _activitiesForState(state);
-    final picked = _pickTwo(all);
+    final picked = _pickTwoUnique(state, all);
 
     print(
       " [Lumra Debug] Detected state = $state, checking if user wants activity...",
@@ -245,10 +313,8 @@ $userMessage
         return "Sorry, I'm having trouble connecting right now. Please try again in a moment 💫";
       }
     }
-
     if (picked.isEmpty) {
-      // for us to check
-      return 'I recognized your state as "$state", but I couldn’t find activities for it.';
+      return "I’ve already suggested all the activities for $state. You can view them anytime in the Activities section.";
     }
 
     // store for saving to Firestore
@@ -267,7 +333,8 @@ $userMessage
     final systemPrompt =
         """
 You are Lumra, a warm and empathetic assistant that supports individuals with ADHD.
-
+The user's name is "$displayName".
+Use the name naturally once near the start.
 The user's current mental state is: $state
 
 Below are two activities Lumra found in her library.
@@ -299,7 +366,7 @@ Write in English only.
       return resp?.output?.trim() ??
           "It seems you’re feeling $state. You can check some helpful activities in your Activities section ";
     } catch (e) {
-      return "NONE";
+      return "Sorry, I'm having trouble connecting right now. Please try again in a moment 💫";
     }
 
     // build friendly  reply
@@ -377,5 +444,12 @@ User: "I need help" → YES
     }).toList();
 
     return lines.join('\n');
+  }
+
+  void clearSessionData() {
+    chatHistory.clear(); // clear the chat messages
+    lastSuggested.clear(); // reset last suggested activities
+    _usedActivitiesByState.clear(); // reset the per-session activity tracker
+    userName = null;
   }
 }

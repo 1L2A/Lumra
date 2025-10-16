@@ -10,6 +10,7 @@ abstract class BaseChatController extends GetxController {
   void onInit() {
     super.onInit();
     Gemini.init(apiKey: APIsConstants.Gimini_API, enableDebugging: true);
+    print("done init");
   }
 
   String buildMemory({int limit = 4, int maxCharsPerMsg = 160}) {
@@ -27,8 +28,4 @@ abstract class BaseChatController extends GetxController {
   }
 
   Future<String> sendMessage(String userMessage); // each bot implements this
-  void clearChat() {
-    chatHistory.clear();
-    print(" Chat history cleared on logout");
-  }
 }

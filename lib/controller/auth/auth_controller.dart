@@ -27,8 +27,41 @@ class AuthController extends GetxController {
         return "EMAIL_NOT_VERIFIED";
       }
 
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      final data = doc.data();
+      if (data == null) {
+        return "User data not found in Firestore.";
+      }
+
+      final role = data['role']?.toString().toLowerCase();
+      final name = data['firstName']?.toString();
+
+      print("-------the role is $role");
+
+      print("------the role is $name");
+
+      //  Pass the name to the ADHD chat controller if role is ADHD
+      if (role == 'adhd') {
+        final adhdCtrl = Get.isRegistered<AdhdChatController>()
+            ? Get.find<AdhdChatController>()
+            : Get.put(AdhdChatController());
+
+        adhdCtrl.setUserName(name);
+        print("fter method");
+        print(adhdCtrl.userName);
+      } else if (role == 'caregiver') {
+        final caregiverCtrl = Get.isRegistered<CaregiverChatController>()
+            ? Get.find<CaregiverChatController>()
+            : Get.put(CaregiverChatController());
+        caregiverCtrl.setUserName(name);
+      }
+
       // Route once cuz AppShell decides tabs based on role
       Get.offAllNamed('/app');
+
       return null;
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
@@ -70,7 +103,7 @@ class AuthController extends GetxController {
       // If user is ADHD, clear the chat controller
       if (role == 'adhd' && Get.isRegistered<AdhdChatController>()) {
         final chatCtrl = Get.find<AdhdChatController>();
-        chatCtrl.chatHistory.clear();
+        chatCtrl.clearSessionData();
         Get.delete<AdhdChatController>();
       } else {
         final chatCtrl = Get.find<CaregiverChatController>();

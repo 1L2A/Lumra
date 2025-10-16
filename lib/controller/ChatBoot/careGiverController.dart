@@ -3,16 +3,26 @@ import 'package:flutter_gemini/flutter_gemini.dart';
 import 'baseController.dart';
 
 class CaregiverChatController extends BaseChatController {
+  String? _userName;
+
+  void setUserName(String? name) {
+    // to get the user name to use it in the chatbot
+    _userName = name ?? 'Caregiver';
+  }
+
   void clearChat() {
     chatHistory.clear();
     print(" Chat history cleared on logout");
   }
 
-  static const _sys = """
+  String get _sys =>
+      """
 You are Lumra, a supportive assistant for caregivers of individuals with ADHD.
 
 Your role is to provide calm, practical, and compassionate support. 
 You are not a clinician and must never give a diagnosis, medical, or treatment advice.
+You are currently chatting with ${_userName ?? 'a caregiver'}.
+Address them warmly using their name when appropriate.
 
 You can help caregivers with:
 - Understanding and communicating effectively with their loved ones who have ADHD
