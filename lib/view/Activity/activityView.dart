@@ -292,6 +292,33 @@ class _ActivityTileState extends State<_ActivityTile> {
                             color: BColors.darkGrey,
                           ),
                         ),
+                        // Required Time
+                        if (item.time.trim().isNotEmpty)
+                          Row(
+                            children: [
+                              Text(
+                                "Required time: ",
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
+                                style: widget.textTheme.bodyMedium?.copyWith(
+                                  fontFamily: 'K2D',
+                                  fontSize: BSizes.fontSizeSm,
+                                  color: BColors.darkGrey,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                "${item.time} minutes",
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
+                                style: widget.textTheme.bodyMedium?.copyWith(
+                                  fontFamily: 'K2D',
+                                  fontSize: BSizes.fontSizeSm,
+                                  color: BColors.darkGrey,
+                                ),
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                   ),
@@ -318,18 +345,17 @@ class _ActivityTileState extends State<_ActivityTile> {
               SizedBox(height: BSizes.sm + 4),
 
               // Bottom row: timer (right-aligned)
-              if  (item.time.trim().isNotEmpty)
+              if (item.time.trim().isNotEmpty)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    GestureDetector( 
+                    GestureDetector(
                       onTap: () {
-                   
-                    widget.activityController.onActivityTimeTap(
-                      widget.item,
-                      context,
-                    );
-                  },
+                        widget.activityController.onActivityTimeTap(
+                          widget.item,
+                          context,
+                        );
+                      },
                       child: Container(
                         padding: EdgeInsets.symmetric(
                           horizontal: BSizes.sm + 2,
@@ -341,28 +367,21 @@ class _ActivityTileState extends State<_ActivityTile> {
                             BSizes.borderRadiusLg,
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // const Icon( BColors.primary
-                            //   Icons.timer_outlined,
-                            //   size: BSizes.iconSm + 2,
-                            //   color: BColors.primary,
-                            // ),
-                            SizedBox(width: BSizes.xs + 2),
-                            Text(
-                          
-                         'Start' 
-                              // Otherwise, display the time value
-                              , 
-                              style: const TextStyle(
+
+                        // const Icon( BColors.primary
+                        //   Icons.timer_outlined,
+                        //   size: BSizes.iconSm + 2,
+                        //   color: BColors.primary,
+                        // ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Start',
+                          style: const TextStyle(
                             fontFamily: 'K2D',
                             fontSize: BSizes.fontSizeSm,
-                            color: Color.fromARGB(255, 255, 255, 255),
+                            color: Colors.white,
                             fontWeight: FontWeight.w600,
                           ),
-                        ),
-                          ],
                         ),
                       ),
                     ),

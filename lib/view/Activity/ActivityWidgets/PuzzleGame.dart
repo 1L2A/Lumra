@@ -10,23 +10,24 @@ class NumberPuzzle extends StatefulWidget {
 }
 
 class _NumberPuzzleState extends State<NumberPuzzle> {
-  int _gridSize = 4; 
+  int _gridSize = 4;
   List<String> _iteams = [];
 
- 
   void _generateItems() {
     int total = _gridSize * _gridSize;
-    _iteams = List.generate(total, (index) => index == 0 ? '' : index.toString());
+    _iteams = List.generate(
+      total,
+      (index) => index == 0 ? '' : index.toString(),
+    );
     _iteams.shuffle();
     setState(() {});
   }
-
 
   void _changeIndex(int i) {
     final int _emptyIndex = _iteams.lastIndexOf('');
     int _previousItem = i - 1;
     int _nextItem = i + 1;
-    int _previousRow = i - _gridSize; 
+    int _previousRow = i - _gridSize;
     int _nextRow = i + _gridSize;
 
     if (_emptyIndex == _previousItem) {
@@ -46,27 +47,36 @@ class _NumberPuzzleState extends State<NumberPuzzle> {
     setState(() {});
   }
 
-  
   Color _getNumberHintColor(String value) {
     if (value.isEmpty) return Colors.white;
 
     int num = int.parse(value);
 
     if (_gridSize == 3) {
-      if (num >= 1 && num <= 3) return const Color(0xFFCDF0F9).withOpacity(0.32) ;
-      if (num >= 4 && num <= 6) return const Color(0xFFE9B8A9).withOpacity(0.32);
-      if (num >= 7 && num <= 9) return  Color.fromARGB(255, 87, 185, 218).withOpacity(0.32);
+      if (num >= 1 && num <= 3)
+        return const Color(0xFFCDF0F9).withOpacity(0.32);
+      if (num >= 4 && num <= 6)
+        return const Color(0xFFE9B8A9).withOpacity(0.32);
+      if (num >= 7 && num <= 9)
+        return Color.fromARGB(255, 87, 185, 218).withOpacity(0.32);
     } else if (_gridSize == 4) {
-      if (num >= 1 && num <= 4) return const Color(0xFFCDF0F9).withOpacity(0.32);
-      if (num >= 5 && num <= 8) return const Color(0xFFE9B8A9).withOpacity(0.32);
-      if (num >= 9 && num <= 12) return Color.fromARGB(255, 87, 185, 218).withOpacity(0.32);
+      if (num >= 1 && num <= 4)
+        return const Color(0xFFCDF0F9).withOpacity(0.32);
+      if (num >= 5 && num <= 8)
+        return const Color(0xFFE9B8A9).withOpacity(0.32);
+      if (num >= 9 && num <= 12)
+        return Color.fromARGB(255, 87, 185, 218).withOpacity(0.32);
       if (num >= 13 && num <= 16) return Color.fromARGB(255, 222, 187, 136);
     } else if (_gridSize == 5) {
-      if (num >= 1 && num <= 5) return const Color(0xFFCDF0F9).withOpacity(0.32);
-      if (num >= 6 && num <= 10) return const Color(0xFFE9B8A9).withOpacity(0.32);
-      if (num >= 11 && num <= 15) return Color.fromARGB(255, 87, 185, 218).withOpacity(0.32);
+      if (num >= 1 && num <= 5)
+        return const Color(0xFFCDF0F9).withOpacity(0.32);
+      if (num >= 6 && num <= 10)
+        return const Color(0xFFE9B8A9).withOpacity(0.32);
+      if (num >= 11 && num <= 15)
+        return Color.fromARGB(255, 87, 185, 218).withOpacity(0.32);
       if (num >= 16 && num <= 20) return Color.fromARGB(255, 222, 187, 136);
-      if (num >= 21 && num <= 25) return Color.fromARGB(255, 78, 134, 173);;
+      if (num >= 21 && num <= 25) return Color.fromARGB(255, 78, 134, 173);
+      ;
     }
 
     return BColors.primary;
@@ -96,36 +106,42 @@ class _NumberPuzzleState extends State<NumberPuzzle> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const SizedBox(height: 20), 
-             Padding(
-  padding: const EdgeInsets.symmetric(horizontal: BSizes.defaultSpace),
-  child: Container(
-    padding: const EdgeInsets.all(BSizes.md), // مسافة داخل الصندوق
-    decoration: BoxDecoration(
-      color: BColors.lightGrey, // خلفية فاتحة مثل البوكسات
-      borderRadius: BorderRadius.circular(BSizes.cardRadiusLg), // حواف دائرية
-      border: Border.all(color: BColors.borderSecondary), // حدود مشابهة للبوكسات
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x11000000),
-          blurRadius: 8,
-          offset: Offset(0, 3),
-        ),
-      ],
-    ),
-    child: const Text(
-      "Your game is to arrange the numbers in order from 1 to the empty square.\n"
-      "Choose the level that suits you to start the challenge!",
-      style: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: Colors.black87,
-      ),
-    ),
-  ),
-),
-          const SizedBox(height: 20), 
-         
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: BSizes.defaultSpace,
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(BSizes.md), // مسافة داخل الصندوق
+              decoration: BoxDecoration(
+                color: BColors.lightGrey, // خلفية فاتحة مثل البوكسات
+                borderRadius: BorderRadius.circular(
+                  BSizes.cardRadiusLg,
+                ), // حواف دائرية
+                border: Border.all(
+                  color: BColors.borderSecondary,
+                ), // حدود مشابهة للبوكسات
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x11000000),
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Text(
+                "Your game is to arrange the numbers in order from 1 to the empty square.\n"
+                "Choose the level that suits you to start the challenge!",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -134,9 +150,17 @@ class _NumberPuzzleState extends State<NumberPuzzle> {
                   _gridSize = 3;
                   _generateItems();
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: BColors.primary , shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),),
-                    
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BColors.primary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+
                 child: const Text("Easy"),
               ),
               const SizedBox(width: 10),
@@ -145,7 +169,13 @@ class _NumberPuzzleState extends State<NumberPuzzle> {
                   _gridSize = 4;
                   _generateItems();
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: BColors.primary),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BColors.primary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
                 child: const Text("Medium"),
               ),
               const SizedBox(width: 10),
@@ -154,13 +184,19 @@ class _NumberPuzzleState extends State<NumberPuzzle> {
                   _gridSize = 5;
                   _generateItems();
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: BColors.primary),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BColors.primary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
                 child: const Text("Hard"),
               ),
             ],
           ),
-          const SizedBox(height: 30), 
-         
+          const SizedBox(height: 30),
+
           Expanded(
             child: Center(
               child: AspectRatio(
@@ -188,7 +224,7 @@ class _NumberPuzzleState extends State<NumberPuzzle> {
                             ),
                           ),
                         ),
-                      )
+                      ),
                   ],
                 ),
               ),
