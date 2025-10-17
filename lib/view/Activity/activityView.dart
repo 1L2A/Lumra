@@ -193,7 +193,7 @@ class _ActivityTileState extends State<_ActivityTile> {
         decoration: BoxDecoration(
           color: isDone
               ? BColors.darkGrey.withOpacity(0.01)
-              : BColors.lightGrey,
+              : BColors.white,
           borderRadius: BorderRadius.circular(BSizes.cardRadiusLg),
           border: Border.all(color: BColors.borderSecondary),
           boxShadow: const [

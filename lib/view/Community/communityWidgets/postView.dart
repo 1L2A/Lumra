@@ -46,18 +46,17 @@ class PostView extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: BSizes.sm),
       padding: const EdgeInsets.all(BSizes.sm),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(BSizes.moreRoundedRaduis),
-        border: Border.all(color: BColors.secondry, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.25),
-            spreadRadius: 0,
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+          color:  BColors.white,
+          borderRadius: BorderRadius.circular(BSizes.cardRadiusLg),
+            border: Border.all(color: BColors.borderSecondary),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x11000000),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
