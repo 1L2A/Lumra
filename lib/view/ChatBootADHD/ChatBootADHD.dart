@@ -91,17 +91,42 @@ class _ChatViewState extends State<ChatView>
       debugPrint('⛔️ Skip store: no signed-in user.');
       return;
     }
+
+    final title = (data['title'] ?? '').toString().trim();
+    final category = _normalizeCategory((data['category'] ?? '').toString());
+    if (title.isEmpty) return;
+
     try {
+      // 1) de-dupe against both user activities and visible initial activities
+      final dup = await _isAlreadyInActivitiesTab(
+        uid: uid,
+        title: title,
+        category: category,
+      );
+      if (dup) {
+        debugPrint('🔁 Skip storing duplicate activity: [$category] $title');
+        return;
+      }
+
+      // 2) write with a stable dedupeKey for future quick lookups
+      final dedupeKey = _dedupeKey(title, category);
+      final payload = {
+        ...data,
+        'title': title,
+        'category': category,
+        'dedupeKey': dedupeKey,
+        'isInitial': false, // chatbot-suggested
+        'createdAt': FieldValue.serverTimestamp(),
+        // keep isChecked/checkedAt/expireAt from data (default: false/null/null)
+      };
+
       final ref = await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
           .collection('activities')
-          .add({
-            ...data,
-            'isInitial': false, // chatbot-suggested
-            'createdAt': FieldValue.serverTimestamp(),
-          });
-      debugPrint('✅ stored activity: ${ref.id}'); ///// easier for us
+          .add(payload);
+
+      debugPrint('✅ stored activity: ${ref.id}');
     } catch (e, st) {
       debugPrint('🔥 Firestore write failed: $e');
       debugPrint(st.toString());
@@ -184,7 +209,7 @@ class _ChatViewState extends State<ChatView>
     });
 
     // 6) STORE (no retrieval here)
-    final savedCount = await _autoSaveSuggestions();
+    final savedCount = await _autoSaveSuggestions(); //we can delete it
     if (!mounted) return;
     /* if (savedCount > 0) {  no need 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -379,6 +404,132 @@ class _ChatViewState extends State<ChatView>
         ),
       ),
     );
+  }
+
+  // DEDUPE HELPERS
+  String _norm(String s) =>
+      s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+  String _dedupeKey(String title, String category) =>
+      '${_norm(category)}|${_norm(title)}';
+
+  // Query: an active user activity with the same dedupeKey exists?
+  Future<bool> _userActivityExists(String uid, String key) async {
+    final snap = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('activities')
+        .where('dedupeKey', isEqualTo: key)
+        .limit(5)
+        .get();
+
+    final now = DateTime.now();
+    for (final d in snap.docs) {
+      final data = d.data();
+      final ts = data['expireAt'];
+      final expired = (ts is Timestamp) && ts.toDate().isBefore(now);
+      if (!expired) return true; // found active duplicate
+    }
+    return false;
+  }
+
+  // Initial templates, copied from ActivityController logic
+  Future<List<Map<String, dynamic>>> _loadInitialTemplatesBandFiltered(
+    String uid,
+  ) async {
+    final db = FirebaseFirestore.instance;
+
+    // 1) points
+    final userDoc = await db.collection('users').doc(uid).get();
+    final int totalPoints = (userDoc.data()?['totalPoints'] ?? 0) as int;
+
+    // 2) all templates
+    final tplSnap = await db.collection('initialActivities').get();
+    final all = tplSnap.docs
+        .map(
+          (doc) => {
+            'id': doc.id,
+            'title': (doc.data()['title'] ?? '').toString(),
+            'description': (doc.data()['description'] ?? '').toString(),
+            'category': (doc.data()['category'] ?? '').toString(),
+            'time': (doc.data()['time'] ?? '').toString(),
+          },
+        )
+        .toList();
+
+    // 3) same band filters you use currently
+    List<String> titlesBand = [];
+    if (totalPoints >= 5 && totalPoints <= 8) {
+      titlesBand = ['Short Walk', 'Light Yoga', 'Small Art'];
+    } else if (totalPoints >= 9 && totalPoints <= 12) {
+      titlesBand = ['Short Run', 'Brain Games', 'Cooking'];
+    } else if (totalPoints >= 13 && totalPoints <= 16) {
+      titlesBand = ['Team sports', 'Fun Exercises', 'Journaling'];
+    } else if (totalPoints >= 17 && totalPoints <= 20) {
+      titlesBand = ['Advanced Yoga', 'Large Puzzle', 'Gardening'];
+    }
+
+    final filtered = titlesBand.isNotEmpty
+        ? all.where((a) => titlesBand.contains(a['title']?.trim())).toList()
+        : all;
+
+    return filtered;
+  }
+
+  // Is there an *initial* activity with same (title, category) that is *currently visible* in the tab?
+  //ASK LOBA AND LATIFA IF WE NEED IT OR NOT
+  Future<bool> _initialVisibleDuplicate(
+    String uid,
+    String title,
+    String category,
+  ) async {
+    final db = FirebaseFirestore.instance;
+    final now = DateTime.now();
+    final candidates = await _loadInitialTemplatesBandFiltered(uid);
+    // find any template matching title+category (case-insensitive)
+    final match = candidates.firstWhere(
+      (a) =>
+          _norm(a['title'] ?? '') == _norm(title) &&
+          _norm(a['category'] ?? '') == _norm(category),
+      orElse: () => {},
+    );
+    if (match.isEmpty) return false;
+
+    final String templateId = match['id'] as String;
+
+    // Read the user's status for this template
+    final status = await db
+        .collection('users')
+        .doc(uid)
+        .collection('activityStatus')
+        .doc(templateId)
+        .get();
+
+    if (!status.exists) {
+      // Fresh initial template without status -> it IS visible
+      return true;
+    }
+
+    final data = status.data() ?? {};
+    final bool isChecked = (data['isChecked'] ?? false) as bool;
+    final Timestamp? ts = data['expireAt'] is Timestamp
+        ? data['expireAt'] as Timestamp
+        : null;
+    final bool expired = ts != null && ts.toDate().isBefore(now);
+
+    // In your UI, an initial item is shown unless (checked && expired).
+    final isVisible = !(isChecked && expired);
+    return isVisible;
+  }
+
+  // Combined: is this activity already visible (user doc OR initial list)?
+  Future<bool> _isAlreadyInActivitiesTab({
+    required String uid,
+    required String title,
+    required String category,
+  }) async {
+    final key = _dedupeKey(title, category);
+    final userDup = await _userActivityExists(uid, key);
+    return userDup; // only block if user already has a chatbot activity (not initials)
   }
 }
 

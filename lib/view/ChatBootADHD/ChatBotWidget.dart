@@ -63,7 +63,7 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
               ),
             ),
 
-            // 2) YOUR SHEET (on top)
+            // 2)  SHEET (on top)
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
