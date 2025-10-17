@@ -1,9 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumra_project/controller/Community/PostController.dart';
 import 'package:lumra_project/controller/auth/auth_controller.dart';
-import 'package:lumra_project/model/community/communityModel.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
 import 'package:lumra_project/theme/custom_themes/text_theme.dart';
@@ -48,7 +46,6 @@ class AddPostView extends StatelessWidget {
 
               ///Input field
               TextField(
-                
                 controller: postController.contentController,
                 maxLines: 7,
                 onChanged: (value) =>
@@ -59,30 +56,30 @@ class AddPostView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(
                       BSizes.inputFieldRadius,
                     ),
-                 borderSide: BorderSide(color: BColors.secondry), 
+                    borderSide: BorderSide(color: BColors.secondry),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(
                       BSizes.inputFieldRadius,
                     ),
-                  borderSide: BorderSide(color: BColors.secondry), 
+                    borderSide: BorderSide(color: BColors.secondry),
                   ),
                 ),
               ),
 
               const SizedBox(height: BSizes.sm),
 
-             /// Warning note
-            Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: Text(
-              "Note that posts containing inappropriate content will not be allowed. Keep it positive and motivating.",
+              /// Warning note
+              Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Text(
+                  "Note that posts containing inappropriate content will not be allowed. Keep it positive and motivating.",
                   style: TextStyle(
-                   color: BColors.darkGrey, // correct way to set text color
-                   fontSize: 14, // optional: match your labelSmall size
+                    color: BColors.darkGrey, // correct way to set text color
+                    fontSize: 14, // optional: match your labelSmall size
                   ),
-               ),
-            ),
+                ),
+              ),
               const SizedBox(height: BSizes.SpaceBtwSections + 20),
 
               Obx(
@@ -94,7 +91,9 @@ class AddPostView extends StatelessWidget {
                             !postController.isLoading.value
                         ? () async {
                             await postController.addPost();
-                            if(!postController.isLoading.value){Navigator.pop(context);}
+                            if (!postController.isLoading.value) {
+                              Navigator.pop(context);
+                            }
                           }
                         : null,
                     style: ElevatedButton.styleFrom(

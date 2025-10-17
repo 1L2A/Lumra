@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumra_project/controller/Community/PostController.dart';
@@ -19,44 +18,42 @@ class PostView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-  return Obx(() {
+    return Obx(() {
+      //if from AccountPage, show saved
+      final postList = (!showSaved) ? controller.posts : controller.savedPosts;
 
-    //if from AccountPage, show saved
-    final postList = (!showSaved) ? controller.posts: controller.savedPosts ;
+      if (postList.isEmpty) {
+        return const Center(child: Text('No posts yet. . .'));
+      }
 
-   if (postList.isEmpty) {
-    return const Center(child: Text('No posts yet. . .'));
-   }
-
-    return Padding(
-      padding: EdgeInsets.all(BSizes.defaultSpace),
-      child: ListView.separated(
-        itemCount: postList.length,
-        separatorBuilder: (_, __) => SizedBox(height: BSizes.SpaceBtwItems),
-        itemBuilder: (context, index) => _postCard(postList[index]),
-      ),
-    );
-  });
+      return Padding(
+        padding: EdgeInsets.all(BSizes.defaultSpace),
+        child: ListView.separated(
+          itemCount: postList.length,
+          separatorBuilder: (_, __) => SizedBox(height: BSizes.SpaceBtwItems),
+          itemBuilder: (context, index) => _postCard(postList[index]),
+        ),
+      );
+    });
   }
 
   /// Builds a single post card with up to 2 comments
   Widget _postCard(Post post) {
-
     return Container(
       margin: const EdgeInsets.symmetric(vertical: BSizes.sm),
       padding: const EdgeInsets.all(BSizes.sm),
       decoration: BoxDecoration(
-          color:  BColors.white,
-          borderRadius: BorderRadius.circular(BSizes.cardRadiusLg),
-            border: Border.all(color: BColors.borderSecondary),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x11000000),
-              blurRadius: 8,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
+        color: BColors.white,
+        borderRadius: BorderRadius.circular(BSizes.cardRadiusLg),
+        border: Border.all(color: BColors.borderSecondary),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x11000000),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -149,10 +146,7 @@ class PostView extends StatelessWidget {
           Row(
             children: [
               IconButton(
-                icon: const Icon(
-                  Icons.comment_outlined,
-                  size: BSizes.iconXMd,
-                ),
+                icon: const Icon(Icons.comment_outlined, size: BSizes.iconXMd),
                 onPressed: () {},
                 color: Colors.grey[800],
                 tooltip: 'Comment',
