@@ -26,6 +26,7 @@ class _MyPostsPageState extends State<MyPostsPage> {
     } else {
       controller = Get.find<PostControllerX>();
     }
+    controller.refreshUserPostsListener();
   }
 
   @override

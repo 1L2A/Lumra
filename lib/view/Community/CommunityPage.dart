@@ -52,10 +52,10 @@ class _CommunityPageState extends State<CommunityPage> {
     BSizes.lg,
     0,
     BSizes.lg,
-    BSizes.lg + 40, // space for bottom nav bar
+    BSizes.lg + 80, // space for bottom nav bar
   ),
   child: Transform.translate(
-    offset: const Offset(0, -38), // moves content 20 pixels up
+    offset: const Offset(0, -16), // moves content 20 pixels up
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -71,7 +71,7 @@ class _CommunityPageState extends State<CommunityPage> {
 
           // Floating Add Post button outside scroll
           Positioned(
-            top: 80,
+            top: 55,
             right: 24,
             child: Container(
               decoration: BoxDecoration(
