@@ -40,26 +40,29 @@ class AccountPage extends StatelessWidget {
           // Main content
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.only(
+                top: 0,
+                bottom: 30,
+                left: 20,
+                right: 20),
               child: Column(
                 children: [
-                  const SizedBox(height: 20),
                   Center(
                     child: Padding(
-              padding: const EdgeInsets.all(BSizes.sm),
+              padding: const EdgeInsets.all(0),
               child: Container(
-                width: 140,
-                height: 140,
+                width: 130,
+                height: 130,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: BColors.grey, // border color
+                    color: BColors.secondry, // border color
                     width: 1.5, // border thickness
                   ),
                 ),
                 child: ClipOval(
                   child: Image.asset(
-                    'assets/images/Avatar.png',
+                    'assets/images/AvatarSimple.png',
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -67,7 +70,6 @@ class AccountPage extends StatelessWidget {
             ),
                   ),
                   const SizedBox(height: 20),
-
                   // First + Last Name beside each other
                   Obx(() {
                     final firstName =
@@ -149,7 +151,7 @@ class AccountPage extends StatelessWidget {
                     }
                   }),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: BSizes.SpaceBtwItems),
 
                   // Sign Out Button
                   SizedBox(

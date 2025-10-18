@@ -27,7 +27,7 @@ if (postList.isEmpty) {
       !showSaved 
           ? 'assets/images/NoPosts.png' 
           : 'assets/images/NoSavedPosts.png',
-      width: 300,  // Adjust size as needed
+      width: 300, 
       height: 300,
       fit: BoxFit.contain,
     ),
@@ -94,7 +94,7 @@ if (postList.isEmpty) {
                 ),
                 child: ClipOval(
                   child: Image.asset(
-                    'assets/images/Avatar.png',
+                    'assets/images/AvatarSimple.png',
                     fit: BoxFit.cover,
                   ),
                 ),
