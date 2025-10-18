@@ -166,7 +166,7 @@ class _EmptyState extends StatelessWidget {
             offset: const Offset(0, 4),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -256,7 +256,7 @@ class _ReminderCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          SizedBox(width: BSizes.sm),
+          SizedBox(width: 20),
           Container(
             width: 8,
             height: 8,
