@@ -548,13 +548,12 @@ class Activitycontroller {
     if (category.contains('sport')) {
       // Open sport timer
       Get.to(() => SportTimer(duration: Duration(minutes: minutes)));
-     
     } else if (title.contains('large puzzle') ||
         title.contains('flash memory challenge') ||
         title.contains('brain games')) {
       Get.to(() => const NumberPuzzle());
       //for now nothing until the rest is added
-    }else if (title.contains('writing') ||
+    } else if (title.contains('writing') ||
         title.contains('write') ||
         title.contains('art') ||
         title.contains('drawing') ||
@@ -567,17 +566,16 @@ class Activitycontroller {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          content: ActivityPrompts(activityTitle: item.title),
+          content: ActivityPrompts(activityTitle: item.title, minutes: minutes),
         ),
       );
       return; // stop further navigation
-    }else if (title.contains('cooking')) {
+    } else if (title.contains('cooking')) {
       getUserAge().then((age) {
         Get.to(() => Cooking(userAge: age));
       });
-    }else {
+    } else {
       Get.to(() => LiquidTimer(duration: Duration(minutes: minutes)));
-
     }
   }
 }

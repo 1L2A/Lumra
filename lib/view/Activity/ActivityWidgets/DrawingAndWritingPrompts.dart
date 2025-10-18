@@ -3,10 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
+import 'package:lumra_project/view/Activity/ActivityWidgets/Timer.dart';
+import 'package:get/get.dart';
 
 class ActivityPrompts extends StatelessWidget {
   final String activityTitle;
-  const ActivityPrompts({super.key, required this.activityTitle});
+  final int minutes;
+  const ActivityPrompts({
+    super.key,
+    required this.activityTitle,
+    required this.minutes,
+  });
 
   String getRandomPrompt() {
     final random = Random();
@@ -74,7 +81,9 @@ class ActivityPrompts extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            onPressed: () => Navigator.pop(context), //later put the timer
+            onPressed: () {
+              Get.to(() => LiquidTimer(duration: Duration(minutes: minutes)));
+            },
             child: const Text(
               "Let's Start!",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
