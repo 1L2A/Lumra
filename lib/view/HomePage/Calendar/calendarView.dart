@@ -202,7 +202,6 @@ class _CalendarPageState extends State<CalendarPage> {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 40),
                             child: BottomArea(
-                              key: ValueKey('${d.year}-${d.month}-${d.day}'),
                               selected: d,
                               events: c.eventsFor(d),
                               // onAddTap: () { REEM },
