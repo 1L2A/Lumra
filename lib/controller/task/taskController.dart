@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lumra_project/model/task/task.dart';
+import 'package:lumra_project/service/task_statistics_service.dart';
 
 class TaskController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String userId;
+  final TaskStatisticsService _statisticsService = TaskStatisticsService();
 
   TaskController({required this.userId});
   CollectionReference<Map<String, dynamic>> get _col =>
@@ -58,6 +60,9 @@ class TaskController {
         Timestamp.fromDate(DateTime.now().add(const Duration(hours: 24)));
 
     await _col.add(data);
+
+    // Update statistics when a new task is created
+    await _statisticsService.onTaskCreated(userId);
   }
 
   Future<void> reorderTasks(
@@ -97,6 +102,13 @@ class TaskController {
     }
 
     await docRef.update(updateData);
+
+    // Update statistics based on task status change
+    if (isChecked) {
+      await _statisticsService.onTaskChecked(userId);
+    } else {
+      await _statisticsService.onTaskUnchecked(userId);
+    }
   }
 
   /// Updates an existing task with new data.
