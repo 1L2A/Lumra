@@ -37,7 +37,6 @@ class AccountPage extends StatelessWidget {
               title: 'Account',
               subtitle: "",
             ),
-            
 
           // Main content
           Expanded(
@@ -53,8 +52,8 @@ class AccountPage extends StatelessWidget {
                     child: Padding(
               padding: const EdgeInsets.all(0),
               child: Container(
-                width: 115,
-                height: 115,
+                width: 130,
+                height: 130,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
