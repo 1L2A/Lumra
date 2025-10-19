@@ -36,7 +36,34 @@ class AccountPage extends StatelessWidget {
               context: context,
               title: 'Account',
               subtitle: "",
+              actions: [
+                  Container(
+                  decoration: BoxDecoration(
+                  color: BColors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                  BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                  ),
+                  ],
+                  ),
+                  child: IconButton(
+                  tooltip: 'Sign Out',
+                  icon: const Icon(
+                  Icons.logout,
+                  color: BColors.primary,
+                  size: 20,
+                  ),
+                  onPressed: () {
+                  Signoutdialog.show(context, authController);
+                  },
+                  ),
+                  ),
+                  ],
             ),
+            
 
           // Main content
           Expanded(
@@ -52,8 +79,8 @@ class AccountPage extends StatelessWidget {
                     child: Padding(
               padding: const EdgeInsets.all(0),
               child: Container(
-                width: 130,
-                height: 130,
+                width: 115,
+                height: 115,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
@@ -158,28 +185,7 @@ class AccountPage extends StatelessWidget {
                   const SizedBox(height: BSizes.SpaceBtwItems),
 
                   // Sign Out Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        Signoutdialog.show(context, authController);
-                      },
-                      icon: const Icon(Icons.logout),
-                      label: const Text("Sign Out"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: BColors.primary,
-                        foregroundColor: BColors.textwhite,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 15,
-                          horizontal: 0,
-                        ),
-                        textStyle: BTextTheme.lightTextTheme.headlineSmall,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
-                  ),
+  
                 ],
               ),
             ),
@@ -195,15 +201,69 @@ class AccountPage extends StatelessWidget {
     required String text,
     VoidCallback? onTap,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: BColors.iconColor),
-      title: Text(text, style: BTextTheme.lightTextTheme.bodySmall),
-      trailing: const Icon(
-        Icons.arrow_forward_ios,
-        size: 16,
-        color: BColors.iconColor,
+    return Container(
+  margin: const EdgeInsets.symmetric(vertical: 6),
+  decoration: BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(16),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.05),
+        blurRadius: 8,
+        offset: const Offset(0, 2),
       ),
-      onTap: onTap,
+    ],
+  ),
+  child: ListTile(
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    leading: Icon(icon, color: BColors.iconColor),
+    title: Text(
+      text,
+      style: BTextTheme.lightTextTheme.bodySmall,
+    ),
+    trailing: const Icon(
+      Icons.arrow_forward_ios,
+      size: 16,
+      color: BColors.iconColor,
+    ),
+    onTap: onTap,
+  ),
+);
+
+  }
+}
+
+class signOutWidget extends StatelessWidget {
+  const signOutWidget({
+    super.key,
+    required this.authController,
+  });
+
+  final AuthController authController;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 130,
+      child: ElevatedButton.icon(
+        onPressed: () async {
+          Signoutdialog.show(context, authController);
+        },
+        icon: const Icon(Icons.logout),
+        label: const Text("Sign Out"),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color.fromARGB(255, 163, 172, 171),
+          foregroundColor: BColors.textwhite,
+          padding: const EdgeInsets.symmetric(
+            vertical: 19,
+            horizontal: 0,
+          ),
+          textStyle: BTextTheme.lightTextTheme.headlineSmall,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      ),
     );
   }
 }

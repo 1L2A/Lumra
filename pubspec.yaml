@@ -84,24 +84,19 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assets/images/Profile_image.jpeg 
     - assets/images/logo.png
-    - assets/images/goals.png
     - assets/images/LumraSplash.GIF
     - assets/images/Bell.svg
     - assets/images/checkinbox.svg
     - assets/images/scanQR.svg
     - assets/images/Successful.svg
     - assets/images/verified.svg
-    - assets/images/final_image.png
     - assets/images/energy_balls.jpg
     - assets/images/banana_icecream.jpg
     - assets/images/berry_smoothie.jpg
-    - assets/images/Avatar.png
     - assets/images/NoPosts.png
     - assets/images/NoSavedPosts.png
     - assets/images/NoMyPosts.png
-    - assets/images/AvatarBetter.png
     - assets/images/AvatarSimple.png
     #- assets/PDFs/TestCaseLumra.pdf
     - assets/adhd_cases/AdhdActivites.json

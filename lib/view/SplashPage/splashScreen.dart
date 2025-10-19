@@ -53,8 +53,8 @@ class _SplashGifScreenState extends State<SplashGifScreen> {
           ),
           // Skip button at top left
           Positioned(
-            top: 72, // adjust depending on status bar height
-            left: 24,
+            top: 85, // adjust depending on status bar height
+            left: 32,
             child: GestureDetector(
               onTap: () {
                 // Navigate to next screen

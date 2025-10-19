@@ -23,7 +23,7 @@ class BAppBarTheme {
     String? subtitle,
     bool showBackButton = false,
     VoidCallback? onBackPressed,
-    List<Widget>? actions,
+    Widget? actions,
   }) {
     final textTheme = Theme.of(context).textTheme;
 

@@ -88,7 +88,7 @@ class _CommunityPageState extends State<CommunityPage> {
               child: IconButton(
                 tooltip: 'Create a post',
                 icon: const Icon(
-                  Icons.edit,
+                  Icons.add,
                   color: BColors.primary,
                   size: BSizes.iconLg,
                 ),
