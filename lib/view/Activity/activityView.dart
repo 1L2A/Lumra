@@ -426,11 +426,6 @@ class _ActivityTileState extends State<_ActivityTile> {
                           ),
                         ),
 
-                        // const Icon( BColors.primary
-                        //   Icons.timer_outlined,
-                        //   size: BSizes.iconSm + 2,
-                        //   color: BColors.primary,
-                        // ),
                         alignment: Alignment.center,
                         child: Text(
                           'Start',
