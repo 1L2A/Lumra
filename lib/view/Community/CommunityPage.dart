@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lumra_project/controller/Account/UserController.dart';
 import 'package:lumra_project/controller/Community/PostController.dart';
+import 'package:lumra_project/controller/auth/auth_controller.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
 import 'package:lumra_project/theme/custom_themes/appbar_theme.dart';
@@ -19,6 +21,8 @@ class CommunityPage extends StatefulWidget {
 
 class _CommunityPageState extends State<CommunityPage> {
   late final PostControllerX postController;
+  late final UserController _userController;
+  final authContoller = Get.find<AuthController>();
 
   @override
   void initState() {
@@ -29,8 +33,12 @@ class _CommunityPageState extends State<CommunityPage> {
         : Get.put(PostControllerX(FirebaseFirestore.instance), permanent: true);
     //post fetching here
     postController.fetchPosts();
-
-
+    if (!Get.isRegistered<UserController>()) {
+      _userController = Get.put(UserController(FirebaseFirestore.instance));
+      _userController.init();
+    } else {
+      _userController = Get.find<UserController>();
+    }
 
   }
 
@@ -124,7 +132,7 @@ class _CommunityPageState extends State<CommunityPage> {
             ),
           ),
 
-              if (postController.communityCollection == 'ADHDCommunityPosts')
+              if (_userController.role == 'adhd')
       const ChatBotWidget(role: 'adhd')
     else
       const ChatBotWidget(role: 'caregiver'),

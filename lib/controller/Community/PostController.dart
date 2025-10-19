@@ -150,19 +150,24 @@ class PostControllerX extends GetxController {
   void refreshUserPostsListener() {
     listenToUserPosts();
   }
+void updateFormValidity() {
+  var text = contentController.text;
+  currentLength.value = text.length;
 
-  void updateFormValidity() {
-    var text = contentController.text;
-    currentLength.value = text.length; // update length reactively
+  // Regex: checks if the string contains only special characters or spaces
+  final onlySpecialChars = RegExp(r'^[^a-zA-Z0-9]+$');
 
-    if (text.isEmpty) {
-      contentError.value = "Post cannot be empty";
-      isFormValid.value = false;
-    } else {
-      contentError.value = null;
-      isFormValid.value = true;
-    }
+  if (text.isEmpty) {
+    contentError.value = "Post cannot be empty";
+    isFormValid.value = false;
+  } else if (onlySpecialChars.hasMatch(text)) {
+    contentError.value = "Post cannot contain only special characters";
+    isFormValid.value = false;
+  } else {
+    contentError.value = null;
+    isFormValid.value = true;
   }
+}
 
   Future<void> addPost() async {
     if (!isFormValid.value) return;

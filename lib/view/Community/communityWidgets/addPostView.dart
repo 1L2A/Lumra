@@ -40,36 +40,43 @@ class AddPostView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(promptMessage, style: BTextTheme.lightTextTheme.labelSmall),
 
-
-             
-                Text(promptMessage, style: BTextTheme.lightTextTheme.labelSmall),
-              
-
-
-              const SizedBox(height: BSizes.SpaceBtwSections-5),
-                /// Warning note
+              const SizedBox(height: BSizes.SpaceBtwSections - 15),
+              /// Warning note
               Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Text(
-                  "* Note that posts cannot exceed 180 charaters or be empty",
-                  style: TextStyle(
-                    color: BColors.darkGrey, // correct way to set text color
-                    fontSize: 12,
-                  ),
+                padding: const EdgeInsets.only(left: 4,right: 4,bottom: 4,top: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline, // or Icons.warning_amber_rounded
+                      color: BColors.darkGrey,
+                      size: 13,
+                    ),
+                    const SizedBox(width: 4), // spacing between icon and text
+                    Expanded(
+                      child: Text(
+                        "Note that posts cannot exceed 180 characters, be empty or only contain special characters.",
+                        style: TextStyle(color: BColors.darkGrey, fontSize: 11),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-               const SizedBox(height: BSizes.sm),
-               
+              const SizedBox(height: BSizes.sm),
+
               TextField(
                 controller: postController.contentController,
                 maxLines: 6,
                 inputFormatters: [
                   LengthLimitingTextInputFormatter(180), // LIMIT 180
                 ],
-                onChanged: (value) { 
-                  postController.currentLength.value = value.length;// counts spaces too
-                  postController.updateFormValidity();},
+                onChanged: (value) {
+                  postController.currentLength.value =
+                      value.length; // counts spaces too
+                  postController.updateFormValidity();
+                },
                 decoration: InputDecoration(
                   hintText: "What's on your mind?",
                   border: OutlineInputBorder(
@@ -88,7 +95,7 @@ class AddPostView extends StatelessWidget {
               ),
 
               const SizedBox(height: BSizes.sm),
-             // Reactive remaining characters
+              // Reactive remaining characters
               Obx(() {
                 final remaining = 180 - postController.currentLength.value;
                 final text = remaining <= 0
@@ -105,7 +112,7 @@ class AddPostView extends StatelessWidget {
                   ),
                 );
               }),
-            
+
               const SizedBox(height: BSizes.SpaceBtwSections + 20),
 
               Obx(
