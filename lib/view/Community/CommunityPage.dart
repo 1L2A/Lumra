@@ -5,11 +5,13 @@ import 'package:lumra_project/controller/Community/PostController.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
 import 'package:lumra_project/theme/custom_themes/appbar_theme.dart';
+import 'package:lumra_project/view/ChatBootADHD/ChatBotWidget.dart';
 import 'package:lumra_project/view/Community/communityWidgets/addPostView.dart';
 import 'package:lumra_project/view/Community/communityWidgets/postView.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
+
 
   @override
   State<CommunityPage> createState() => _CommunityPageState();
@@ -27,6 +29,9 @@ class _CommunityPageState extends State<CommunityPage> {
         : Get.put(PostControllerX(FirebaseFirestore.instance), permanent: true);
     //post fetching here
     postController.fetchPosts();
+
+
+
   }
 
   @override
@@ -118,6 +123,11 @@ class _CommunityPageState extends State<CommunityPage> {
               ),
             ),
           ),
+
+              if (postController.communityCollection == 'ADHDCommunityPosts')
+      const ChatBotWidget(role: 'adhd')
+    else
+      const ChatBotWidget(role: 'caregiver'),
         ],
       ),
     );

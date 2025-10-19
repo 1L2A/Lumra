@@ -17,7 +17,7 @@ class NavItem {
 
 final Map<UserRole, List<NavItem>> navConfig = {
   UserRole.adhd: [
-    NavItem(label: 'Home', icon: Icons.home, page: HomePage()),
+    NavItem(label: 'Home', icon: Icons.home_rounded, page: HomePage()),
     NavItem(
       label: 'Activity',
       icon: Icons.local_activity_rounded,
@@ -25,27 +25,27 @@ final Map<UserRole, List<NavItem>> navConfig = {
     ),
     NavItem(
       label: 'Community',
-      icon: Icons.people,
+      icon: Icons.people_alt_rounded,
       page: CommunityPage(),
     ),
-    NavItem(label: 'Account', icon: Icons.account_box, page: AccountPage()),
+    NavItem(label: 'Account', icon: Icons.account_circle_rounded, page: AccountPage()),
   ],
 
   UserRole.caregiver: [
-    NavItem(label: 'Home', icon: Icons.home, page: CareGiverHomePage()),
+    NavItem(label: 'Home', icon: Icons.home_rounded, page: CareGiverHomePage()),
     NavItem(
       label: 'Dashboard',
-      icon: Icons.leaderboard,
+      icon: Icons.leaderboard_rounded,
       page: ComingSoonPage(
         feature: 'Dashboard',
       ), //  Later: replace with DashboardPage()
     ),
     NavItem(
       label: 'Community',
-      icon: Icons.people,
+      icon: Icons.people_alt_rounded,
       page: CommunityPage(),
     ),
-    NavItem(label: 'Account', icon: Icons.account_box, page: AccountPage()),
+    NavItem(label: 'Account', icon: Icons.account_circle_rounded, page: AccountPage()),
   ],
 };
 

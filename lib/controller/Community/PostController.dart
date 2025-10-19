@@ -49,6 +49,7 @@ class PostControllerX extends GetxController {
     _postsSubscription?.cancel();
     _savedPostsSubscription?.cancel();
     contentController.dispose();
+    communityCollection = '';
     super.onClose();
   }
 
@@ -374,4 +375,4 @@ class PostControllerX extends GetxController {
       showingCheckIds.remove(postId);
     });
   }
-}
+  }
