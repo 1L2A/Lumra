@@ -71,7 +71,7 @@ class _TasksListState extends State<TasksList> {
 
     Get.showSnackbar(
       GetSnackBar(
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.white,
         borderRadius: 24,
         margin: const EdgeInsets.all(12),
