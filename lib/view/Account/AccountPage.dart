@@ -32,11 +32,11 @@ class AccountPage extends StatelessWidget {
       backgroundColor: BColors.lightGrey,
       body: Column(
         children: [
-            BAppBarTheme.createHeader(
-              context: context,
-              title: 'Account',
-              subtitle: "",
-            ),
+          BAppBarTheme.createHeader(
+            context: context,
+            title: 'Account',
+            subtitle: "",
+          ),
 
           // Main content
           Expanded(
@@ -45,30 +45,31 @@ class AccountPage extends StatelessWidget {
                 top: 0,
                 bottom: 30,
                 left: 20,
-                right: 20),
+                right: 20,
+              ),
               child: Column(
                 children: [
                   Center(
                     child: Padding(
-              padding: const EdgeInsets.all(0),
-              child: Container(
-                width: 130,
-                height: 130,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: BColors.secondry, // border color
-                    width: 1.5, // border thickness
-                  ),
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/images/AvatarSimple.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            ),
+                      padding: const EdgeInsets.all(0),
+                      child: Container(
+                        width: 130,
+                        height: 130,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: BColors.secondry, // border color
+                            width: 1.5, // border thickness
+                          ),
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/AvatarSimple.png',
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 20),
                   // First + Last Name beside each other
@@ -96,7 +97,7 @@ class AccountPage extends StatelessWidget {
                     );
                   }),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 8),
 
                   // Options
                   _buildOption(
@@ -109,26 +110,31 @@ class AccountPage extends StatelessWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   _buildOption(
                     icon: Icons.article,
                     text: "My Posts",
-                    onTap: () {Navigator.push(
+                    onTap: () {
+                      Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => MyPostsPage()),
-                      );},
+                      );
+                    },
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   _buildOption(
                     icon: Icons.bookmark,
                     text: "Saved Posts",
                     onTap: () {
-                        Navigator.push(
+                      Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => SavedPostsPage()),
-                      );},
+                        MaterialPageRoute(
+                          builder: (context) => SavedPostsPage(),
+                        ),
+                      );
+                    },
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
 
                   // QR Code Option (only for ADHD)
                   Obx(() {
@@ -155,12 +161,9 @@ class AccountPage extends StatelessWidget {
                     }
                   }),
 
-                  const SizedBox(height: BSizes.SpaceBtwItems),
-
-                  // Sign Out Button
                   // Sign Out Button
                   SizedBox(
-                    width: 150,
+                    width: 200,
                     child: ElevatedButton.icon(
                       onPressed: () async {
                         Signoutdialog.show(context, authController);
@@ -171,7 +174,7 @@ class AccountPage extends StatelessWidget {
                         backgroundColor: BColors.primary,
                         foregroundColor: BColors.textwhite,
                         padding: const EdgeInsets.symmetric(
-                          vertical: 11,
+                          vertical: 8,
                           horizontal: 0,
                         ),
                         textStyle: BTextTheme.lightTextTheme.headlineSmall,
@@ -181,8 +184,6 @@ class AccountPage extends StatelessWidget {
                       ),
                     ),
                   ),
-                  
-  
                 ],
               ),
             ),
@@ -199,34 +200,29 @@ class AccountPage extends StatelessWidget {
     VoidCallback? onTap,
   }) {
     return Container(
-  margin: const EdgeInsets.symmetric(vertical: 6,horizontal: 12),
-  decoration: BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(16),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withOpacity(0.05),
-        blurRadius: 8,
-        offset: const Offset(0, 2),
+      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-    ],
-  ),
-  child: ListTile(
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-    leading: Icon(icon, color: BColors.iconColor),
-    title: Text(
-      text,
-      style: BTextTheme.lightTextTheme.bodySmall,
-    ),
-    trailing: const Icon(
-      Icons.arrow_forward_ios,
-      size: 16,
-      color: BColors.iconColor,
-    ),
-    onTap: onTap,
-  ),
-);
-
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Icon(icon, color: BColors.iconColor),
+        title: Text(text, style: BTextTheme.lightTextTheme.bodySmall),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: BColors.iconColor,
+        ),
+        onTap: onTap,
+      ),
+    );
   }
 }
-
