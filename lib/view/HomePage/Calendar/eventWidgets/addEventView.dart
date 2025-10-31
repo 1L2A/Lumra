@@ -8,11 +8,12 @@ import 'package:lumra_project/theme/base_themes/sizes.dart';
 import 'package:lumra_project/theme/custom_themes/text_theme.dart';
 
 class AddEventView extends StatelessWidget {
-  AddEventView({super.key});
-  final authContoller = Get.find<AuthController>();
+  const AddEventView({super.key, this.eventToEdit});
+  final dynamic eventToEdit;
 
   @override
   Widget build(BuildContext context) {
+    final authContoller = Get.find<AuthController>();
     // Directly get the controller from GetX
     final AddEventController controller = Get.put(
       AddEventController(
@@ -20,6 +21,12 @@ class AddEventView extends StatelessWidget {
         authContoller.currentUser!.uid,
       ),
     );
+
+    if (eventToEdit != null) {
+      controller.loadFromEvent(eventToEdit); //prefill edit
+    } else {
+      controller.prepareForAdd();
+    }
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -28,7 +35,7 @@ class AddEventView extends StatelessWidget {
             Navigator.pop(context); // goes back to the previous screen
           },
         ),
-        title: Text("Add Event"),
+        title: Text(eventToEdit == null ? "Add Event" : "Edit Event"),
         titleTextStyle: BTextTheme.lightTextTheme.headlineLarge,
         backgroundColor: Colors.white,
         centerTitle: true,
@@ -303,18 +310,22 @@ class AddEventView extends StatelessWidget {
 
               const SizedBox(height: BSizes.appBarHeight),
 
-              // ------------------ ADD BUTTON ------------------ //
+              // ------------------ ADD / UPDATE BUTTON ------------------ //
               Obx(
                 () => SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: controller.isFormValid.value
+                    onPressed: controller.canSubmit.value
                         ? () async {
-                            // Make sure validation runs one last time
-                            if (controller.validateForm()) {
+                            if (!controller.validateForm()) return;
+                            if (eventToEdit == null) {
                               await controller.addEventToFirebase();
-                              Navigator.pop(context); // closes the view
+                            } else {
+                              await controller.updateEventInFirebase(
+                                eventToEdit.id,
+                              );
                             }
+                            Navigator.pop(context);
                           }
                         : null, // disables button if form not valid // null disables the button
                     style: ElevatedButton.styleFrom(
@@ -329,7 +340,7 @@ class AddEventView extends StatelessWidget {
                         const Icon(Icons.check),
                         const SizedBox(width: 8),
                         Text(
-                          "Add",
+                          eventToEdit == null ? "Add" : "Update",
                           style: BTextTheme.darkTextTheme.headlineSmall,
                         ),
                       ],

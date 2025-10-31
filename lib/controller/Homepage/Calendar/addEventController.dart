@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:lumra_project/controller/Homepage/Calendar/calendarController.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/utils/customWidgets/toastservice.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddEventController extends GetxController {
@@ -27,6 +26,12 @@ class AddEventController extends GetxController {
 
   var isEventAdded = false.obs;
 
+  String? _originalTitle;
+  Timestamp? _originalStart;
+  Timestamp? _originalEnd;
+
+  final canSubmit = false.obs;
+
   AddEventController(this.db, this.currentUid);
 
   //to get the date from the calander controller
@@ -43,11 +48,45 @@ class AddEventController extends GetxController {
     }
   }
 
+  void loadFromEvent(dynamic e) {
+    // Expecting CalendarEvent with: id, title(String), start(DateTime), end(DateTime)
+    titleController.text = e.title;
+    eventStart.value = Timestamp.fromDate(e.start);
+    eventEnd.value = Timestamp.fromDate(e.end);
+
+    _originalTitle = e.title;
+    _originalStart = eventStart.value;
+    _originalEnd = eventEnd.value;
+
+    validateTitle(titleController.text);
+    validateTimes();
+    updateFormValidity();
+    _updateCanSubmit();
+  }
+
+  void prepareForAdd() {
+    _originalTitle = null;
+    _originalStart = null;
+    _originalEnd = null;
+
+    titleController.clear();
+    eventStart.value = null;
+    eventEnd.value = null;
+
+    titleError.value = null;
+    startError.value = null;
+    endError.value = null;
+
+    isFormValid.value = false;
+    canSubmit.value = false;
+  }
+
   // ------------------ Title validate ------------------ //
   void updateTitle(String value) {
     titleFieldTouched.value = true;
     validateTitle(value);
     updateFormValidity();
+    _updateCanSubmit();
   }
 
   void validateTitle(String value) {
@@ -123,6 +162,35 @@ class AddEventController extends GetxController {
         endError.value == null;
   }
 
+  //Enable button only when valid and changed (in edit mode)
+  void _updateCanSubmit() {
+    final editing =
+        _originalTitle != null ||
+        _originalStart != null ||
+        _originalEnd != null;
+    if (!editing) {
+      canSubmit.value = isFormValid.value; // add mode
+      return;
+    }
+    canSubmit.value = isFormValid.value && _hasChanges(); // edit mode
+  }
+
+  bool _hasChanges() {
+    if (_originalTitle == null &&
+        _originalStart == null &&
+        _originalEnd == null) {
+      return true; // add mode
+    }
+    final tChanged = titleController.text.trim() != (_originalTitle ?? '');
+    final sChanged =
+        eventStart.value?.seconds != _originalStart?.seconds ||
+        eventStart.value?.nanoseconds != _originalStart?.nanoseconds;
+    final eChanged =
+        eventEnd.value?.seconds != _originalEnd?.seconds ||
+        eventEnd.value?.nanoseconds != _originalEnd?.nanoseconds;
+    return tChanged || sChanged || eChanged;
+  }
+
   // Pick time
   Future<void> pickTime({required bool isStart}) async {
     // Get the day chosen from the calendar
@@ -174,6 +242,7 @@ class AddEventController extends GetxController {
       }
       validateTimes(); // run validation whenever a time is picked
       updateFormValidity();
+      _updateCanSubmit();
     }
   }
 
@@ -187,6 +256,7 @@ class AddEventController extends GetxController {
 
     // Update form validity (for the button)
     updateFormValidity();
+    _updateCanSubmit();
 
     return endError.value == null &&
         startError.value == null &&
@@ -233,21 +303,38 @@ class AddEventController extends GetxController {
       titleController.clear();
       eventStart.value = null;
       eventEnd.value = null;
+      titleError.value = null;
+      startError.value = null;
+      endError.value = null;
+      isFormValid.value = false;
+      _originalTitle = null;
+      _originalStart = null;
+      _originalEnd = null;
+      _updateCanSubmit();
     } catch (e) {
       ToastService.error("Couldn’t save your event. Give it another go!");
+    }
+  }
+
+  // Update
+  Future<void> updateEventInFirebase(String eventId) async {
+    if (!validateForm()) return;
+    try {
+      await db.collection("events").doc(eventId).update({
+        "title": titleController.text.trim(),
+        "start": eventStart.value,
+        "end": eventEnd.value,
+        "updated_at": FieldValue.serverTimestamp(),
+      });
+      ToastService.success("Your event is updated successfully.");
+    } catch (e) {
+      ToastService.error("Couldn’t update your event.");
     }
   }
 
   @override
   void onClose() {
     titleController.dispose();
-    eventStart.value = null;
-    eventEnd.value = null;
-    titleError.value = null;
-    startError.value = null;
-    endError.value = null;
-    isFormValid.value = false;
-    isEventAdded.value = false;
     super.onClose();
   }
 }

@@ -64,11 +64,6 @@ class EventTile extends StatelessWidget {
             ),
           ),
           SizedBox(width: BSizes.sm),
-          IconButton(
-            tooltip: 'Edit event',
-            icon: const Icon(Icons.edit, color: BColors.darkGrey, size: 18),
-            onPressed: null, // placeholder for now
-          ),
         ],
       ),
     );

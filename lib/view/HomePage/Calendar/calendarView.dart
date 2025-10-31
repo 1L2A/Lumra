@@ -200,13 +200,16 @@ class _CalendarPageState extends State<CalendarPage> {
                         Obx(() {
                           final d = c.selectedDay.value;
                           if (d == null) return const SizedBox.shrink();
+                          // ✅ explicitly depend on monthEvents so this Obx rebuilds on any map change
+                          final events = c.eventsFor(d);
+                          final rebuildKey =
+                              '${d.year}-${d.month}-${d.day}-${events.length}'; // ✅ force subtree refresh when 1→0
+
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 40),
                             child: BottomArea(
-                              key: ValueKey('${d.year}-${d.month}-${d.day}'),
+                              key: ValueKey(rebuildKey),
                               selected: d,
-                              events: c.eventsFor(d),
-                              // onAddTap: () { REEM },
                             ),
                           );
                         }),

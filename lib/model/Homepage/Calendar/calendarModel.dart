@@ -40,18 +40,18 @@ class CalendarEvent {
   //Takes only the date without the time to group the events of the same date in the same day
   DateTime get dayKey => DateTime(start.year, start.month, start.day);
 
-  //   CalendarEvent copyWith({
-  //     String? title,
-  //     DateTime? start,
-  //     DateTime? end,
-  //     List<String>? participants,
-  //   }) {
-  //     return CalendarEvent(
-  //       id: id,
-  //       title: title ?? this.title,
-  //       start: start ?? this.start,
-  //       end: end ?? this.end,
-  //       participants: participants ?? this.participants,
-  //     );
-  //   }
+  CalendarEvent copyWith({
+    String? title,
+    DateTime? start,
+    DateTime? end,
+    List<String>? participants,
+  }) {
+    return CalendarEvent(
+      id: id,
+      title: title ?? this.title,
+      start: start ?? this.start,
+      end: end ?? this.end,
+      participants: participants ?? this.participants,
+    );
+  }
 }

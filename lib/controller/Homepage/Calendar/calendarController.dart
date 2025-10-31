@@ -67,12 +67,16 @@ class CalendarController extends GetxController {
   }
 
   //checks if the day has at least one event
-  bool hasEvent(DateTime day) =>
-      monthEvents.containsKey(DateTime(day.year, day.month, day.day));
+  bool hasEvent(DateTime day) {
+    final d = DateTime(day.year, day.month, day.day);
+    return monthEvents.containsKey(d);
+  }
 
   //returns the list of events in one day or an empty list
-  List<CalendarEvent> eventsFor(DateTime day) =>
-      monthEvents[DateTime(day.year, day.month, day.day)] ?? const [];
+  List<CalendarEvent> eventsFor(DateTime day) {
+    final d = DateTime(day.year, day.month, day.day); // local day
+    return monthEvents[d] ?? const <CalendarEvent>[];
+  }
 
   //this method is used to set up or reset the firestor listener for the month containing m
   //which is why we call it in the int and in goToMonth when we move to another month
@@ -108,11 +112,8 @@ class CalendarController extends GetxController {
       //iterate over every document in the snapshot
       for (final doc in snap.docs) {
         final ev = CalendarEvent.fromDoc(doc);
-
-        // (Optional sanity) enforce again at client level:
-        // if (!ev.participants.contains(currentUid)) continue;
-
-        final key = DateTime(ev.start.year, ev.start.month, ev.start.day);
+        final s = ev.start.toLocal();
+        final key = DateTime(s.year, s.month, s.day);
         (map[key] ??= <CalendarEvent>[]).add(ev);
       }
 
@@ -121,11 +122,29 @@ class CalendarController extends GetxController {
         list.sort((a, b) => a.start.compareTo(b.start));
       }
 
-      // Only update events for the current month to prevent flicker
-      for (final entry in map.entries) {
-        monthEvents[entry.key] = entry.value;
-      }
+      monthEvents.assignAll(map);
+      monthEvents.refresh();
     });
+  }
+
+  //Delete an existing event
+  Future<void> deleteEvent(String eventId) async {
+    await db.collection('events').doc(eventId).delete();
+
+    //manually remove from local cache immediately (before Firestore pushes)
+    final keysToRemove = <DateTime>[];
+
+    monthEvents.forEach((key, list) {
+      list.removeWhere((ev) => ev.id == eventId);
+      if (list.isEmpty) keysToRemove.add(key); // mark empty day for removal
+    });
+
+    for (final k in keysToRemove) {
+      monthEvents.remove(k);
+    }
+
+    //tell GetX observers to rebuild right away
+    monthEvents.refresh();
   }
 
   @override
