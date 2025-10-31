@@ -125,7 +125,7 @@ class _FocusViewState extends State<FocusView>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Focus plan ready',
+                            'Focus plan',
                             style: const TextStyle(
                               fontFamily: 'K2D',
                               fontSize: BSizes.fontSizeLg,
