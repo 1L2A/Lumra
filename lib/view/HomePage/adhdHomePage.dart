@@ -14,6 +14,7 @@ import 'package:lumra_project/controller/Homepage/Reminders/reminderController.d
 import 'package:get/get.dart';
 import 'package:lumra_project/utils/customWidgets/toastservice.dart';
 import "package:lumra_project/view/ChatBootADHD/ChatBotWidget.dart";
+import 'package:lumra_project/controller/notification/Moodnotification.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -45,6 +46,17 @@ class _HomePageState extends State<HomePage> {
         Get.put(ReminderController(currentUid: uid));
       }
     }
+
+        // Initialize daily notifications 
+    // Future.delayed(const Duration(seconds: 0), () async {
+    //   final moodNotification = DailyMoodNotification();
+    //   await moodNotification.init();
+    //   await moodNotification.scheduleDailyNotification(test: false);
+    // });
+
+  final moodNotification = DailyMoodNotification();
+  moodNotification.init( authContoller.currentUser!.uid);
+
   }
 
   //  MAIN UI
