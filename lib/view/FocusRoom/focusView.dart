@@ -38,8 +38,8 @@ class _FocusViewState extends State<FocusView>
       builder: (context) {
         return DraggableScrollableSheet(
           // 60% tall initially, can grow to 90%
-          initialChildSize: 0.60,
-          minChildSize: 0.40,
+          initialChildSize: 0.70,
+          minChildSize: 0.60,
           maxChildSize: 0.90,
           expand: false,
           builder: (context, scrollController) {
@@ -62,19 +62,24 @@ class _FocusViewState extends State<FocusView>
   }
 
   void _endSession() {
-    c.endSession();
-    setState(() {
-      started = false;
-      focusMinutes = null;
-      breaks = null;
-      plan = null;
-    });
-  }
+  c.endSession();
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (mounted) {
+      setState(() {
+        started = false;
+        focusMinutes = null;
+        breaks = null;
+        plan = null;
+      });
+    }
+  });
+}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: BColors.lightGrey,
       body: LayoutBuilder(
         builder: (context, constraints) {
           return Stack(
@@ -168,14 +173,14 @@ class _FocusViewState extends State<FocusView>
                                   decoration: BoxDecoration(
                                     color: isFocus
                                         ? BColors.primary.withOpacity(0.07)
-                                        : Colors.grey.shade100,
+                                        : BColors.lightGrey,
                                     borderRadius: BorderRadius.circular(
                                       BSizes.borderRadiusMd,
                                     ),
                                     border: Border.all(
                                       color: isFocus
                                           ? BColors.primary.withOpacity(0.25)
-                                          : Colors.grey.shade300,
+                                          : BColors.lightGrey,
                                     ),
                                   ),
                                   child: Row(
@@ -219,7 +224,7 @@ class _FocusViewState extends State<FocusView>
                     child: Container(
                       padding: EdgeInsets.fromLTRB(BSizes.lg, 8, BSizes.lg, 8),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: BColors.lightGrey,
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.06),
@@ -260,7 +265,9 @@ class _FocusViewState extends State<FocusView>
                                 if (plan == null) return;
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) => FocusTimerView(plan: plan!),
+                                    builder: (_) => FocusTimerView(plan: plan!,
+                                    onEnd: _endSession, // REEM ADD pass reset function
+),
                                   ),
                                 );
                               },

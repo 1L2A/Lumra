@@ -9,8 +9,11 @@ import 'package:lumra_project/theme/base_themes/sizes.dart';
 import 'package:lumra_project/view/FocusRoom/FocusRoomPlant.dart';
 
 class FocusTimerView extends StatefulWidget {
-  const FocusTimerView({super.key, required this.plan});
+  const FocusTimerView({super.key, required this.plan, this.onEnd});
   final FocusSessionPlan plan;
+  final void Function()? onEnd;
+
+  ///REEM ADD
 
   @override
   State<FocusTimerView> createState() => _FocusTimerViewState();
@@ -62,7 +65,6 @@ class _FocusTimerViewState extends State<FocusTimerView> {
     if (_haptics) HapticFeedback.selectionClick();
     setState(() {}); // update labels
   }
-
   void _onTick(Timer _) {
     final now = DateTime.now();
     if (now.isBefore(_segmentEndsAt)) {
@@ -74,36 +76,49 @@ class _FocusTimerViewState extends State<FocusTimerView> {
     if (_segIndex + 1 < widget.plan.segments.length) {
       _startSegment(_segIndex + 1);
     } else {
-      // All done
-      _ticker?.cancel();
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AlertDialog(
-          title: const Text('Great job!'),
-          content: Text(
-            'You completed ${widget.plan.config.durationMin} minutes '
-            'with ${widget.plan.config.breaksCount} break(s).',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _endSession(reset: true);
-              },
-              child: const Text('Done'),
-            ),
-          ],
+     // All done
+_ticker?.cancel();
+if (!mounted) return;
+
+Future.microtask(() async {
+  if (!mounted) return;
+
+  // Wait a frame to ensure dialog is safe to show
+  await Future.delayed(const Duration(milliseconds: 50));
+
+  if (!mounted) return;
+
+  // Use dialogContext instead of widget context
+  await showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Great job!'),
+      content: Text(
+        'You completed ${widget.plan.config.durationMin} minutes '
+        'with ${widget.plan.config.breaksCount} break(s).',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(dialogContext).pop();
+            if (mounted) _endSession(reset: true);
+          },
+          child: const Text('Done'),
         ),
-      );
+      ],
+    ),
+  );
+});
+
     }
   }
 
   void _endSession({bool reset = false}) {
     _ticker?.cancel();
     c.endSession(showToast: !reset);
-    Navigator.of(context).pop(); // pop timer screen
+    widget.onEnd?.call(); // 🔔 tell parent to reset its state
+    Navigator.of(context).pop();
   }
 
   Duration _remaining() {
@@ -130,10 +145,10 @@ class _FocusTimerViewState extends State<FocusTimerView> {
         : 'Stretch • Breathe • Water';
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: BColors.lightGrey,
       appBar: AppBar(
         title: const Text('Focus Session', style: TextStyle(fontFamily: 'K2D')),
-        backgroundColor: Colors.white,
+        backgroundColor: BColors.lightGrey,
         elevation: 0,
         foregroundColor: Colors.black87,
         actions: [
@@ -160,12 +175,12 @@ class _FocusTimerViewState extends State<FocusTimerView> {
                 decoration: BoxDecoration(
                   color: _isFocus
                       ? BColors.primary.withOpacity(.08)
-                      : Colors.grey.shade100,
+                      : BColors.lightGrey,
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
                     color: _isFocus
                         ? BColors.primary.withOpacity(.25)
-                        : Colors.grey.shade300,
+                        : BColors.lightGrey,
                   ),
                 ),
                 child: Text(
@@ -242,34 +257,41 @@ class _FocusTimerViewState extends State<FocusTimerView> {
                 child: OutlinedButton(
                   onPressed: () async {
                     final ok = await showDialog<bool>(
-                      context: context,
-                      builder: (_) => AlertDialog(
+                      context: Get.context!,
+                      barrierDismissible: false,
+                      builder: (ctx) => AlertDialog(
                         title: const Text('End session?'),
                         content: const Text('You can resume later anytime.'),
                         actions: [
                           TextButton(
-                            onPressed: () => Navigator.pop(context, false),
+                            onPressed: () => Navigator.of(
+                              ctx,
+                            ).pop(false), // ctx, not context
                             child: const Text('Continue'),
                           ),
                           TextButton(
-                            onPressed: () => Navigator.pop(context, true),
+                            onPressed: () =>
+                                Navigator.of(ctx).pop(true), // ctx, not context
                             child: const Text('End'),
                           ),
                         ],
                       ),
                     );
-                    if (ok == true) _endSession();
+
+                    if (ok == true) {
+                      _endSession();
+                    }
                   },
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: BorderSide(color: Colors.red.shade400),
+                    side: BorderSide(color: BColors.error),
                   ),
                   child: Text(
                     'End Session',
                     style: TextStyle(
                       fontFamily: 'K2D',
                       fontWeight: FontWeight.w600,
-                      color: Colors.red.shade600,
+                      color: BColors.error,
                     ),
                   ),
                 ),

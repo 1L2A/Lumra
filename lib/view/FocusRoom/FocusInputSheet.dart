@@ -96,7 +96,12 @@ class DurationAndBreakSheet extends StatelessWidget {
                     initialValue:
                         selectedBreaks ??
                         (breakOptions.isNotEmpty ? breakOptions.first : null),
-                    onChanged: (v) => c.setBreaks(v),
+                    onChanged: (v) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        c.setBreaks(v);
+                      });
+                    },
+                    //c.setBreaks(v),
                     height: 220,
                     itemExtent: 48,
                     pillRadius: 28,

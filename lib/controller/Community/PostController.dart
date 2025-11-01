@@ -77,6 +77,9 @@ class PostControllerX extends GetxController {
 
     // Real-time updates
     print('Setting up real-time listener for collection: $communityCollection');
+    //
+    _postsSubscription?.cancel();
+    //
     _postsSubscription = db
         .collection(communityCollection)
         .orderBy('createdAt', descending: true)
@@ -215,8 +218,12 @@ void updateFormValidity() {
       contentController.clear();
 
       // Manually refresh posts to ensure UI updates immediately
-      print('Manually refreshing posts...');
-      await fetchPosts();
+     // print('Manually refreshing posts...');
+     // await fetchPosts();
+      print('Post added successfully with ID: ${docRef.id}');
+      contentController.clear();
+      // No need to fetchPosts(), the listener will update automatically
+
     } catch (e) {
       ToastService.error("Could not add post. Try again!");
     } finally {

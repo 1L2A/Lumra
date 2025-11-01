@@ -86,8 +86,8 @@ class PlantGrower extends StatelessWidget {
                   icon,
                   size: 120,
                   color: _lerpColor(
-                    const Color(0xFF66BB6A),
-                    const Color(0xFF2E7D32),
+                    const Color.fromARGB(255, 98, 163, 102),
+                    const Color.fromARGB(255, 39, 99, 42),
                     p,
                   ),
                 ),
@@ -110,7 +110,7 @@ class PlantGrower extends StatelessWidget {
                   child: Icon(
                     Icons.eco_rounded,
                     size: 14 + (p - 0.7) * 10,
-                    color: const Color(0xFF66BB6A).withOpacity(0.6),
+                    color: const Color.fromARGB(255, 78, 127, 81).withOpacity(0.6),
                   ),
                 ),
               );
