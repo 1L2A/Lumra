@@ -372,6 +372,26 @@ class Activitycontroller {
     // return reserve; //keep something on screen; emitCombined will reload next snapshot
   }
 
+  // Keep both names so old calls still compile
+  Future<void> setNotIntreseted(Activitymodel item) => setNotInterested(item);
+
+  // Hide initial or delete chatbot activity
+  Future<void> setNotInterested(Activitymodel item) async {
+    final uid = authController.currentUser?.uid;
+    if (uid == null) return;
+
+    final userRef = db.collection('users').doc(uid);
+
+    if (item.isInitial) {
+      await userRef.collection('activityStatus').doc(item.id).set({
+        'hidden': true,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } else {
+      await userRef.collection('activities').doc(item.id).delete();
+    }
+  }
+
   // Toggles completion for either INITIAL or CHATBOT items.
   // - INITIAL: write per-user status with 24h expiry (soft reset after expiry).
   // - CHATBOT: update and delete after 24h automatically.
@@ -443,12 +463,12 @@ class Activitycontroller {
     int count = 0;
 
     // 1. Check completed INITIAL activities (via activityStatus)
-
     final statusSnap = await db
         .collection('users')
         .doc(uid)
         .collection('activityStatus')
         .where('isChecked', isEqualTo: true)
+        .where('hidden', isEqualTo: false) //exclude hidden initials from counts
         .where('checkedAt', isGreaterThanOrEqualTo: yesterdayTimestamp)
         .get();
     count += statusSnap.docs.length;
@@ -508,6 +528,10 @@ class Activitycontroller {
         .doc(uid)
         .collection('activityStatus')
         .where('isChecked', isEqualTo: true)
+        .where(
+          'hidden',
+          isEqualTo: false,
+        ) // exclude hidden initials from counts
         .where('checkedAt', isGreaterThanOrEqualTo: lastWeekTimestamp)
         .get();
     count += statusSnap.docs.length;
@@ -553,7 +577,12 @@ class Activitycontroller {
         title.contains('brain games')) {
       Get.to(() => const NumberPuzzle());
       //for now nothing until the rest is added
-    } else if (title.contains('small art') || title.contains('journaling')) {
+    } else if (title.contains('writing') ||
+        title.contains('write') ||
+        title.contains('art') ||
+        title.contains('drawing') ||
+        title.contains('draw') ||
+        title.contains('journaling')) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(

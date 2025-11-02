@@ -1,3 +1,4 @@
+// lib/model/Activity/ActivityModel.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Activitymodel can represent:
@@ -24,6 +25,7 @@ class Activitymodel {
 
   // Source flag
   final bool isInitial; // true = initial template; false = per-user chatbot
+  final bool isHidden;
 
   Activitymodel({
     this.id,
@@ -35,6 +37,7 @@ class Activitymodel {
     this.checkedAt,
     this.expireAt,
     this.isInitial = false,
+    this.isHidden = false,
   });
 
   // Use for per-user CHATBOT docs: `users/{uid}/activities/{docId}`
@@ -77,6 +80,7 @@ class Activitymodel {
       checkedAt: null,
       expireAt: null,
       isInitial: true,
+      isHidden: false,
     );
   }
 
@@ -113,6 +117,7 @@ class Activitymodel {
     Timestamp? checkedAt,
     Timestamp? expireAt,
     bool? isInitial,
+    bool? isHidden,
   }) {
     return Activitymodel(
       id: id ?? this.id,
@@ -124,6 +129,7 @@ class Activitymodel {
       checkedAt: checkedAt ?? this.checkedAt,
       expireAt: expireAt ?? this.expireAt,
       isInitial: isInitial ?? this.isInitial,
+      isHidden: isHidden ?? this.isHidden,
     );
   }
 }
