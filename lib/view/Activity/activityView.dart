@@ -39,7 +39,6 @@ class _ActivityViewState extends State<ActivityView> {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
     return Scaffold(
       backgroundColor: BColors.lightGrey,
       body: Obx(() {
