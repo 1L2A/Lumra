@@ -153,30 +153,31 @@ class PostControllerX extends GetxController {
   void refreshUserPostsListener() {
     listenToUserPosts();
   }
-void updateFormValidity() {
-  var text = contentController.text;
-  currentLength.value = text.length;
 
-  // Regex: checks if the string contains only special characters or spaces
-  final onlySpecialChars = RegExp(r'^[^a-zA-Z0-9]+$');
+  void updateFormValidity() {
+    var text = contentController.text;
+    currentLength.value = text.length;
 
-  if (text.isEmpty) {
-    contentError.value = "Post cannot be empty";
-    isFormValid.value = false;
-  } else if (onlySpecialChars.hasMatch(text)) {
-    contentError.value = "Post cannot contain only special characters";
-    isFormValid.value = false;
-  } else {
-    contentError.value = null;
-    isFormValid.value = true;
+    // Regex: checks if the string contains only special characters or spaces
+    final onlySpecialChars = RegExp(r'^[^a-zA-Z0-9]+$');
+
+    if (text.isEmpty) {
+      contentError.value = "Post cannot be empty";
+      isFormValid.value = false;
+    } else if (onlySpecialChars.hasMatch(text)) {
+      contentError.value = "Post cannot contain only special characters";
+      isFormValid.value = false;
+    } else {
+      contentError.value = null;
+      isFormValid.value = true;
+    }
   }
-}
 
   Future<void> addPost() async {
     if (!isFormValid.value) return;
 
     var text = contentController.text.trim();
-     //Remove leading/trailing spaces and collapse multiple spaces between words
+    //Remove leading/trailing spaces and collapse multiple spaces between words
     text = text.trim().replaceAll(RegExp(r'\s+'), ' ');
 
     if (text.isEmpty) {
@@ -218,12 +219,11 @@ void updateFormValidity() {
       contentController.clear();
 
       // Manually refresh posts to ensure UI updates immediately
-     // print('Manually refreshing posts...');
-     // await fetchPosts();
+      // print('Manually refreshing posts...');
+      // await fetchPosts();
       print('Post added successfully with ID: ${docRef.id}');
       contentController.clear();
       // No need to fetchPosts(), the listener will update automatically
-
     } catch (e) {
       ToastService.error("Could not add post. Try again!");
     } finally {
@@ -359,10 +359,9 @@ void updateFormValidity() {
     }
   }
 
-
-
-//-----------------FUTURE SPRINTS---------///
-  /*Future<void> unsavePost(String postId) async {
+  //-----------------FUTURE SPRINTS---------///
+  // Restored unsave functionality - removes saved post from user's savedPosts collection and updates reactive lists
+  Future<void> unsavePost(String postId) async {
     if (currentUid == null) {
       ToastService.error("You must be logged in to unsave posts");
       return;
@@ -382,9 +381,8 @@ void updateFormValidity() {
     } catch (e) {
       debugPrint('unsavePost error: $e');
     }
-  }*/
+  }
   //-----------------END-------///
-
 
   void showBookmarkCheck(String postId) {
     showingCheckIds.add(postId);
@@ -392,4 +390,4 @@ void updateFormValidity() {
       showingCheckIds.remove(postId);
     });
   }
-  }
+}

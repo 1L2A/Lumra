@@ -17,14 +17,20 @@ class PostView extends StatelessWidget {
   final ScrollPhysics SrollType;
   final PostControllerX controller = Get.find<PostControllerX>();
 
-  PostView({super.key, this.showSaved = false, this.showUserPosts = false, this.isShrinkWrap = true, this.SrollType = const NeverScrollableScrollPhysics() });
+  PostView({
+    super.key,
+    this.showSaved = false,
+    this.showUserPosts = false,
+    this.isShrinkWrap = true,
+    this.SrollType = const NeverScrollableScrollPhysics(),
+  });
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       //Decide Which lisrt to display
-      final postList ;
-          if (showUserPosts) {
+      final postList;
+      if (showUserPosts) {
         postList = controller.userPosts;
       } else if (showSaved) {
         postList = controller.savedPosts;
@@ -32,32 +38,32 @@ class PostView extends StatelessWidget {
         postList = controller.posts;
       }
 
-    // Handle empty state
-    if (postList.isEmpty) {
-      String imagePath;
-      if (showUserPosts) {
-        imagePath = 'assets/images/NoMyPosts.png';
-      } else if (showSaved) {
-        imagePath = 'assets/images/NoSavedPosts.png';
-      } else {
-        imagePath = 'assets/images/NoPosts.png';
-      }
+      // Handle empty state
+      if (postList.isEmpty) {
+        String imagePath;
+        if (showUserPosts) {
+          imagePath = 'assets/images/NoMyPosts.png';
+        } else if (showSaved) {
+          imagePath = 'assets/images/NoSavedPosts.png';
+        } else {
+          imagePath = 'assets/images/NoPosts.png';
+        }
 
         return Center(
-    child: Padding(
-      padding: EdgeInsets.only(
-        // to make centerd
-        top: imagePath.contains('assets/images/NoPosts.png') ? 130 : 0,
-      ),
-      child: Image.asset(
-        imagePath,
-        width: 295,
-        height: 295,
-        fit: BoxFit.contain,
-      ),
-    ),
-  );
-    }
+          child: Padding(
+            padding: EdgeInsets.only(
+              // to make centerd
+              top: imagePath.contains('assets/images/NoPosts.png') ? 130 : 0,
+            ),
+            child: Image.asset(
+              imagePath,
+              width: 295,
+              height: 295,
+              fit: BoxFit.contain,
+            ),
+          ),
+        );
+      }
       return ListView.separated(
         itemCount: postList.length,
         shrinkWrap: isShrinkWrap,
@@ -185,7 +191,8 @@ class PostView extends StatelessWidget {
           return GestureDetector(
             onTap: () async {
               if (isSaved) {
-               // FOR FUTURE SPRINTS IN HERE ADD THE UNSAVE ACTION
+                // Restored unsave functionality - removes post from saved posts
+                await controller.unsavePost(post.id);
               } else {
                 await controller.savePost(post);
                 controller.showBookmarkCheck(
@@ -201,13 +208,15 @@ class PostView extends StatelessWidget {
                   ? Icon(
                       Icons.check_rounded,
                       key: ValueKey('check_${post.id}'),
-                      color: const Color.fromARGB(255, 241, 205, 99) ,
-                      size: BSizes.iconMd ,
+                      color: const Color.fromARGB(255, 241, 205, 99),
+                      size: BSizes.iconMd,
                     )
                   : Icon(
                       isSaved ? Icons.bookmark : Icons.bookmark_border,
                       key: ValueKey('bookmark_${post.id}'),
-                      color: isSaved ? const Color.fromARGB(255, 241, 205, 99) : BColors.darkGrey,
+                      color: isSaved
+                          ? const Color.fromARGB(255, 241, 205, 99)
+                          : BColors.darkGrey,
                       size: BSizes.iconMd,
                     ),
             ),
