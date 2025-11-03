@@ -7,7 +7,6 @@ import 'package:lumra_project/theme/base_themes/sizes.dart';
 import 'package:lumra_project/theme/custom_themes/text_theme.dart';
 
 /// PostView
-/// ----------------
 /// This widget displays the community posts feed.
 /// Uses a single PostControllerX for all posts & comments
 class PostView extends StatelessWidget {
@@ -17,14 +16,20 @@ class PostView extends StatelessWidget {
   final ScrollPhysics SrollType;
   final PostControllerX controller = Get.find<PostControllerX>();
 
-  PostView({super.key, this.showSaved = false, this.showUserPosts = false, this.isShrinkWrap = true, this.SrollType = const NeverScrollableScrollPhysics() });
+  PostView({
+    super.key,
+    this.showSaved = false,
+    this.showUserPosts = false,
+    this.isShrinkWrap = true,
+    this.SrollType = const NeverScrollableScrollPhysics(),
+  });
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       //Decide Which lisrt to display
-      final postList ;
-          if (showUserPosts) {
+      final postList;
+      if (showUserPosts) {
         postList = controller.userPosts;
       } else if (showSaved) {
         postList = controller.savedPosts;
@@ -32,32 +37,32 @@ class PostView extends StatelessWidget {
         postList = controller.posts;
       }
 
-    // Handle empty state
-    if (postList.isEmpty) {
-      String imagePath;
-      if (showUserPosts) {
-        imagePath = 'assets/images/NoMyPosts.png';
-      } else if (showSaved) {
-        imagePath = 'assets/images/NoSavedPosts.png';
-      } else {
-        imagePath = 'assets/images/NoPosts.png';
-      }
+      // Handle empty state
+      if (postList.isEmpty) {
+        String imagePath;
+        if (showUserPosts) {
+          imagePath = 'assets/images/NoMyPosts.png';
+        } else if (showSaved) {
+          imagePath = 'assets/images/NoSavedPosts.png';
+        } else {
+          imagePath = 'assets/images/NoPosts.png';
+        }
 
         return Center(
-    child: Padding(
-      padding: EdgeInsets.only(
-        // to make centerd
-        top: imagePath.contains('assets/images/NoPosts.png') ? 130 : 0,
-      ),
-      child: Image.asset(
-        imagePath,
-        width: 295,
-        height: 295,
-        fit: BoxFit.contain,
-      ),
-    ),
-  );
-    }
+          child: Padding(
+            padding: EdgeInsets.only(
+              // to make centerd
+              top: imagePath.contains('assets/images/NoPosts.png') ? 130 : 0,
+            ),
+            child: Image.asset(
+              imagePath,
+              width: 295,
+              height: 295,
+              fit: BoxFit.contain,
+            ),
+          ),
+        );
+      }
       return ListView.separated(
         itemCount: postList.length,
         shrinkWrap: isShrinkWrap,
@@ -171,13 +176,9 @@ class PostView extends StatelessWidget {
   Widget _postActionButtons(Post post) {
     return Row(
       children: [
-        IconButton(
-          icon: const Icon(Icons.favorite_border, size: BSizes.iconMd),
-          onPressed: () {},
-          color: BColors.darkGrey,
-          tooltip: 'Like',
-        ),
-
+        SizedBox(width: BSizes.md),
+        _LikeButton(post: post, controller: controller),
+        SizedBox(width: BSizes.xs),
         Obx(() {
           final isSaved = controller.isPostSaved(post.id);
           final isShowingCheck = controller.isShowingCheck(post.id);
@@ -185,7 +186,7 @@ class PostView extends StatelessWidget {
           return GestureDetector(
             onTap: () async {
               if (isSaved) {
-               // FOR FUTURE SPRINTS IN HERE ADD THE UNSAVE ACTION
+                await controller.unsavePost(post.id);
               } else {
                 await controller.savePost(post);
                 controller.showBookmarkCheck(
@@ -201,18 +202,21 @@ class PostView extends StatelessWidget {
                   ? Icon(
                       Icons.check_rounded,
                       key: ValueKey('check_${post.id}'),
-                      color: const Color.fromARGB(255, 241, 205, 99) ,
-                      size: BSizes.iconMd ,
+                      color: const Color.fromARGB(255, 241, 205, 99),
+                      size: BSizes.iconMd,
                     )
                   : Icon(
                       isSaved ? Icons.bookmark : Icons.bookmark_border,
                       key: ValueKey('bookmark_${post.id}'),
-                      color: isSaved ? const Color.fromARGB(255, 241, 205, 99) : BColors.darkGrey,
+                      color: isSaved
+                          ? const Color.fromARGB(255, 241, 205, 99)
+                          : BColors.darkGrey,
                       size: BSizes.iconMd,
                     ),
             ),
           );
         }),
+        SizedBox(width: BSizes.sm),
         IconButton(
           icon: const Icon(Icons.comment_outlined, size: BSizes.iconMd - 1.5),
           onPressed: () {},
@@ -221,5 +225,80 @@ class PostView extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+class _LikeButton extends StatefulWidget {
+  final Post post;
+  final PostControllerX controller;
+  const _LikeButton({required this.post, required this.controller});
+  @override
+  State<_LikeButton> createState() => _LikeButtonState();
+}
+
+class _LikeButtonState extends State<_LikeButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animController;
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _animController.reset();
+    _animController.forward().then((_) => _animController.reverse());
+    widget.controller.toggleLike(widget.post.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final isLiked = widget.controller.isPostLiked(widget.post.id);
+      final likeCount = widget.controller.getLikeCount(widget.post.id);
+      return GestureDetector(
+        onTap: _handleTap,
+        child: AnimatedBuilder(
+          animation: _animController,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: 1.0 + (_animController.value * 0.15),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isLiked ? Icons.favorite : Icons.favorite_border,
+                    size: BSizes.iconMd,
+                    color: isLiked ? Colors.red : BColors.darkGrey,
+                  ),
+                  SizedBox(
+                    width: 24,
+                    child: likeCount > 0
+                        ? Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: Text(
+                              '$likeCount',
+                              style: BTextTheme.lightTextTheme.labelMedium
+                                  ?.copyWith(color: BColors.darkGrey),
+                            ),
+                          )
+                        : null,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    });
   }
 }

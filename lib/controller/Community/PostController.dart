@@ -27,6 +27,8 @@ class PostControllerX extends GetxController {
   late String communityCollection;
   var savedPostIds = <String>[].obs;
   var showingCheckIds = <String>[].obs;
+  var likedPostIds = <String>[].obs;
+  var likeCounts = <String, int>{}.obs;
 
   var isInit = false;
   var isInitialized = false.obs;
@@ -36,6 +38,9 @@ class PostControllerX extends GetxController {
   StreamSubscription<QuerySnapshot>? _postsSubscription;
   StreamSubscription<QuerySnapshot>? _savedPostsSubscription;
   StreamSubscription<QuerySnapshot>? _userPostsSubscription;
+  // Each like is stored once at /{postId}/likes/{userId}
+  final Map<String, StreamSubscription<QuerySnapshot>> _likesSubscriptions = {};
+  final Set<String> _likeOpsInFlight = {};
 
   @override
   void onInit() {
@@ -48,6 +53,14 @@ class PostControllerX extends GetxController {
   void onClose() {
     _postsSubscription?.cancel();
     _savedPostsSubscription?.cancel();
+    _userPostsSubscription?.cancel();
+    _clearLikesSubscriptions();
+    likedPostIds.clear();
+    likeCounts.clear();
+    savedPostIds.clear();
+    savedPosts.clear();
+    userPosts.clear();
+    posts.clear();
     contentController.dispose();
     communityCollection = '';
     super.onClose();
@@ -87,6 +100,7 @@ class PostControllerX extends GetxController {
         .listen((snapshot) {
           print('Real-time listener received ${snapshot.docs.length} posts');
           posts.value = snapshot.docs.map(Post.fromFirestore).toList();
+          _setupLikesSubscriptions(snapshot.docs);
         }, onError: (e) => print('Error fetching posts: $e'));
 
     listenToSavedPosts();
@@ -136,6 +150,7 @@ class PostControllerX extends GetxController {
 
       // Refresh saved posts listener to ensure it's listening to current user
       refreshSavedPostsListener();
+      _setupLikesSubscriptions(snapshot.docs);
     } catch (e) {
       ToastService.error("Failed to fetch posts. Try again!");
       debugPrint('fetchPosts error: $e');
@@ -153,30 +168,31 @@ class PostControllerX extends GetxController {
   void refreshUserPostsListener() {
     listenToUserPosts();
   }
-void updateFormValidity() {
-  var text = contentController.text;
-  currentLength.value = text.length;
 
-  // Regex: checks if the string contains only special characters or spaces
-  final onlySpecialChars = RegExp(r'^[^a-zA-Z0-9]+$');
+  void updateFormValidity() {
+    var text = contentController.text;
+    currentLength.value = text.length;
 
-  if (text.isEmpty) {
-    contentError.value = "Post cannot be empty";
-    isFormValid.value = false;
-  } else if (onlySpecialChars.hasMatch(text)) {
-    contentError.value = "Post cannot contain only special characters";
-    isFormValid.value = false;
-  } else {
-    contentError.value = null;
-    isFormValid.value = true;
+    // Regex: checks if the string contains only special characters or spaces
+    final onlySpecialChars = RegExp(r'^[^a-zA-Z0-9]+$');
+
+    if (text.isEmpty) {
+      contentError.value = "Post cannot be empty";
+      isFormValid.value = false;
+    } else if (onlySpecialChars.hasMatch(text)) {
+      contentError.value = "Post cannot contain only special characters";
+      isFormValid.value = false;
+    } else {
+      contentError.value = null;
+      isFormValid.value = true;
+    }
   }
-}
 
   Future<void> addPost() async {
     if (!isFormValid.value) return;
 
     var text = contentController.text.trim();
-     //Remove leading/trailing spaces and collapse multiple spaces between words
+    //Remove leading/trailing spaces and collapse multiple spaces between words
     text = text.trim().replaceAll(RegExp(r'\s+'), ' ');
 
     if (text.isEmpty) {
@@ -218,12 +234,11 @@ void updateFormValidity() {
       contentController.clear();
 
       // Manually refresh posts to ensure UI updates immediately
-     // print('Manually refreshing posts...');
-     // await fetchPosts();
+      // print('Manually refreshing posts...');
+      // await fetchPosts();
       print('Post added successfully with ID: ${docRef.id}');
       contentController.clear();
       // No need to fetchPosts(), the listener will update automatically
-
     } catch (e) {
       ToastService.error("Could not add post. Try again!");
     } finally {
@@ -359,10 +374,9 @@ void updateFormValidity() {
     }
   }
 
-
-
-//-----------------FUTURE SPRINTS---------///
-  /*Future<void> unsavePost(String postId) async {
+  //-----------------FUTURE SPRINTS---------///
+  // Restored unsave functionality - removes saved post from user's savedPosts collection and updates reactive lists
+  Future<void> unsavePost(String postId) async {
     if (currentUid == null) {
       ToastService.error("You must be logged in to unsave posts");
       return;
@@ -382,9 +396,8 @@ void updateFormValidity() {
     } catch (e) {
       debugPrint('unsavePost error: $e');
     }
-  }*/
+  }
   //-----------------END-------///
-
 
   void showBookmarkCheck(String postId) {
     showingCheckIds.add(postId);
@@ -392,4 +405,90 @@ void updateFormValidity() {
       showingCheckIds.remove(postId);
     });
   }
+
+  bool isPostLiked(String postId) => likedPostIds.contains(postId);
+  int getLikeCount(String postId) => likeCounts[postId] ?? 0;
+
+  Future<void> toggleLike(String postId) async {
+    if (currentUid == null) {
+      ToastService.error("You must be logged in to like posts");
+      return;
+    }
+    try {
+      if (_likeOpsInFlight.contains(postId)) return;
+      _likeOpsInFlight.add(postId);
+
+      final isLiked = isPostLiked(postId);
+      final likesDocRef = db
+          .collection(communityCollection)
+          .doc(postId)
+          .collection('likes')
+          .doc(currentUid);
+
+      if (isLiked) {
+        await likesDocRef.delete();
+        likedPostIds.remove(postId);
+      } else {
+        await likesDocRef.set({'createdAt': FieldValue.serverTimestamp()});
+        likedPostIds.add(postId); //
+      }
+    } catch (e) {
+      debugPrint('toggleLike error: $e');
+    } finally {
+      _likeOpsInFlight.remove(postId);
+    }
   }
+
+  void _setupLikesSubscriptions(List<QueryDocumentSnapshot> postDocs) {
+    final currentIds = postDocs.map((d) => d.id).toSet();
+
+    final toRemove = _likesSubscriptions.keys
+        .where((id) => !currentIds.contains(id))
+        .toList(growable: false);
+    for (final id in toRemove) {
+      _likesSubscriptions[id]?.cancel();
+      _likesSubscriptions.remove(id);
+      likeCounts.remove(id);
+      likedPostIds.remove(id);
+    }
+
+    for (final doc in postDocs) {
+      final postId = doc.id;
+      if (_likesSubscriptions.containsKey(postId)) continue;
+
+      final sub = db
+          .collection(communityCollection)
+          .doc(postId)
+          .collection('likes')
+          .snapshots()
+          .listen(
+            (likeSnap) {
+              likeCounts[postId] = likeSnap.size;
+              final uid = currentUid;
+              if (uid != null) {
+                final hasLiked = likeSnap.docs.any((d) => d.id == uid);
+                if (hasLiked) {
+                  if (!likedPostIds.contains(postId)) likedPostIds.add(postId);
+                } else {
+                  likedPostIds.remove(postId);
+                }
+              } else {
+                likedPostIds.remove(postId);
+              }
+            },
+            onError: (e) {
+              debugPrint('likes listener error for post $postId: $e');
+            },
+          );
+
+      _likesSubscriptions[postId] = sub;
+    }
+  }
+
+  void _clearLikesSubscriptions() {
+    for (final sub in _likesSubscriptions.values) {
+      sub.cancel();
+    }
+    _likesSubscriptions.clear();
+  }
+}

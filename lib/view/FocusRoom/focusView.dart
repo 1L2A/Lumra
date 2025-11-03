@@ -86,36 +86,46 @@ class _FocusViewState extends State<FocusView>
             children: [
               if (!started)
                 Positioned(
-                  top: 500,
+                  top: 200,
                   left: BSizes.defaultSpace,
                   right: BSizes.defaultSpace,
                   child: SafeArea(
-                    child: Center(
-                      child: GestureDetector(
-                        onTap: _startFlow,
-                        child: Container(
-                          alignment: Alignment.center,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: BSizes.sm + 2,
-                            vertical: BSizes.md,
-                          ),
-                          decoration: BoxDecoration(
-                            color: BColors.primary,
-                            borderRadius: BorderRadius.circular(
-                              BSizes.borderRadiusLg,
-                            ),
-                          ),
-                          child: const Text(
-                            'start a focus session',
-                            style: TextStyle(
-                              fontFamily: 'K2D',
-                              fontSize: BSizes.fontSizeMd,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                    child: Column(
+                      children: [
+                        Image.asset(
+                          'assets/images/Focus.png',
+                          height: 280,
+                          width: 280,
+                          fit: BoxFit.contain,
+                        ),
+                        Center(
+                          child: GestureDetector(
+                            onTap: _startFlow,
+                            child: Container(
+                              alignment: Alignment.center,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: BSizes.sm + 2,
+                                vertical: BSizes.md,
+                              ),
+                              decoration: BoxDecoration(
+                                color: BColors.primary,
+                                borderRadius: BorderRadius.circular(
+                                  BSizes.borderRadiusLg,
+                                ),
+                              ),
+                              child: const Text(
+                                'start a focus session',
+                                style: TextStyle(
+                                  fontFamily: 'K2D',
+                                  fontSize: BSizes.fontSizeMd,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),

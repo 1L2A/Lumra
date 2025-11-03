@@ -8,7 +8,6 @@ import 'taskItem.dart';
 import 'addTaskSheet.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/utils/customWidgets/toastservice.dart';
-import 'package:get/get.dart';
 
 class TasksList extends StatefulWidget {
   final TaskController controller;
@@ -47,8 +46,6 @@ class TasksList extends StatefulWidget {
 }
 
 class _TasksListState extends State<TasksList> {
-  final Set<String> _deletedTaskIds = <String>{};
-  final Map<String, Timer> _deletionTimers = <String, Timer>{};
   // Reorder control and task sources
   bool _isReordering = false;
   List<Task> _liveTasks = <Task>[]; // latest from stream (when not reordering)
@@ -64,113 +61,84 @@ class _TasksListState extends State<TasksList> {
     return true;
   }
 
-  void _deleteTaskWithUndo(Task task) {
-    setState(() {
-      _deletedTaskIds.add(task.id);
-    });
 
-    Get.showSnackbar(
-      GetSnackBar(
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.white,
-        borderRadius: 24,
-        margin: const EdgeInsets.all(12),
-        duration: const Duration(seconds: 4),
-        snackStyle: SnackStyle.FLOATING,
-        isDismissible: true,
-        dismissDirection: DismissDirection.vertical,
-        boxShadows: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 4,
-            spreadRadius: 1,
-            offset: const Offset(0, 2),
+  Future<void> _deleteTaskWithConfirmation(Task task) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-        ],
-        messageText: Padding(
-          padding: const EdgeInsets.only(left: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Task deleted',
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 40,
+            vertical: 24,
+          ),
+          title: const Text(
+            "Delete",
+            style: TextStyle(
+              fontFamily: 'K2D',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: const Text(
+            "Are you sure you want to delete this task?",
+            style: TextStyle(
+              fontFamily: 'K2D',
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(fontFamily: 'K2D', color: Colors.black87),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: BColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                minimumSize: const Size(90, 40),
+              ),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text(
+                "Confirm",
                 style: TextStyle(
-                  fontSize: 20,
+                  fontFamily: 'K2D',
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
                 ),
               ),
-              TextButton(
-                onPressed: () => _undoTaskDeletion(task.id),
-                child: const Text(
-                  'Undo',
-                  style: TextStyle(
-                    color: BColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
+          ],
+        );
+      },
     );
 
-    // Schedule permanent deletion after timeout with proper timer management
-    _deletionTimers[task.id] = Timer(const Duration(seconds: 10), () {
-      if (mounted && _deletedTaskIds.contains(task.id)) {
-        _performPermanentDeletion(task.id);
+    if (confirmed == true && mounted) {
+      try {
+        await widget.controller.deleteTask(task.id);
+      } catch (e) {
+        if (mounted) {
+          ToastService.error('Failed to delete task');
+        }
       }
-    });
-  }
-
-  void _undoTaskDeletion(String taskId) {
-    if (mounted) {
-      // Cancel the deletion timer if it exists
-      _deletionTimers[taskId]?.cancel();
-      _deletionTimers.remove(taskId);
-
-      setState(() {
-        _deletedTaskIds.remove(taskId);
-      });
-      Get.closeCurrentSnackbar();
     }
-  }
-
-  void _performPermanentDeletion(String taskId) {
-    if (!mounted || !_deletedTaskIds.contains(taskId)) {
-      return; // Task was undone or widget disposed
-    }
-
-    // Clean up timer
-    _deletionTimers.remove(taskId);
-
-    widget.controller
-        .deleteTask(taskId)
-        .then((_) {
-          if (mounted) {
-            setState(() {
-              _deletedTaskIds.remove(taskId);
-            });
-          }
-        })
-        .catchError((error) {
-          if (mounted) {
-            setState(() {
-              _deletedTaskIds.remove(taskId);
-            });
-            ToastService.error('Failed to delete task');
-          }
-        });
   }
 
   @override
   void dispose() {
-    // Cancel all pending deletion timers
-    for (final timer in _deletionTimers.values) {
-      timer.cancel();
-    }
-    _deletionTimers.clear();
     super.dispose();
   }
 
@@ -219,10 +187,7 @@ class _TasksListState extends State<TasksList> {
           return Center(child: Text('Stream error: ${snapshot.error}'));
         }
 
-        // Filter out locally deleted (pending undo) tasks
-        final incoming = (snapshot.data ?? const <Task>[])
-            .where((task) => !_deletedTaskIds.contains(task.id))
-            .toList();
+        final incoming = (snapshot.data ?? const <Task>[]).toList();
 
         // While reordering, freeze the UI order by ignoring incoming updates
         if (_isReordering) {
@@ -306,7 +271,7 @@ class _TasksListState extends State<TasksList> {
                 tasks: _currentTasks,
                 isReordering: _isReordering,
                 controller: widget.controller,
-                onDelete: _deleteTaskWithUndo,
+                onDelete: _deleteTaskWithConfirmation,
                 onEdit: _openEditTaskModal,
                 onReorder: _handleReorder,
               ),
