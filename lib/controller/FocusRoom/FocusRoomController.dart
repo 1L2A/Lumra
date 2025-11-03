@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lumra_project/model/FocusRoom/FocusRoomModel.dart';
 import 'package:lumra_project/utils/customWidgets/toastservice.dart';
 
+// 5 MIN TEST CASE ADDED BY JANA
 class FocusController extends GetxController {
   /// Reactive state
   final RxnInt selectedDurationMin = RxnInt(); // 15, 25, 45, 60...
@@ -18,7 +19,36 @@ class FocusController extends GetxController {
   static const int kBreakLenMin = 5; // each break = 5 minutes
   static const int kMinGapMin = 15; // min spacing between breaks
 
-  /// Call this when duration changes
+  static bool _isBreakCountValid(int durationMin, int b) {
+    // Special-case: allow 30 minutes with 1 break as per product requirement.
+    if (durationMin == 30 && b == 1) return true;
+    if (durationMin == 5 && (b == 0 || b == 1)) return true; //////////TEST CASE
+
+    final gaps = b + 1;
+    final gapMinutes = (durationMin - kBreakLenMin * b) / gaps;
+    return gapMinutes >= kMinGapMin;
+  }
+
+  static List<int> computeValidBreakCounts(int durationMin) {
+    final maxB = max(0, durationMin ~/ (kBreakLenMin + kMinGapMin));
+    final hardMax = durationMin ~/ kBreakLenMin;
+    final limit = min(maxB + 8, hardMax);
+
+    final out = <int>[];
+    for (int b = 0; b <= limit; b++) {
+      if (_isBreakCountValid(durationMin, b)) out.add(b);
+    }
+
+    // Ensure UI shows 1 break for 30 minutes (even if average-gap math would exclude it)
+    if (durationMin == 30 && !out.contains(1)) out.add(1);
+    if (durationMin == 5) {
+      if (!out.contains(0)) out.add(0);
+      if (!out.contains(1)) out.add(1);
+    } /////TEST CASE
+    out.sort();
+    return out;
+  }
+
   void setDuration(int? minutes) {
     if (minutes == null) {
       selectedDurationMin.value = null;
@@ -26,17 +56,32 @@ class FocusController extends GetxController {
       selectedBreaks.value = null;
       return;
     }
+
     final clamped = minutes.clamp(1, kMaxDurationMin);
     selectedDurationMin.value = clamped;
-    _recomputeValidBreaks();
-    // If previously selected breaks is no longer valid, clear it.
-    if (selectedBreaks.value != null &&
-        !validBreakOptions.contains(selectedBreaks.value)) {
-      selectedBreaks.value = null;
+
+    // Recompute options for this duration
+    validBreakOptions.assignAll(computeValidBreakCounts(clamped));
+
+    // Default selection per product rules:
+    // 15 min  -> 0 breaks
+    // 30 min  -> 1 break
+    // else    -> keep previous if still valid; otherwise clear
+    if (clamped == 15) {
+      selectedBreaks.value = 0;
+    } else if (clamped == 30) {
+      selectedBreaks.value = validBreakOptions.contains(1) ? 1 : null;
+    } else if (clamped == 5) {
+      /////////TEST CASE
+      selectedBreaks.value = validBreakOptions.contains(1) ? 1 : 0;
+    } else {
+      if (selectedBreaks.value != null &&
+          !validBreakOptions.contains(selectedBreaks.value)) {
+        selectedBreaks.value = null;
+      }
     }
   }
 
-  /// Call this when number of breaks changes
   void setBreaks(int? b) {
     if (b == null) {
       selectedBreaks.value = null;
@@ -45,37 +90,6 @@ class FocusController extends GetxController {
     if (validBreakOptions.contains(b)) {
       selectedBreaks.value = b;
     }
-  }
-
-  ///  rule:
-  /// For session duration D with b breaks of 5 minutes, average gap must be ≥ 15:
-  ///   (D - 5b) / (b + 1) >= 15
-  static bool _isBreakCountValid(int durationMin, int b) {
-    final gaps = b + 1;
-    final gapMinutes = (durationMin - kBreakLenMin * b) / gaps;
-    return gapMinutes >= kMinGapMin;
-  }
-
-  /// Compute allowed break counts for a duration
-  static List<int> computeValidBreakCounts(int durationMin) {
-    final maxB = max(0, durationMin ~/ (kBreakLenMin + kMinGapMin));
-    // Iterate safely up to durationMin/5 just in case
-    final hardMax = durationMin ~/ kBreakLenMin;
-    final limit = min(maxB + 8, hardMax); // a small buffer
-    final out = <int>[];
-    for (int b = 0; b <= limit; b++) {
-      if (_isBreakCountValid(durationMin, b)) out.add(b);
-    }
-    return out;
-  }
-
-  void _recomputeValidBreaks() {
-    final d = selectedDurationMin.value;
-    if (d == null) {
-      validBreakOptions.clear();
-      return;
-    }
-    validBreakOptions.assignAll(computeValidBreakCounts(d));
   }
 
   /// Build a simple alternating plan: Focus / Break / Focus / ...
@@ -88,7 +102,21 @@ class FocusController extends GetxController {
       _isBreakCountValid(durationMin, breaksCount),
       'Invalid config: spacing rule not satisfied',
     );
-
+    // TEST ONLY EXCEPTION:
+    // For 5 minutes with 1 break : Focus 1, Break 3, Focus 1
+    if (durationMin == 5 && breaksCount == 1) {
+      return FocusSessionPlan(
+        config: FocusSessionConfig(
+          durationMin: durationMin,
+          breaksCount: breaksCount,
+        ),
+        segments: const [
+          FocusSegment(phase: 'focus', minutes: 1),
+          FocusSegment(phase: 'break', minutes: 3),
+          FocusSegment(phase: 'focus', minutes: 1),
+        ],
+      );
+    }
     final focusBlocks = breaksCount + 1;
     final totalBreakTime = breaksCount * kBreakLenMin;
     final totalFocusTime = durationMin - totalBreakTime;
