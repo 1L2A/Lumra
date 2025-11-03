@@ -37,10 +37,10 @@ class _FocusViewState extends State<FocusView>
       ),
       builder: (context) {
         return DraggableScrollableSheet(
-          // 60% tall initially, can grow to 90%
-          initialChildSize: 0.60,
-          minChildSize: 0.40,
-          maxChildSize: 0.90,
+          // 70% tall initially, can grow to ..
+          initialChildSize: 0.75,
+          minChildSize: 0.75,
+          maxChildSize: 0.75,
           expand: false,
           builder: (context, scrollController) {
             return DurationAndBreakSheet(scrollController: scrollController);
@@ -63,54 +63,69 @@ class _FocusViewState extends State<FocusView>
 
   void _endSession() {
     c.endSession();
-    setState(() {
-      started = false;
-      focusMinutes = null;
-      breaks = null;
-      plan = null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          started = false;
+          focusMinutes = null;
+          breaks = null;
+          plan = null;
+        });
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: BColors.lightGrey,
       body: LayoutBuilder(
         builder: (context, constraints) {
           return Stack(
             children: [
               if (!started)
                 Positioned(
-                  top: 500,
+                  top: 200,
                   left: BSizes.defaultSpace,
                   right: BSizes.defaultSpace,
                   child: SafeArea(
-                    child: Center(
-                      child: GestureDetector(
-                        onTap: _startFlow,
-                        child: Container(
-                          alignment: Alignment.center,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: BSizes.sm + 2,
-                            vertical: BSizes.md,
-                          ),
-                          decoration: BoxDecoration(
-                            color: BColors.primary,
-                            borderRadius: BorderRadius.circular(
-                              BSizes.borderRadiusLg,
-                            ),
-                          ),
-                          child: const Text(
-                            'start a focus session',
-                            style: TextStyle(
-                              fontFamily: 'K2D',
-                              fontSize: BSizes.fontSizeMd,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                    child: Column(
+                      children: [
+                        Image.asset(
+                          'assets/images/Focus.png',
+                          height: 280,
+                          width: 280,
+                          fit: BoxFit.contain,
+                        ),
+                        Center(
+                          child: GestureDetector(
+                            onTap: _startFlow,
+                            child: Container(
+                              alignment: Alignment.center,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: BSizes.sm + 2,
+                                vertical: BSizes.md,
+                              ),
+                              decoration: BoxDecoration(
+                                color: BColors.primary,
+                                borderRadius: BorderRadius.circular(
+                                  BSizes.borderRadiusLg,
+                                ),
+                              ),
+                              child: const Text(
+                                'start a focus session',
+                                style: TextStyle(
+                                  fontFamily: 'K2D',
+                                  fontSize: BSizes.fontSizeMd,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
@@ -135,7 +150,7 @@ class _FocusViewState extends State<FocusView>
                           const SizedBox(height: 8),
                           Text(
                             'Total duration: ${plan!.config.durationMin} min'
-                            ' • Breaks: ${plan!.config.breaksCount} × 5 min',
+                            ' • Breaks: ${plan!.config.breaksCount}',
                             style: const TextStyle(
                               fontFamily: 'K2D',
                               fontSize: BSizes.fontSizeSm,
@@ -168,14 +183,14 @@ class _FocusViewState extends State<FocusView>
                                   decoration: BoxDecoration(
                                     color: isFocus
                                         ? BColors.primary.withOpacity(0.07)
-                                        : Colors.grey.shade100,
+                                        : BColors.lightGrey,
                                     borderRadius: BorderRadius.circular(
                                       BSizes.borderRadiusMd,
                                     ),
                                     border: Border.all(
                                       color: isFocus
                                           ? BColors.primary.withOpacity(0.25)
-                                          : Colors.grey.shade300,
+                                          : BColors.lightGrey,
                                     ),
                                   ),
                                   child: Row(
@@ -213,21 +228,12 @@ class _FocusViewState extends State<FocusView>
                 Positioned(
                   left: 0,
                   right: 0,
-                  bottom: 90,
+                  bottom: 120,
                   child: SafeArea(
                     top: false,
                     child: Container(
                       padding: EdgeInsets.fromLTRB(BSizes.lg, 8, BSizes.lg, 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
-                            blurRadius: 10,
-                            offset: const Offset(0, -4),
-                          ),
-                        ],
-                      ),
+                      decoration: const BoxDecoration(color: BColors.lightGrey),
                       child: Row(
                         children: [
                           Expanded(
@@ -238,9 +244,13 @@ class _FocusViewState extends State<FocusView>
                                   vertical: 14,
                                 ),
                                 side: BorderSide(color: Colors.red.shade400),
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                elevation: 0,
                               ),
+
                               child: Text(
-                                'End Session',
+                                'End Plan',
                                 style: TextStyle(
                                   fontFamily: 'K2D',
                                   fontSize: BSizes.fontSizeSm,
@@ -260,7 +270,11 @@ class _FocusViewState extends State<FocusView>
                                 if (plan == null) return;
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) => FocusTimerView(plan: plan!),
+                                    builder: (_) => FocusTimerView(
+                                      plan: plan!,
+                                      onEnd:
+                                          _endSession, // REEM ADD pass reset function
+                                    ),
                                   ),
                                 );
                               },
@@ -286,6 +300,7 @@ class _FocusViewState extends State<FocusView>
                               ),
                             ),
                           ),
+                          const SizedBox(height: 20),
                         ],
                       ),
                     ),

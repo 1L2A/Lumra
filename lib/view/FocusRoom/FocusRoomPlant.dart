@@ -43,7 +43,7 @@ class PlantGrower extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           // ground / pot shadow
-          Positioned(
+          /*Positioned(
             bottom: 46,
             child: Container(
               width: 180,
@@ -53,15 +53,15 @@ class PlantGrower extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
-          ),
+          ),*/
 
-          Positioned(
+         /* Positioned(
             bottom: 40,
             child: Container(
               width: 160,
               height: 56,
               decoration: BoxDecoration(
-                color: const Color(0xFF8D6E63), // clay brown (change ?)
+                color: const Color.fromARGB(255, 65, 71, 47), // clay brown (change ?)
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
@@ -72,10 +72,10 @@ class PlantGrower extends StatelessWidget {
                 ],
               ),
             ),
-          ),
+          ),*/
 
           // plant
-          AnimatedOpacity(
+         /* AnimatedOpacity(
             duration: const Duration(milliseconds: 250),
             opacity: opacity,
             child: Transform.translate(
@@ -86,14 +86,14 @@ class PlantGrower extends StatelessWidget {
                   icon,
                   size: 120,
                   color: _lerpColor(
-                    const Color(0xFF66BB6A),
-                    const Color(0xFF2E7D32),
+                    const Color.fromARGB(255, 98, 163, 102),
+                    const Color.fromARGB(255, 39, 99, 42),
                     p,
                   ),
                 ),
               ),
             ),
-          ),
+          ),*/
 
           if (p > 0.7)
             ...List.generate(6, (i) {
@@ -110,36 +110,41 @@ class PlantGrower extends StatelessWidget {
                   child: Icon(
                     Icons.eco_rounded,
                     size: 14 + (p - 0.7) * 10,
-                    color: const Color(0xFF66BB6A).withOpacity(0.6),
+                    color: const Color.fromARGB(255, 78, 127, 81).withOpacity(0.6),
                   ),
                 ),
               );
             }),
 
           // progress ring
-          Positioned(
-            top: 0,
-            child: SizedBox(
-              width: 56,
-              height: 56,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    value: p,
-                    strokeWidth: 5,
-                    backgroundColor: Colors.black12,
-                    color: BColors.primary,
-                  ),
-                  const Icon(
-                    Icons.local_florist,
-                    size: 20,
-                    color: Colors.black54,
-                  ),
-                ],
-              ),
-            ),
+         // progress ring (bigger, stays in place)
+Positioned(
+  top: 95,
+  child: Transform.scale(
+    scale: 5.5, // 2x bigger, adjust as needed
+    child: SizedBox(
+      width: 120,  
+      height: 120,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CircularProgressIndicator(
+            value: p,
+            strokeWidth: 5, // original stroke
+            backgroundColor: Colors.black12,
+            color: BColors.primary,
           ),
+          const Icon(
+            Icons.spa,
+            size: 20, // scale automatically
+            color: BColors.primary,
+          ),
+        ],
+      ),
+    ),
+  ),
+),
+
         ],
       ),
     );

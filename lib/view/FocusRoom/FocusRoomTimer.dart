@@ -7,10 +7,15 @@ import 'package:lumra_project/model/FocusRoom/FocusRoomModel.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
 import 'package:lumra_project/view/FocusRoom/FocusRoomPlant.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FocusTimerView extends StatefulWidget {
-  const FocusTimerView({super.key, required this.plan});
+  const FocusTimerView({super.key, required this.plan, this.onEnd});
   final FocusSessionPlan plan;
+  final void Function()? onEnd;
+
+  ///REEM ADD
 
   @override
   State<FocusTimerView> createState() => _FocusTimerViewState();
@@ -63,7 +68,7 @@ class _FocusTimerViewState extends State<FocusTimerView> {
     setState(() {}); // update labels
   }
 
-  void _onTick(Timer _) {
+  Future<void> _onTick(Timer _) async {
     final now = DateTime.now();
     if (now.isBefore(_segmentEndsAt)) {
       // just repaint remaining time
@@ -77,33 +82,45 @@ class _FocusTimerViewState extends State<FocusTimerView> {
       // All done
       _ticker?.cancel();
       if (!mounted) return;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AlertDialog(
-          title: const Text('Great job!'),
-          content: Text(
-            'You completed ${widget.plan.config.durationMin} minutes '
-            'with ${widget.plan.config.breaksCount} break(s).',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _endSession(reset: true);
-              },
-              child: const Text('Done'),
+      await _saveOnce(completed: true);
+      Future.microtask(() async {
+        if (!mounted) return;
+
+        // Wait a frame to ensure dialog is safe to show
+        await Future.delayed(const Duration(milliseconds: 50));
+
+        if (!mounted) return;
+
+        // Use dialogContext instead of widget context
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Great job!'),
+            content: Text(
+              'You completed ${widget.plan.config.durationMin} minutes '
+              'with ${widget.plan.config.breaksCount} break(s).',
             ),
-          ],
-        ),
-      );
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  if (mounted) _endSession(reset: true);
+                },
+                child: const Text('Done'),
+              ),
+            ],
+          ),
+        );
+      });
     }
   }
 
   void _endSession({bool reset = false}) {
     _ticker?.cancel();
-    c.endSession(showToast: !reset);
-    Navigator.of(context).pop(); // pop timer screen
+    //c.endSession(showToast: !reset);
+    widget.onEnd?.call(); // telling parent to reset its state
+    Navigator.of(context).pop();
   }
 
   Duration _remaining() {
@@ -130,10 +147,10 @@ class _FocusTimerViewState extends State<FocusTimerView> {
         : 'Stretch • Breathe • Water';
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: BColors.lightGrey,
       appBar: AppBar(
         title: const Text('Focus Session', style: TextStyle(fontFamily: 'K2D')),
-        backgroundColor: Colors.white,
+        backgroundColor: BColors.lightGrey,
         elevation: 0,
         foregroundColor: Colors.black87,
         actions: [
@@ -150,7 +167,6 @@ class _FocusTimerViewState extends State<FocusTimerView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 12),
               // Phase badge
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -160,19 +176,19 @@ class _FocusTimerViewState extends State<FocusTimerView> {
                 decoration: BoxDecoration(
                   color: _isFocus
                       ? BColors.primary.withOpacity(.08)
-                      : Colors.grey.shade100,
+                      : BColors.lightGrey,
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
                     color: _isFocus
                         ? BColors.primary.withOpacity(.25)
-                        : Colors.grey.shade300,
+                        : BColors.lightGrey,
                   ),
                 ),
                 child: Text(
                   title,
                   style: TextStyle(
                     fontFamily: 'K2D',
-                    fontSize: 14,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: _isFocus ? BColors.primary : Colors.black54,
                   ),
@@ -189,30 +205,28 @@ class _FocusTimerViewState extends State<FocusTimerView> {
                   color: Colors.black54,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: BSizes.defaultSpace),
 
-              // Plant growth
+              //circular Progress Bar only
               PlantGrower(progress: _overallProgress, isFocus: _isFocus),
 
-              const SizedBox(height: 8),
-
-              const Spacer(),
-
-              // Big time
+              const SizedBox(height: BSizes.defaultSpace + 42),
+              //Small time now
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
                   _mmss(rem),
                   style: const TextStyle(
                     fontFamily: 'K2D',
-                    fontSize: 96,
+                    fontSize: 24,
                     fontWeight: FontWeight.w600,
-                    letterSpacing: 1.5,
+                    letterSpacing: 6,
+                    color: BColors.darkGrey,
                   ),
                 ),
               ),
 
-              const Spacer(),
+              const SizedBox(height: BSizes.defaultSpace),
 
               // Progress dots for segments
               Wrap(
@@ -222,8 +236,8 @@ class _FocusTimerViewState extends State<FocusTimerView> {
                   final focus = s.phase == 'focus';
                   final active = i == _segIndex;
                   return Container(
-                    width: active ? 16 : 10,
-                    height: 10,
+                    width: active ? 23 : 13,
+                    height: 8,
                     decoration: BoxDecoration(
                       color: active
                           ? (focus ? BColors.primary : Colors.black54)
@@ -234,7 +248,7 @@ class _FocusTimerViewState extends State<FocusTimerView> {
                 }),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: BSizes.defaultSpace + 150),
 
               // End session
               SizedBox(
@@ -242,34 +256,95 @@ class _FocusTimerViewState extends State<FocusTimerView> {
                 child: OutlinedButton(
                   onPressed: () async {
                     final ok = await showDialog<bool>(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: const Text('End session?'),
-                        content: const Text('You can resume later anytime.'),
+                      context: Get.context!,
+                      barrierDismissible: false,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: Colors.white,
+
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        insetPadding: const EdgeInsets.symmetric(
+                          horizontal: 40,
+                          vertical: 24,
+                        ),
+                        title: const Text(
+                          'Quit the session?',
+                          style: TextStyle(
+                            fontFamily: 'K2D',
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        content: const Text(
+                          'You can start another one later, at your convenience!.',
+                          style: TextStyle(
+                            fontFamily: 'K2D',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                          ),
+                        ),
                         actions: [
                           TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Continue'),
+                            onPressed: () => Navigator.of(
+                              ctx,
+                            ).pop(false), // ctx, not context
+                            child: const Text(
+                              'Continue',
+                              style: TextStyle(
+                                fontFamily: 'K2D',
+                                color: Colors.black87,
+                              ),
+                            ),
                           ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text('End'),
+                          //TextButton(
+                          //onPressed: () =>
+                          // Navigator.of(ctx).pop(true), // ctx, not context
+                          // child:
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: BColors.primary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                              minimumSize: const Size(90, 40),
+                            ),
+                            onPressed: () =>
+                                Navigator.of(ctx).pop(true), // ctx, not context
+                            child: const Text(
+                              "Quit",
+                              style: TextStyle(
+                                fontFamily: 'K2D',
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
+                          //  const Text('Quit',style: TextStyle(fontFamily: 'K2D', color: Colors.black87)),
+                          //),
                         ],
                       ),
                     );
-                    if (ok == true) _endSession();
+
+                    if (ok == true) {
+                      await _saveOnce(completed: false);
+                      _endSession();
+                    }
                   },
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: BorderSide(color: Colors.red.shade400),
+                    side: BorderSide(color: BColors.error),
                   ),
                   child: Text(
-                    'End Session',
+                    'Quit',
                     style: TextStyle(
                       fontFamily: 'K2D',
                       fontWeight: FontWeight.w600,
-                      color: Colors.red.shade600,
+                      color: BColors.error,
                     ),
                   ),
                 ),
@@ -278,6 +353,24 @@ class _FocusTimerViewState extends State<FocusTimerView> {
           ),
         ),
       ),
+    );
+  }
+
+  bool _saved = false; // prevents double writes
+
+  Future<void> _saveOnce({required bool completed}) async {
+    if (_saved) return;
+    _saved = true;
+
+    final endedAt = DateTime.now();
+    final stoppedIndex = completed ? null : _segIndex;
+
+    await c.recordSession(
+      plan: widget.plan,
+      startedAt: _planStartedAt,
+      endedAt: endedAt,
+      completed: completed,
+      stoppedAtSegmentIndex: stoppedIndex,
     );
   }
 }

@@ -32,7 +32,7 @@ class _CommunityPageState extends State<CommunityPage> {
         ? Get.find<PostControllerX>()
         : Get.put(PostControllerX(FirebaseFirestore.instance), permanent: true);
     //post fetching here
-    postController.fetchPosts();
+  //  postController.fetchPosts();
     if (!Get.isRegistered<UserController>()) {
       _userController = Get.put(UserController(FirebaseFirestore.instance));
       _userController.init();

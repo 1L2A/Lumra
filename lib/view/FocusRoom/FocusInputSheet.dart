@@ -15,7 +15,7 @@ class DurationAndBreakSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = Get.find<FocusController>();
-    final durations = const [15, 25, 45, 60, 90, 120, 180, 240];
+    final durations = const [5, 15, 30, 45, 60, 90, 120, 180, 240];
 
     return SafeArea(
       top: false,
@@ -71,10 +71,10 @@ class DurationAndBreakSheet extends StatelessWidget {
                 style: BTextTheme.lightTextTheme.headlineSmall,
               ),
               const SizedBox(height: 8),
-              const Text(
-                "Swipe or tap to select. Breaks are spaced ≥ 15 minutes apart.",
-                style: TextStyle(fontSize: 12, color: Colors.black54),
-              ),
+              // const Text(
+              //   "Swipe or tap to select. Breaks are spaced ≥ 15 minutes apart.",
+              //   style: TextStyle(fontSize: 12, color: Colors.black54),
+              // ),
               const SizedBox(height: 12),
 
               if (selectedDuration == null)
@@ -87,16 +87,33 @@ class DurationAndBreakSheet extends StatelessWidget {
                   "No valid breaks for this duration.",
                   style: TextStyle(color: Colors.black54),
                 )
+              else if (selectedDuration == 15)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    "No need for break, you’ve got this!",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black54,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                )
               else
-                // Fix height so ListView can layout everything without overflow
                 SizedBox(
                   height: 220,
+
                   child: BreaksWheel(
                     options: breakOptions.toList(),
                     initialValue:
                         selectedBreaks ??
                         (breakOptions.isNotEmpty ? breakOptions.first : null),
-                    onChanged: (v) => c.setBreaks(v),
+                    onChanged: (v) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        c.setBreaks(v);
+                      });
+                    },
                     height: 220,
                     itemExtent: 48,
                     pillRadius: 28,
@@ -138,7 +155,7 @@ class DurationAndBreakSheet extends StatelessWidget {
                     ),
                   ),
                   child: const Text(
-                    "Start Focusing",
+                    "Start Focus Plan",
                     style: TextStyle(
                       fontFamily: 'K2D',
                       fontSize: BSizes.fontSizeSm,

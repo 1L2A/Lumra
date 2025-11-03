@@ -79,27 +79,27 @@ Future<void> requestNotificationPermission() async {
 
       final Map<int, List<String>> modeMessages = {
         1: [
-          "Sadness doesn’t last forever, Better moments can come soon",
-          "Every sad moment passes, and something good can follow",
-          "Rainy moments help flowers grow, and your joy can bloom too", 
+          "Sadness doesn’t last forever, Better moments can come soon.",
+          "Every sad moment passes, and something good can follow.",
+          "Rainy moments help flowers grow, and your joy can bloom too.", 
         ],
         2: [
-          "Feeling anxious is normal, Be kind to yourself",
-          "You are stronger than your worries, Take a slow breath and keep going",
-          "A short break can recharge your mind ",
+          "Feeling anxious is normal, Be kind to yourself.",
+          "You are stronger than your worries, Take a slow breath and keep going.",
+          "A short break can recharge your mind. ",
         ],
         3: [
-          "Even normal days hold chances to try something new",
-          "Even a calm day can be a nice pause for your mind",
-          "A simple day can bring a gentle kind of happiness",
+          "Even normal days hold chances to try something new.",
+          "Even a calm day can be a nice pause for your mind.",
+          "A simple day can bring a gentle kind of happiness.",
         ],
         4: [
-          "Let this good mood light up your day and others around you",
-          "Your smile today can make everything feel brighter",
-          "Keep your energy up! Today is a great day to do something amazing",
+          "Let this good mood light up your day and others around you.",
+          "Your smile today can make everything feel brighter.",
+          "Keep your energy up! Today is a great day to do something amazing.",
         ],
         5: [
-          "Enjoy this happy moment! You deserve it",
+          "Enjoy this happy moment! You deserve it.",
           "Smile and share your joy with others!",
           "Stay positive, keep moving, and enjoy every moment!",
         ],
@@ -118,7 +118,7 @@ Future<void> requestNotificationPermission() async {
       } else {
         final now = tz.TZDateTime.now(tz.local);
         scheduledDate =
-            tz.TZDateTime(tz.local, now.year, now.month, now.day, 12 , 20);
+            tz.TZDateTime(tz.local, now.year, now.month, now.day, 11, 30);
         if (scheduledDate.isBefore(now)) {
           scheduledDate = scheduledDate.add(const Duration(days: 1));
         }
@@ -142,7 +142,7 @@ Future<void> requestNotificationPermission() async {
         scheduledDate,
         notificationDetails,
         androidScheduleMode: AndroidScheduleMode.inexact,
-       matchDateTimeComponents: test ? null : DateTimeComponents.time,
+        matchDateTimeComponents: test ? null : DateTimeComponents.time,
         payload: 'Daily Notification',
       );
 
@@ -174,9 +174,5 @@ Future<void> requestNotificationPermission() async {
 
   
 
-  /// Cancel all notifications
-  Future<void> cancelAllNotifications() async {
-    await _notificationsPlugin.cancelAll();
-    print("All notifications canceled.");
-  }
+  
 }

@@ -8,6 +8,7 @@ import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/custom_themes/appbar_theme.dart';
 import 'package:lumra_project/view/Activity/ActivityWidgets/categoryStyle.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
+import 'package:lumra_project/view/Activity/ActivityWidgets/notInterestedConfirmation.dart';
 import 'dart:async'; // Required for StreamSubscription
 
 import "package:lumra_project/view/ChatBootADHD/ChatBotWidget.dart";
@@ -38,7 +39,6 @@ class _ActivityViewState extends State<ActivityView> {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
     return Scaffold(
       backgroundColor: BColors.lightGrey,
       body: Obx(() {
@@ -245,211 +245,253 @@ class _ActivityTileState extends State<_ActivityTile> {
 
     // The variable that reflects the correct real-time status:
     final isDone = item.isInitial ? _isInitialItemChecked : item.isChecked;
-
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 180),
-      opacity: isDone ? 0.65 : 1.0,
-      child: Container(
-        // Each activity card container
-        decoration: BoxDecoration(
-          color: isDone ? BColors.darkGrey.withOpacity(0.01) : BColors.white,
-          borderRadius: BorderRadius.circular(BSizes.cardRadiusLg),
-          border: Border.all(color: BColors.borderSecondary),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x11000000),
-              blurRadius: 8,
-              offset: Offset(0, 3),
+    final isChecked = item.isChecked;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        AnimatedOpacity(
+          duration: const Duration(milliseconds: 180),
+          opacity: isDone ? 0.65 : 1.0,
+          child: Container(
+            // Each activity card container
+            decoration: BoxDecoration(
+              color: isDone
+                  ? BColors.darkGrey.withOpacity(0.01)
+                  : BColors.white,
+              borderRadius: BorderRadius.circular(BSizes.cardRadiusLg),
+              border: Border.all(color: BColors.borderSecondary),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x11000000),
+                  blurRadius: 8,
+                  offset: Offset(0, 3),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            BSizes.md - 2,
-            BSizes.md - 2,
-            BSizes.md - 2,
-            BSizes.sm + 4,
-          ),
-          child: Column(
-            children: [
-              // Top row: icon + texts + checkbox
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Category icon box
-                  Container(
-                    width: BSizes.iconLg + 16,
-                    height: BSizes.iconLg + 16,
-                    decoration: BoxDecoration(
-                      color: style.bgColor,
-                      borderRadius: BorderRadius.circular(
-                        BSizes.borderRadiusLg,
-                      ),
-                    ),
-                    child: Icon(
-                      style.icon,
-                      color: style.iconColor,
-                      size: BSizes.iconMd + 2,
-                    ),
-                  ),
-                  SizedBox(width: BSizes.sm + 4),
-
-                  // Texts
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Category name chip
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: BSizes.sm,
-                            vertical: BSizes.xs - 1,
-                          ),
-                          decoration: BoxDecoration(
-                            color: BColors.secondry.withOpacity(0.4),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            _titleCase(item.category),
-                            style: widget.textTheme.labelMedium?.copyWith(
-                              fontFamily: 'K2D',
-                              fontSize: BSizes.fontSizeSm,
-                              color: BColors.primary,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: BSizes.sm),
-
-                        // Activity Title
-                        Text(
-                          item.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: widget.textTheme.titleMedium?.copyWith(
-                            fontFamily: 'K2D',
-                            fontSize: BSizes.fontSizeMd,
-                            color: isDone
-                                ? BColors.darkGrey
-                                : BColors.textprimary, // Update color
-                            decoration: isDone
-                                ? TextDecoration.lineThrough
-                                : null, // Add strikethrough
-                            decorationColor: BColors.textprimary,
-                            decorationThickness: 2,
-                          ),
-                        ),
-                        SizedBox(height: BSizes.xs + 2),
-
-                        // Activity Description
-                        Text(
-                          item.description,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: widget.textTheme.bodyMedium?.copyWith(
-                            fontFamily: 'K2D',
-                            fontSize: BSizes.fontSizeSm,
-                            color: BColors.darkGrey,
-                          ),
-                        ),
-                        // Required Time
-                        if (item.time.trim().isNotEmpty)
-                          Row(
-                            children: [
-                              Text(
-                                "Required time: ",
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 2,
-                                style: widget.textTheme.bodyMedium?.copyWith(
-                                  fontFamily: 'K2D',
-                                  fontSize: BSizes.fontSizeSm,
-                                  color: BColors.darkGrey,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                "${item.time} minutes",
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 2,
-                                style: widget.textTheme.bodyMedium?.copyWith(
-                                  fontFamily: 'K2D',
-                                  fontSize: BSizes.fontSizeSm,
-                                  color: BColors.darkGrey,
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ),
-
-                  //Checkbox
-                  Padding(
-                    padding: EdgeInsets.only(left: BSizes.xs + 2, top: 2),
-                    child: Checkbox.adaptive(
-                      value: isDone, // Use the reactive value
-                      onChanged: (_) => widget.onToggle(),
-                      activeColor: BColors.primary, // checkmark color
-                      checkColor: BColors.textwhite, // inside check color
-                      side: BorderSide(
-                        color: isDone
-                            ? BColors.darkGrey
-                            : BColors.borderPrimary, // Update border color
-                      ),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
-                ],
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                BSizes.md - 2,
+                BSizes.md - 2,
+                BSizes.md - 2,
+                BSizes.sm + 4,
               ),
-
-              SizedBox(height: BSizes.sm + 4),
-
-              // Bottom row: timer (right-aligned)
-              if (item.time.trim().isNotEmpty)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        widget.activityController.onActivityTimeTap(
-                          widget.item,
-                          context,
-                        );
-                      },
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: BSizes.sm + 2,
-                          vertical: BSizes.xs + 2,
-                        ),
+              child: Column(
+                children: [
+                  // Top row: icon + texts + checkbox
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Category icon box
+                      Container(
+                        width: BSizes.iconLg + 16,
+                        height: BSizes.iconLg + 16,
                         decoration: BoxDecoration(
-                          color: BColors.primary,
+                          color: style.bgColor,
                           borderRadius: BorderRadius.circular(
                             BSizes.borderRadiusLg,
                           ),
                         ),
-
-                        // const Icon( BColors.primary
-                        //   Icons.timer_outlined,
-                        //   size: BSizes.iconSm + 2,
-                        //   color: BColors.primary,
-                        // ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Start',
-                          style: const TextStyle(
-                            fontFamily: 'K2D',
-                            fontSize: BSizes.fontSizeSm,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        child: Icon(
+                          style.icon,
+                          color: style.iconColor,
+                          size: BSizes.iconMd + 2,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-            ],
+                      SizedBox(width: BSizes.sm + 4),
+
+                      // Texts
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Category name chip
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: BSizes.sm,
+                                vertical: BSizes.xs - 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: BColors.secondry.withOpacity(0.4),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                _titleCase(item.category),
+                                style: widget.textTheme.labelMedium?.copyWith(
+                                  fontFamily: 'K2D',
+                                  fontSize: BSizes.fontSizeSm,
+                                  color: BColors.primary,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: BSizes.sm),
+
+                            // Activity Title
+                            Text(
+                              item.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: widget.textTheme.titleMedium?.copyWith(
+                                fontFamily: 'K2D',
+                                fontSize: BSizes.fontSizeMd,
+                                color: isDone
+                                    ? BColors.darkGrey
+                                    : BColors.textprimary, // Update color
+                                decoration: isDone
+                                    ? TextDecoration.lineThrough
+                                    : null, // Add strikethrough
+                                decorationColor: BColors.textprimary,
+                                decorationThickness: 2,
+                              ),
+                            ),
+                            SizedBox(height: BSizes.xs + 2),
+
+                            // Activity Description
+                            Text(
+                              item.description,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: widget.textTheme.bodyMedium?.copyWith(
+                                fontFamily: 'K2D',
+                                fontSize: BSizes.fontSizeSm,
+                                color: BColors.darkGrey,
+                              ),
+                            ),
+                            // Required Time
+                            if (item.time.trim().isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 15),
+
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      "Required time: ",
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 2,
+                                      style: widget.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            fontFamily: 'K2D',
+                                            fontSize: BSizes.fontSizeSm,
+                                            color: BColors.darkGrey,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    Text(
+                                      "${item.time} minutes",
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 2,
+                                      style: widget.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            fontFamily: 'K2D',
+                                            fontSize: BSizes.fontSizeSm,
+                                            color: BColors.darkGrey,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+
+                      //Checkbox
+                      Padding(
+                        padding: EdgeInsets.only(left: BSizes.xs + 2, top: 2),
+                        child: Checkbox.adaptive(
+                          value: isDone, // Use the reactive value
+                          onChanged: (_) => widget.onToggle(),
+                          activeColor: BColors.primary, // checkmark color
+                          checkColor: BColors.textwhite, // inside check color
+                          side: BorderSide(
+                            color: isDone
+                                ? BColors.darkGrey
+                                : BColors.borderPrimary, // Update border color
+                          ),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: BSizes.sm + 4),
+
+                  // Bottom row: timer (right-aligned)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (item.time.trim().isNotEmpty)
+                        GestureDetector(
+                          onTap: () {
+                            widget.activityController.onActivityTimeTap(
+                              widget.item,
+                              context,
+                            );
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: BSizes.sm + 2,
+                              vertical: BSizes.xs + 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: BColors.primary,
+                              borderRadius: BorderRadius.circular(
+                                BSizes.borderRadiusLg,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: const Text(
+                              'Start',
+                              style: TextStyle(
+                                fontFamily: 'K2D',
+                                fontSize: BSizes.fontSizeSm,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
+        if (!isChecked)
+          Positioned(
+            top: -8, // moves it a bit above the box
+            right: -8, // moves it a bit outside to the right
+            child: GestureDetector(
+              onTap: () async {
+                final ok = await NotInterestedDialog.show(context);
+                if (ok == true) {
+                  await widget.activityController.setNotInterested(widget.item);
+                }
+              },
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                  border: Border.all(color: Colors.grey.shade300, width: 1),
+                ),
+                child: const Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: Colors.black54,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

@@ -1,14 +1,21 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lumra_project/model/community/communityModel.dart';
 import 'package:lumra_project/utils/customWidgets/toastservice.dart';
+import 'package:lumra_project/utils/customWidgets/custom_dialog.dart';
+import 'package:profanity_filter/profanity_filter.dart';
 
 class PostControllerX extends GetxController {
   final FirebaseFirestore db;
   final contentController = TextEditingController();
+  final _profanityFilter = ProfanityFilter();
+  final List<String> _bannedWords = [];
+  var _bannedWordsLoaded = false.obs;
 
   PostControllerX(this.db);
 
@@ -27,6 +34,8 @@ class PostControllerX extends GetxController {
   late String communityCollection;
   var savedPostIds = <String>[].obs;
   var showingCheckIds = <String>[].obs;
+  var likedPostIds = <String>[].obs;
+  var likeCounts = <String, int>{}.obs;
 
   var isInit = false;
   var isInitialized = false.obs;
@@ -36,6 +45,9 @@ class PostControllerX extends GetxController {
   StreamSubscription<QuerySnapshot>? _postsSubscription;
   StreamSubscription<QuerySnapshot>? _savedPostsSubscription;
   StreamSubscription<QuerySnapshot>? _userPostsSubscription;
+  // Each like is stored once at /{postId}/likes/{userId}
+  final Map<String, StreamSubscription<QuerySnapshot>> _likesSubscriptions = {};
+  final Set<String> _likeOpsInFlight = {};
 
   @override
   void onInit() {
@@ -48,6 +60,14 @@ class PostControllerX extends GetxController {
   void onClose() {
     _postsSubscription?.cancel();
     _savedPostsSubscription?.cancel();
+    _userPostsSubscription?.cancel();
+    _clearLikesSubscriptions();
+    likedPostIds.clear();
+    likeCounts.clear();
+    savedPostIds.clear();
+    savedPosts.clear();
+    userPosts.clear();
+    posts.clear();
     contentController.dispose();
     communityCollection = '';
     super.onClose();
@@ -55,6 +75,8 @@ class PostControllerX extends GetxController {
 
   /// Initializes community collection and sets up real-time listeners
   Future<void> _init() async {
+    await _loadBannedWords();
+
     final userDoc = await FirebaseFirestore.instance
         .collection('users')
         .doc(currentUid)
@@ -77,6 +99,9 @@ class PostControllerX extends GetxController {
 
     // Real-time updates
     print('Setting up real-time listener for collection: $communityCollection');
+    //
+    _postsSubscription?.cancel();
+    //
     _postsSubscription = db
         .collection(communityCollection)
         .orderBy('createdAt', descending: true)
@@ -84,11 +109,58 @@ class PostControllerX extends GetxController {
         .listen((snapshot) {
           print('Real-time listener received ${snapshot.docs.length} posts');
           posts.value = snapshot.docs.map(Post.fromFirestore).toList();
+          _setupLikesSubscriptions(snapshot.docs);
         }, onError: (e) => print('Error fetching posts: $e'));
 
     listenToSavedPosts();
     listenToUserPosts();
     isInitialized.value = true;
+  }
+
+  Future<void> _loadBannedWords() async {
+    try {
+      final String jsonString = await rootBundle.loadString(
+        'assets/banned_words.json',
+      );
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+      _bannedWords.clear();
+      _bannedWords.addAll(List<String>.from(jsonData['bannedWords']));
+      _bannedWordsLoaded.value = true;
+    } catch (e) {
+      debugPrint('Error loading banned words: $e');
+      _bannedWordsLoaded.value = false;
+    }
+  }
+
+  bool _containsBannedWords(String text) {
+    if (!_bannedWordsLoaded.value || _bannedWords.isEmpty) {
+      return false;
+    }
+
+    String normalizedText = text.toLowerCase();
+    normalizedText = normalizedText.replaceAll(RegExp(r'\s+'), ' ');
+    normalizedText = normalizedText.replaceAll("'", "'");
+    normalizedText = normalizedText.replaceAll("'", "'");
+    normalizedText = normalizedText.replaceAll("wanna", "want to");
+    normalizedText = normalizedText.replaceAll("gonna", "going to");
+    normalizedText = normalizedText.replaceAll("cant", "can't");
+    normalizedText = normalizedText.replaceAll("cannot", "can't");
+    normalizedText = normalizedText.replaceAll("-", " ");
+
+    for (final bannedWord in _bannedWords) {
+      String normalizedBanned = bannedWord.toLowerCase().trim();
+      if (normalizedBanned.isEmpty) continue;
+      normalizedBanned = normalizedBanned.replaceAll(RegExp(r'\s+'), ' ');
+      normalizedBanned = normalizedBanned.replaceAll("'", "'");
+      normalizedBanned = normalizedBanned.replaceAll("'", "'");
+      normalizedBanned = normalizedBanned.replaceAll("-", " ");
+
+      if (normalizedText.contains(normalizedBanned)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /// Updates community collection based on current user's role
@@ -133,6 +205,7 @@ class PostControllerX extends GetxController {
 
       // Refresh saved posts listener to ensure it's listening to current user
       refreshSavedPostsListener();
+      _setupLikesSubscriptions(snapshot.docs);
     } catch (e) {
       ToastService.error("Failed to fetch posts. Try again!");
       debugPrint('fetchPosts error: $e');
@@ -150,40 +223,57 @@ class PostControllerX extends GetxController {
   void refreshUserPostsListener() {
     listenToUserPosts();
   }
-void updateFormValidity() {
-  var text = contentController.text;
-  currentLength.value = text.length;
 
-  // Regex: checks if the string contains only special characters or spaces
-  final onlySpecialChars = RegExp(r'^[^a-zA-Z0-9]+$');
+  void updateFormValidity() {
+    var text = contentController.text;
+    currentLength.value = text.length;
 
-  if (text.isEmpty) {
-    contentError.value = "Post cannot be empty";
-    isFormValid.value = false;
-  } else if (onlySpecialChars.hasMatch(text)) {
-    contentError.value = "Post cannot contain only special characters";
-    isFormValid.value = false;
-  } else {
-    contentError.value = null;
-    isFormValid.value = true;
+    // Regex: checks if the string contains only special characters or spaces
+    final onlySpecialChars = RegExp(r'^[^a-zA-Z0-9]+$');
+
+    if (text.isEmpty) {
+      contentError.value = "Post cannot be empty";
+      isFormValid.value = false;
+    } else if (onlySpecialChars.hasMatch(text)) {
+      contentError.value = "Post cannot contain only special characters";
+      isFormValid.value = false;
+    } else {
+      contentError.value = null;
+      isFormValid.value = true;
+    }
   }
-}
 
-  Future<void> addPost() async {
-    if (!isFormValid.value) return;
+  Future<bool> addPost(BuildContext context) async {
+    if (!isFormValid.value) return false;
 
     var text = contentController.text.trim();
-     //Remove leading/trailing spaces and collapse multiple spaces between words
+    //Remove leading/trailing spaces and collapse multiple spaces between words
     text = text.trim().replaceAll(RegExp(r'\s+'), ' ');
 
     if (text.isEmpty) {
       ToastService.error("Post cannot be empty");
-      return;
+      return false;
     }
 
     if (currentUid == null) {
       ToastService.error("You must be logged in to create a post");
-      return;
+      return false;
+    }
+
+    if (!_bannedWordsLoaded.value) {
+      await _loadBannedWords();
+    }
+
+    final hasProfanity = _profanityFilter.hasProfanity(text);
+    final hasBannedWords = _containsBannedWords(text);
+
+    if (hasProfanity || hasBannedWords) {
+      await CustomDialog.showError(
+        context,
+        title: 'Restricted Content',
+        message: "Your post contains restricted content and can't be posted.",
+      );
+      return false;
     }
 
     try {
@@ -215,10 +305,15 @@ void updateFormValidity() {
       contentController.clear();
 
       // Manually refresh posts to ensure UI updates immediately
-      print('Manually refreshing posts...');
-      await fetchPosts();
+      // print('Manually refreshing posts...');
+      // await fetchPosts();
+      print('Post added successfully with ID: ${docRef.id}');
+      contentController.clear();
+      // No need to fetchPosts(), the listener will update automatically
+      return true;
     } catch (e) {
       ToastService.error("Could not add post. Try again!");
+      return false;
     } finally {
       isLoading.value = false;
     }
@@ -352,10 +447,9 @@ void updateFormValidity() {
     }
   }
 
-
-
-//-----------------FUTURE SPRINTS---------///
-  /*Future<void> unsavePost(String postId) async {
+  //-----------------FUTURE SPRINTS---------///
+  // Restored unsave functionality - removes saved post from user's savedPosts collection and updates reactive lists
+  Future<void> unsavePost(String postId) async {
     if (currentUid == null) {
       ToastService.error("You must be logged in to unsave posts");
       return;
@@ -375,9 +469,8 @@ void updateFormValidity() {
     } catch (e) {
       debugPrint('unsavePost error: $e');
     }
-  }*/
+  }
   //-----------------END-------///
-
 
   void showBookmarkCheck(String postId) {
     showingCheckIds.add(postId);
@@ -385,4 +478,90 @@ void updateFormValidity() {
       showingCheckIds.remove(postId);
     });
   }
+
+  bool isPostLiked(String postId) => likedPostIds.contains(postId);
+  int getLikeCount(String postId) => likeCounts[postId] ?? 0;
+
+  Future<void> toggleLike(String postId) async {
+    if (currentUid == null) {
+      ToastService.error("You must be logged in to like posts");
+      return;
+    }
+    try {
+      if (_likeOpsInFlight.contains(postId)) return;
+      _likeOpsInFlight.add(postId);
+
+      final isLiked = isPostLiked(postId);
+      final likesDocRef = db
+          .collection(communityCollection)
+          .doc(postId)
+          .collection('likes')
+          .doc(currentUid);
+
+      if (isLiked) {
+        await likesDocRef.delete();
+        likedPostIds.remove(postId);
+      } else {
+        await likesDocRef.set({'createdAt': FieldValue.serverTimestamp()});
+        likedPostIds.add(postId); //
+      }
+    } catch (e) {
+      debugPrint('toggleLike error: $e');
+    } finally {
+      _likeOpsInFlight.remove(postId);
+    }
   }
+
+  void _setupLikesSubscriptions(List<QueryDocumentSnapshot> postDocs) {
+    final currentIds = postDocs.map((d) => d.id).toSet();
+
+    final toRemove = _likesSubscriptions.keys
+        .where((id) => !currentIds.contains(id))
+        .toList(growable: false);
+    for (final id in toRemove) {
+      _likesSubscriptions[id]?.cancel();
+      _likesSubscriptions.remove(id);
+      likeCounts.remove(id);
+      likedPostIds.remove(id);
+    }
+
+    for (final doc in postDocs) {
+      final postId = doc.id;
+      if (_likesSubscriptions.containsKey(postId)) continue;
+
+      final sub = db
+          .collection(communityCollection)
+          .doc(postId)
+          .collection('likes')
+          .snapshots()
+          .listen(
+            (likeSnap) {
+              likeCounts[postId] = likeSnap.size;
+              final uid = currentUid;
+              if (uid != null) {
+                final hasLiked = likeSnap.docs.any((d) => d.id == uid);
+                if (hasLiked) {
+                  if (!likedPostIds.contains(postId)) likedPostIds.add(postId);
+                } else {
+                  likedPostIds.remove(postId);
+                }
+              } else {
+                likedPostIds.remove(postId);
+              }
+            },
+            onError: (e) {
+              debugPrint('likes listener error for post $postId: $e');
+            },
+          );
+
+      _likesSubscriptions[postId] = sub;
+    }
+  }
+
+  void _clearLikesSubscriptions() {
+    for (final sub in _likesSubscriptions.values) {
+      sub.cancel();
+    }
+    _likesSubscriptions.clear();
+  }
+}
