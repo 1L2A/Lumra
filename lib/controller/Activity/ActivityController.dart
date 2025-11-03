@@ -24,7 +24,7 @@ import 'package:lumra_project/view/Activity/ActivityWidgets/Timer.dart';
 // 5. Enforce a hard cap of 10 total displayed items (initial + chatbot).
 //        If chatbot suggests more than 10, keep the existing 10, prune the extras immediately, and show a one-time Toast when the tab opens.
 // ---------------------------------------------------------------------------
-
+//NEW
 class Activitycontroller {
   final FirebaseFirestore db;
   final AuthController authController = Get.find<AuthController>();
