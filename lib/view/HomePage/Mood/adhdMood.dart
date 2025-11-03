@@ -93,6 +93,7 @@ class _MoodRowState extends State<MoodRow> {
       await _moodController.setTodayMood(mood + 1);
     } finally {
       // After Firestore confirms, ensure UI stays stable
+      _isLocallyChosen = false;
       if (mounted) {
         await Future.delayed(const Duration(milliseconds: 1500));
         setState(() {
@@ -144,35 +145,35 @@ class _MoodRowState extends State<MoodRow> {
                     icon: Icons.sentiment_very_dissatisfied,
                     color: const Color(0xFFE57373),
                     isSelected: selectedMood == 0,
-                    onTap: chosen ? null : () => _onMoodSelected(0),
+                    onTap: () => _onMoodSelected(0),
                     size: iconSize,
                   ),
                   _MoodIcon(
                     icon: Icons.sentiment_dissatisfied,
                     color: const Color(0xFFFFB74D),
                     isSelected: selectedMood == 1,
-                    onTap: chosen ? null : () => _onMoodSelected(1),
+                    onTap: () => _onMoodSelected(1),
                     size: iconSize,
                   ),
                   _MoodIcon(
                     icon: Icons.sentiment_neutral,
                     color: const Color(0xFFFFF59D),
                     isSelected: selectedMood == 2,
-                    onTap: chosen ? null : () => _onMoodSelected(2),
+                    onTap: () => _onMoodSelected(2),
                     size: iconSize,
                   ),
                   _MoodIcon(
                     icon: Icons.sentiment_satisfied,
                     color: const Color(0xFF81C784),
                     isSelected: selectedMood == 3,
-                    onTap: chosen ? null : () => _onMoodSelected(3),
+                    onTap: () => _onMoodSelected(3),
                     size: iconSize,
                   ),
                   _MoodIcon(
                     icon: Icons.sentiment_very_satisfied,
                     color: const Color(0xFF4CAF50),
                     isSelected: selectedMood == 4,
-                    onTap: chosen ? null : () => _onMoodSelected(4),
+                    onTap: () => _onMoodSelected(4),
                     size: iconSize,
                   ),
                 ],

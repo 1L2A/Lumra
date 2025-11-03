@@ -13,14 +13,14 @@ class MoodTrackingController extends GetxController {
     return _userDoc.snapshots();
   }
 
-  /// 🔹 Get current user ID
+  /// Get current user ID
   String get _userId {
     final user = _authController.currentUser;
     if (user == null) throw Exception("No user is logged in.");
     return user.uid;
   }
 
-  /// 🔹 Reference to the current user document
+  ///  Reference to the current user document
   DocumentReference<Map<String, dynamic>> get _userDoc =>
       _firestore.collection('users').doc(_userId);
 
@@ -31,7 +31,7 @@ class MoodTrackingController extends GetxController {
   }
 
   // -------------------------------------------------------------
-  // 🌤 INITIALIZATION LOGIC
+  //  INITIALIZATION LOGIC
   // -------------------------------------------------------------
 
   /// Load today's mood.
@@ -58,7 +58,7 @@ class MoodTrackingController extends GetxController {
   }
 
   // -------------------------------------------------------------
-  // 😄 USER INTERACTION
+  //  USER INTERACTION
   // -------------------------------------------------------------
 
   /// When the user chooses a mood emoji manually
@@ -69,12 +69,10 @@ class MoodTrackingController extends GetxController {
       'dailyMood': moodValue,
       'MoodChosenToday': true,
     }, SetOptions(merge: true));
-
-    await _addToWeekly(moodValue);
   }
 
   // -------------------------------------------------------------
-  // 🔁 DAILY RESET LOGIC
+  //  DAILY RESET LOGIC
   // -------------------------------------------------------------
 
   /// Reset at midnight → mood=3, not chosen
@@ -86,7 +84,7 @@ class MoodTrackingController extends GetxController {
   }
 
   // -------------------------------------------------------------
-  // 📅 WEEKLY HANDLING
+  // WEEKLY HANDLING
   // -------------------------------------------------------------
 
   /// Add today’s mood to the weekly list
@@ -137,7 +135,7 @@ class MoodTrackingController extends GetxController {
   }
 
   // -------------------------------------------------------------
-  // 🕒 DAILY CHECK — RUN ON APP OPEN
+  // DAILY CHECK — RUN ON APP OPEN
   // -------------------------------------------------------------
 
   Future<void> checkAndResetIfNeeded() async {
@@ -155,11 +153,11 @@ class MoodTrackingController extends GetxController {
     try {
       lastAddedDate = DateFormat('yyyy-MM-dd HH:mm:ss').parse(lastAddedStr);
     } catch (e) {
-      print('⚠️ Invalid lastAdded format ($lastAddedStr). Using today.');
+      print(' Invalid lastAdded format ($lastAddedStr). Using today.');
       lastAddedDate = now;
     }
 
-    // ✅ Compare by calendar day (ignores hour) but keep time for storage
+    // Compare by calendar day (ignores hour) but keep time for storage
     final DateTime lastAddedDay = DateTime(
       lastAddedDate.year,
       lastAddedDate.month,
@@ -169,22 +167,28 @@ class MoodTrackingController extends GetxController {
 
     final diffDays = todayDay.difference(lastAddedDay).inDays;
     print(
-      '🧭 checkAndResetIfNeeded → lastAdded=$lastAddedStr | now=${_todayString()} | diffDays=$diffDays',
+      ' checkAndResetIfNeeded → lastAdded=$lastAddedStr | now=${_todayString()} | diffDays=$diffDays',
     );
 
     // Same calendar day → no action
     if (diffDays <= 0) return;
 
     if (diffDays == 1) {
-      // 🌞 Just a new day → reset dailyMood but keep lastAdded unchanged
+      // ✅ Before resetting, add yesterday's final mood to weekly list
+      final yesterdayDoc = await _userDoc.get();
+      final yesterdayData = yesterdayDoc.data() ?? {};
+      final yesterdayMood = yesterdayData['dailyMood'] ?? 3;
+      await _addToWeekly(yesterdayMood);
+
+      // ✅ Then reset daily for the new day
       await _userDoc.set({
         'dailyMood': 3,
         'MoodChosenToday': false,
       }, SetOptions(merge: true));
 
-      print("🌞 One new day passed — daily reset only, lastAdded kept same.");
+      print("🕛 New day — yesterday's mood added to weekly and daily reset.");
     } else if (diffDays > 1) {
-      // 🗓️ Missed multiple days → fill missed days with 3
+      //  Missed multiple days → fill missed days with 3
       final missed = (diffDays - 1).clamp(0, 365);
       for (int i = 0; i < missed; i++) {
         days.add(3);
@@ -195,12 +199,12 @@ class MoodTrackingController extends GetxController {
         'MoodChosenToday': false,
         'weeklyMood': {
           'days': days,
-          // ✅ Keep full date + time string
+          //  Keep full date + time string
           'lastAdded': _todayString(now),
         },
       }, SetOptions(merge: true));
 
-      print("📅 Missed $missed day(s) — filled with 3s and updated lastAdded.");
+      print(" Missed $missed day(s) — filled with 3s and updated lastAdded.");
     }
   }
 }
