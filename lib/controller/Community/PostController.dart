@@ -1,6 +1,8 @@
 ﻿import 'dart:async';
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lumra_project/model/community/communityModel.dart';
@@ -12,6 +14,8 @@ class PostControllerX extends GetxController {
   final FirebaseFirestore db;
   final contentController = TextEditingController();
   final _profanityFilter = ProfanityFilter();
+  final List<String> _bannedWords = [];
+  var _bannedWordsLoaded = false.obs;
 
   PostControllerX(this.db);
 
@@ -71,6 +75,8 @@ class PostControllerX extends GetxController {
 
   /// Initializes community collection and sets up real-time listeners
   Future<void> _init() async {
+    await _loadBannedWords();
+
     final userDoc = await FirebaseFirestore.instance
         .collection('users')
         .doc(currentUid)
@@ -109,6 +115,52 @@ class PostControllerX extends GetxController {
     listenToSavedPosts();
     listenToUserPosts();
     isInitialized.value = true;
+  }
+
+  Future<void> _loadBannedWords() async {
+    try {
+      final String jsonString = await rootBundle.loadString(
+        'assets/banned_words.json',
+      );
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+      _bannedWords.clear();
+      _bannedWords.addAll(List<String>.from(jsonData['bannedWords']));
+      _bannedWordsLoaded.value = true;
+    } catch (e) {
+      debugPrint('Error loading banned words: $e');
+      _bannedWordsLoaded.value = false;
+    }
+  }
+
+  bool _containsBannedWords(String text) {
+    if (!_bannedWordsLoaded.value || _bannedWords.isEmpty) {
+      return false;
+    }
+
+    String normalizedText = text.toLowerCase();
+    normalizedText = normalizedText.replaceAll(RegExp(r'\s+'), ' ');
+    normalizedText = normalizedText.replaceAll("'", "'");
+    normalizedText = normalizedText.replaceAll("'", "'");
+    normalizedText = normalizedText.replaceAll("wanna", "want to");
+    normalizedText = normalizedText.replaceAll("gonna", "going to");
+    normalizedText = normalizedText.replaceAll("cant", "can't");
+    normalizedText = normalizedText.replaceAll("cannot", "can't");
+    normalizedText = normalizedText.replaceAll("-", " ");
+
+    for (final bannedWord in _bannedWords) {
+      String normalizedBanned = bannedWord.toLowerCase().trim();
+      if (normalizedBanned.isEmpty) continue;
+      normalizedBanned = normalizedBanned.replaceAll(RegExp(r'\s+'), ' ');
+      normalizedBanned = normalizedBanned.replaceAll("'", "'");
+      normalizedBanned = normalizedBanned.replaceAll("'", "'");
+      normalizedBanned = normalizedBanned.replaceAll("-", " ");
+
+      if (normalizedText.contains(normalizedBanned)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /// Updates community collection based on current user's role
@@ -208,7 +260,14 @@ class PostControllerX extends GetxController {
       return false;
     }
 
-    if (_profanityFilter.hasProfanity(text)) {
+    if (!_bannedWordsLoaded.value) {
+      await _loadBannedWords();
+    }
+
+    final hasProfanity = _profanityFilter.hasProfanity(text);
+    final hasBannedWords = _containsBannedWords(text);
+
+    if (hasProfanity || hasBannedWords) {
       await CustomDialog.showError(
         context,
         title: 'Restricted Content',
