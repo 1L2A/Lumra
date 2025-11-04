@@ -2,8 +2,6 @@ import 'dart:async';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:lumra_project/navigation/nav_config.dart';
-import 'package:lumra_project/navigation/nav_controller.dart';
 import 'package:lumra_project/utils/customWidgets/toastservice.dart';
 import 'package:lumra_project/view/Activity/ActivityWidgets/DrawingAndWritingPrompts.dart';
 import 'package:lumra_project/view/Activity/ActivityWidgets/SportTimer.dart';
@@ -22,7 +20,7 @@ import 'package:lumra_project/view/Activity/ActivityWidgets/Timer.dart';
 // 3. Fallback: INITIAL activities that were completed reappear ONLY when all initials are completed.
 // 4. Realtime: React to changes in BOTH 'activities' and 'activityStatus'.
 // 5. Enforce a hard cap of 10 total displayed items (initial + chatbot).
-//        If chatbot suggests more than 10, keep the existing 10, prune the extras immediately, and show a one-time Toast when the tab opens.
+//        If chatbot suggests more than 10, keep the existing 10, prune the extras immediately, and show message to the user
 // ---------------------------------------------------------------------------
 //NEW
 class Activitycontroller {
@@ -67,19 +65,6 @@ class Activitycontroller {
   StreamSubscription? subStatus;
   StreamSubscription? subUser;
 
-  // Check if Activities tab is currently visible
-  bool _isActivitiesTabOpen() {
-    if (!Get.isRegistered<NavController>()) return false;
-    final nav = Get.find<NavController>();
-    final r = nav.role.value;
-    if (r == null) return false;
-    final items = navConfig[r]!;
-    final cur = nav.currentIndex.value;
-    return cur >= 0 &&
-        cur < items.length &&
-        items[cur].label.toLowerCase() == 'activities';
-  }
-
   // Centralized, safe toast (epoch + debounce)
   void _maybeShowOverflowToast() {
     // Only once per epoch
@@ -93,19 +78,14 @@ class Activitycontroller {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ToastService.error(
-        "Your AI assistant have suggested more activities, but your list has 10 activities. "
+      ToastService.info(
         "Finish some first to add new ones.",
+        "Your AI assistant have suggested more activities, but your list has 10 activities. ",
       );
     });
 
     _lastToastEpochShown = _overflowEpoch; //mark this epoch as shown
     _lastToastAt = now; // update debounce clock
-  }
-
-  // Call from navbar when Activities tab is tapped
-  void onActivitiesTabTapped() {
-    _maybeShowOverflowToast(); // show if there’s a new epoch
   }
 
   void init() {
@@ -277,9 +257,7 @@ class Activitycontroller {
       }
       userItems.removeRange(userItems.length - overflow, userItems.length);
       _overflowEpoch++;
-      if (_isActivitiesTabOpen()) {
-        _maybeShowOverflowToast();
-      }
+      _maybeShowOverflowToast();
     }
 
     // B. Process INITIAL Status docs

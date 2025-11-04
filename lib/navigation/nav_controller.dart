@@ -12,18 +12,6 @@ class NavController extends GetxController {
   }
 
   void setTab(int i) {
-    final r = role.value;
-    if (r != null) {
-      final items = navConfig[r]!;
-      if (i >= 0 && i < items.length) {
-        final label = items[i].label.toLowerCase();
-        if (label == 'activities' && Get.isRegistered<Activitycontroller>()) {
-          Get.find<Activitycontroller>()
-              .onActivitiesTabTapped(); //show if a new overflow happened
-        }
-      }
-    }
-
     currentIndex.value = i;
   }
 }
