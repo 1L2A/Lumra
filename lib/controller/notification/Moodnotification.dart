@@ -48,7 +48,7 @@ Future<void> requestNotificationPermission() async {
   }
 
   /// Schedule daily notification based on user's dailyMode from Firestore
-  Future<void> scheduleDailyNotification({bool test = false , int? dailyMood}) async {
+  Future<void> scheduleDailyNotification({ int? dailyMood}) async {
     if (!_initialized) {
       print("Notifications not initialized yet.");
       return;
@@ -80,12 +80,12 @@ Future<void> requestNotificationPermission() async {
       final Map<int, List<String>> modeMessages = {
         1: [
           "Sadness doesn’t last forever, Better moments can come soon.",
-          "Every sad moment passes, and something good can follow.",
-          "Rainy moments help flowers grow, and your joy can bloom too.", 
+          "Every sad moment passes and something good can follow.",
+          "Don’t be sad, sunshine always comes back", 
         ],
         2: [
           "Feeling anxious is normal, Be kind to yourself.",
-          "You are stronger than your worries, Take a slow breath and keep going.",
+          "Don’t worry, this moment will pass",
           "A short break can recharge your mind. ",
         ],
         3: [
@@ -112,17 +112,13 @@ Future<void> requestNotificationPermission() async {
 
       // Determine the scheduled time
       tz.TZDateTime scheduledDate;
-      if (test) {
-        scheduledDate =
-            tz.TZDateTime.now(tz.local).add(const Duration(seconds: 5));
-      } else {
         final now = tz.TZDateTime.now(tz.local);
         scheduledDate =
-            tz.TZDateTime(tz.local, now.year, now.month, now.day, 10, 40);
+            tz.TZDateTime(tz.local, now.year, now.month, now.day, 10, 30);
         if (scheduledDate.isBefore(now)) {
           scheduledDate = scheduledDate.add(const Duration(days: 1));
         }
-      }
+      
 
       // Notification details
       const androidDetails = AndroidNotificationDetails(
@@ -131,6 +127,7 @@ Future<void> requestNotificationPermission() async {
         channelDescription: 'Daily mood-based notifications',
         importance: Importance.max,
         priority: Priority.high,
+       
       );
       final notificationDetails = NotificationDetails(android: androidDetails);
 
@@ -142,30 +139,17 @@ Future<void> requestNotificationPermission() async {
         scheduledDate,
         notificationDetails,
         androidScheduleMode: AndroidScheduleMode.inexact,
-        matchDateTimeComponents: test ? null : DateTimeComponents.time,
+        matchDateTimeComponents: DateTimeComponents.time,
         payload: 'Daily Notification',
       );
 
       print(
-          "✅ Notification scheduled for ${currentUser.uid}: $selectedMessage at $scheduledDate");
+          " Notification scheduled for ${currentUser.uid}: $selectedMessage at $scheduledDate");
 
-      // if (!test) {   // بينحذف 
-      //   final nextDay = scheduledDate.add(const Duration(minutes: 2));
-      //     await _notificationsPlugin.zonedSchedule(
-      //        1,
-      //        "Daily Mood 💭",
-      //         selectedMessage,
-      //         nextDay,
-      //         notificationDetails,
-      //          androidScheduleMode: AndroidScheduleMode.inexact,
-      //          matchDateTimeComponents: DateTimeComponents.time,
-      //          payload: 'Daily Notification',
-      //            );
-      //           print("🔄 Notification rescheduled for next day at $nextDay");
-      //  }
+     
     
     } catch (e) {
-      print("❌ Error scheduling notification: $e");
+      print(" Error scheduling notification: $e");
     }
   }
 
