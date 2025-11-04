@@ -59,6 +59,9 @@ class Activitycontroller {
   bool _emitting = false; // re-entrancy guard
   bool _emitQueued = false; // run once more if calls arrived while emitting
 
+  Timer? _expiryTicker;
+  static const _expiryTick = Duration(seconds: 30);
+
   StreamController<List<Activitymodel>>? controller;
   StreamSubscription? subActivities;
   StreamSubscription? subStatus;
@@ -165,6 +168,12 @@ class Activitycontroller {
       _scheduleEmit(); // update list now
     });
 
+    // START heartbeat so expiry is handled "live" even without writes
+    _expiryTicker?.cancel();
+    _expiryTicker = Timer.periodic(_expiryTick, (_) {
+      _scheduleEmit(); //re-evaluate expireAt + soft resets
+    });
+
     // first run
     _scheduleEmit();
     controller!.onCancel = () async {
@@ -173,6 +182,8 @@ class Activitycontroller {
       await subUser?.cancel();
       await controller?.close();
       controller = null;
+      _expiryTicker?.cancel();
+      _expiryTicker = null;
     };
 
     return controller!.stream;
