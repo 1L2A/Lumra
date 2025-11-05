@@ -186,9 +186,8 @@ class _RealStickerEnvelopeState extends State<RealStickerEnvelope> {
   Widget _buildReadyEnvelope() {
     return GestureDetector(
       onTap: () {
-        // When tapped, open the text field to write
         setState(() {
-          _isOpen = true; // switch to show inline text field
+          _isOpen = true;
         });
       },
       child: AnimatedSwitcher(
@@ -249,7 +248,7 @@ class _RealStickerEnvelopeState extends State<RealStickerEnvelope> {
                     ),
                   ),
                   const Positioned(
-                    bottom: 8,
+                    top: 8,
                     right: 12,
                     child: Icon(
                       Icons.edit_note_rounded,
@@ -341,7 +340,7 @@ class _RealStickerEnvelopeState extends State<RealStickerEnvelope> {
           const Text(
             "Message Sent",
             style: TextStyle(
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w800,
               color: BColors.textprimary,
               fontFamily: 'K2D',
               fontSize: 14,
@@ -354,7 +353,7 @@ class _RealStickerEnvelopeState extends State<RealStickerEnvelope> {
               message,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: BColors.black,
+                color: BColors.primary,
                 fontStyle: FontStyle.italic,
                 fontSize: 15,
                 fontFamily: 'K2D',

@@ -106,7 +106,8 @@ class EncouragementMessage extends StatelessWidget {
                       msgCtrl.messageText.value,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        color: BColors.black,
+                        color: BColors.primary,
+                        fontWeight: FontWeight.w600,
                         fontFamily: 'K2D',
                         fontSize: 14,
                         fontStyle: FontStyle.italic,
@@ -159,7 +160,7 @@ class EncouragementMessage extends StatelessWidget {
                             child: Text(
                               "Message from your caregiver",
                               style: TextStyle(
-                                color: BColors.textprimary,
+                                color: BColors.black,
                                 fontWeight: FontWeight.w600,
                                 fontFamily: 'K2D',
                                 fontSize: 14,

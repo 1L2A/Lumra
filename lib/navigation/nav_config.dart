@@ -24,12 +24,6 @@ class NavItem {
   });
 }
 
-void _notifyActivitiesTab() {
-  if (Get.isRegistered<Activitycontroller>()) {
-    Get.find<Activitycontroller>().onActivitiesTabTapped();
-  }
-}
-
 final Map<UserRole, List<NavItem>> navConfig = {
   UserRole.adhd: [
     NavItem(label: 'Home', icon: Icons.home_rounded, page: HomePage()),
@@ -37,7 +31,6 @@ final Map<UserRole, List<NavItem>> navConfig = {
       label: 'Activities',
       icon: Icons.local_activity_rounded,
       page: ActivityView(),
-      onTap: _notifyActivitiesTab,
     ),
     NavItem(label: 'Focus', icon: Icons.timer, page: FocuspPage()),
     NavItem(
