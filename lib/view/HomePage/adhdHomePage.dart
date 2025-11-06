@@ -48,11 +48,7 @@ class _HomePageState extends State<HomePage> {
     }
 
         // Initialize daily notifications 
-    // Future.delayed(const Duration(seconds: 0), () async {
-    //   final moodNotification = DailyMoodNotification();
-    //   await moodNotification.init();
-    //   await moodNotification.scheduleDailyNotification(test: false);
-    // });
+   
 
   final moodNotification = DailyMoodNotification();
   moodNotification.init( authContoller.currentUser!.uid);

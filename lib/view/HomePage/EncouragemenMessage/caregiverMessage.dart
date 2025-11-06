@@ -123,7 +123,7 @@ class _RealStickerEnvelopeState extends State<RealStickerEnvelope> {
                     fontSize: 14,
                   ),
                   decoration: const InputDecoration(
-                    hintText: "A word from you can brighten their day ☀️",
+                    hintText: "A daily message, a brighter day",
                     hintStyle: TextStyle(
                       color: BColors.darkGrey,
                       fontFamily: 'K2D',
