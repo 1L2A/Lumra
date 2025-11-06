@@ -50,7 +50,7 @@ export const scheduleEventReminder = onSchedule("every 1 minutes", async (event)
         if (allTokens.length) {
             const message = {
                 notification: {
-                    title: "⏰ Reminder: Upcoming Event",
+                    title: "Reminder",
                     body: `Your event "${data.title}" starts in 24 hours.`,
                 },
                 tokens: allTokens,
