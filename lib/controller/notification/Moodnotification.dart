@@ -124,7 +124,7 @@ class DailyMoodNotification {
         now.month,
         now.day,
         13,
-        5,
+        20,
       );
       if (scheduledDate.isBefore(now)) {
         scheduledDate = scheduledDate.add(const Duration(days: 1));
