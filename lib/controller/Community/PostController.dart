@@ -170,7 +170,10 @@ class PostControllerX extends GetxController {
       normalizedBanned = normalizedBanned.replaceAll("'", "'");
       normalizedBanned = normalizedBanned.replaceAll("-", " ");
 
-      if (normalizedText.contains(normalizedBanned)) {
+      final escapedBanned = RegExp.escape(normalizedBanned);
+      final wordBoundaryPattern = RegExp(r'\b' + escapedBanned + r'\b', caseSensitive: false);
+      
+      if (wordBoundaryPattern.hasMatch(normalizedText)) {
         return true;
       }
     }
