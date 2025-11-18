@@ -44,7 +44,7 @@ class _DashboardPageState extends State<DashboardPage> {
             fontWeight: FontWeight.w600,
             color: isActive ? Colors.white : BColors.textprimary,
           ),
-        ), 
+        ),
       ),
     );
   }
@@ -55,21 +55,24 @@ class _DashboardPageState extends State<DashboardPage> {
     final DateTime now = DateTime.now();
     final String currentMonth = DateFormat('MMMM').format(now);
     final int daysInMonth = DateTime(now.year, now.month + 1, 0).day;
-    final int totalWeeks = ((daysInMonth + DateTime(now.year, now.month, 1).weekday - 1) / 7).ceil();
+    final int totalWeeks =
+        ((daysInMonth + DateTime(now.year, now.month, 1).weekday - 1) / 7)
+            .ceil();
     final int currentWeek = weekOfMonth(now);
     // Dummy weekly data dynamically based on number of weeks
     final Map<String, double> weeklyData = {
-      for (int i = 0; i < totalWeeks; i++) 'Week ${i + 1}': (10 + i * 10).toDouble()
+      for (int i = 0; i < totalWeeks; i++)
+        'Week ${i + 1}': (10 + i * 10).toDouble(),
     };
 
     // Dummy data – some can be 0
     //get actual data later, then still use the method down to remove the ones with no activities
     final Map<String, double> categoryCounts = {
       'mindfulness': 4,
-      'creative': 0,
+      'creative': 2,
       'sport': 5,
       'learning': 3,
-      'relaxation': 0,
+      'relaxation': 1,
       'social': 2,
       'motivation': 3,
     };
@@ -88,26 +91,25 @@ class _DashboardPageState extends State<DashboardPage> {
     final entries = categoryCounts.entries.where((e) => e.value > 0).toList();
 
     // Build bar groups from filtered entries
-    final List<BarChartGroupData> barGroups = List.generate(
-      entries.length,
-      (i) {
-        final key = entries[i].key;
-        final value = entries[i].value;
-        final style = CategoryStyles.byKey(key);
+    final List<BarChartGroupData> barGroups = List.generate(entries.length, (
+      i,
+    ) {
+      final key = entries[i].key;
+      final value = entries[i].value;
+      final style = CategoryStyles.byKey(key);
 
-        return BarChartGroupData(
-          x: i,
-          barRods: [
-            BarChartRodData(
-              toY: value,
-              width: 22,
-              color: style.iconColor.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(0),
-            ),
-          ],
-        );
-      },
-    );
+      return BarChartGroupData(
+        x: i,
+        barRods: [
+          BarChartRodData(
+            toY: value,
+            width: 22,
+            color: style.iconColor.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(0),
+          ),
+        ],
+      );
+    });
 
     return Scaffold(
       backgroundColor: BColors.lightGrey,
@@ -125,7 +127,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ),
 
-              // -------------- WEEKLY  and Daily-------------- 
+              // -------------- WEEKLY  and Daily--------------
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   BSizes.lg,
@@ -163,12 +165,13 @@ class _DashboardPageState extends State<DashboardPage> {
                             children: [
                               // Title + button
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     showDaily
-                                     ? "Daily Progress - Week $currentWeek"
-                                     : "$currentMonth Weekly Progress",
+                                        ? "Daily Progress - Week $currentWeek"
+                                        : "$currentMonth Weekly Progress",
 
                                     style: textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.bold,
@@ -192,7 +195,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               ),
                               const SizedBox(height: 14),
 
-                              //  LINE CHART 
+                              //  LINE CHART
                               Expanded(
                                 child: Padding(
                                   padding: const EdgeInsets.only(right: 6.0),
@@ -203,21 +206,30 @@ class _DashboardPageState extends State<DashboardPage> {
                                       gridData: FlGridData(show: false),
                                       borderData: FlBorderData(show: false),
                                       titlesData: FlTitlesData(
-                                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                        topTitles: AxisTitles(
+                                          sideTitles: SideTitles(
+                                            showTitles: false,
+                                          ),
+                                        ),
+                                        rightTitles: AxisTitles(
+                                          sideTitles: SideTitles(
+                                            showTitles: false,
+                                          ),
+                                        ),
                                         leftTitles: AxisTitles(
                                           sideTitles: SideTitles(
                                             showTitles: true,
                                             reservedSize: 30,
                                             interval: 20,
-                                            getTitlesWidget: (value, meta) => Text(
-                                              value.toInt().toString(),
-                                              style: const TextStyle(
-                                                fontFamily: 'K2D',
-                                                fontSize: 11,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
+                                            getTitlesWidget: (value, meta) =>
+                                                Text(
+                                                  value.toInt().toString(),
+                                                  style: const TextStyle(
+                                                    fontFamily: 'K2D',
+                                                    fontSize: 11,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
                                           ),
                                         ),
                                         bottomTitles: AxisTitles(
@@ -227,21 +239,42 @@ class _DashboardPageState extends State<DashboardPage> {
                                             reservedSize: 26,
                                             getTitlesWidget: (value, meta) {
                                               int i = value.toInt();
-                                              final keys = showDaily ? dailyData.keys.toList() : weeklyData.keys.toList();
-                                              if (i < 0 || i >= keys.length) return const SizedBox.shrink();
-                                              final isCurrentWeek = !showDaily && (i + 1) == currentWeek;  
-                                              final isToday = showDaily && i == (DateTime.now().weekday % 7);  
-
+                                              final keys = showDaily
+                                                  ? dailyData.keys.toList()
+                                                  : weeklyData.keys.toList();
+                                              if (i < 0 || i >= keys.length)
+                                                return const SizedBox.shrink();
+                                              final isCurrentWeek =
+                                                  !showDaily &&
+                                                  (i + 1) == currentWeek;
+                                              final isToday =
+                                                  showDaily &&
+                                                  i ==
+                                                      (DateTime.now().weekday %
+                                                          7);
 
                                               return Padding(
-                                                padding: const EdgeInsets.only(top: 6),
+                                                padding: const EdgeInsets.only(
+                                                  top: 6,
+                                                ),
                                                 child: Text(
                                                   keys[i],
                                                   style: TextStyle(
                                                     fontFamily: 'K2D',
                                                     fontSize: 11,
-                                                    color: isToday || isCurrentWeek ? const Color.fromARGB(255, 25, 27, 26) : Colors.grey,
-                                                    fontWeight: isToday || isCurrentWeek ? FontWeight.bold : FontWeight.normal,
+                                                    color:
+                                                        isToday || isCurrentWeek
+                                                        ? const Color.fromARGB(
+                                                            255,
+                                                            25,
+                                                            27,
+                                                            26,
+                                                          )
+                                                        : Colors.grey,
+                                                    fontWeight:
+                                                        isToday || isCurrentWeek
+                                                        ? FontWeight.bold
+                                                        : FontWeight.normal,
                                                   ),
                                                 ),
                                               );
@@ -249,37 +282,48 @@ class _DashboardPageState extends State<DashboardPage> {
                                           ),
                                         ),
                                       ),
-                                      lineTouchData: LineTouchData(enabled: true),
-                                      
+                                      lineTouchData: LineTouchData(
+                                        enabled: true,
+                                      ),
+
                                       lineBarsData: [
                                         LineChartBarData(
-                                          spots: List.generate(  //we will replace later with actual data
-                                            showDaily ? dailyData.length : weeklyData.length,
+                                          spots: List.generate(
+                                            //we will replace later with actual data
+                                            showDaily
+                                                ? dailyData.length
+                                                : weeklyData.length,
                                             (i) => FlSpot(
                                               i.toDouble(),
                                               showDaily
-                                                  ? dailyData.values.elementAt(i)    //we will replace later with actual data
-                                                  : weeklyData.values.elementAt(i),   //we will replace later with actual data
+                                                  ? dailyData.values.elementAt(
+                                                      i,
+                                                    ) //we will replace later with actual data
+                                                  : weeklyData.values.elementAt(
+                                                      i,
+                                                    ), //we will replace later with actual data
                                             ),
                                           ),
                                           isCurved: true,
                                           barWidth: 3.1,
                                           color: BColors.primary,
-                                          dotData: FlDotData(show: true ,
-                                          ),
+                                          dotData: FlDotData(show: true),
 
-                                          
-                                           belowBarData: BarAreaData(
-                                             show: true,
-                                                gradient: LinearGradient(
-                                                   begin: Alignment.topCenter,
-                                                    end: Alignment.bottomCenter,
-                                                    colors: [
-                                                       BColors.primary.withOpacity(0.4),
-                                                       BColors.primary.withOpacity(0.05),
-                                                       ],
-                                                       ),
-                                                       ),
+                                          belowBarData: BarAreaData(
+                                            show: true,
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: [
+                                                BColors.primary.withOpacity(
+                                                  0.4,
+                                                ),
+                                                BColors.primary.withOpacity(
+                                                  0.05,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -292,195 +336,269 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
 
                       const SizedBox(height: 20),
-                      // ---------------- TASK + FOCUS ROOM----------------
-                      Row(
-                        children: [
-                          // ===== TASK BOX =====
-                          Expanded(
-                            child: Container(
-                              padding: EdgeInsets.all(BSizes.md),
-                              height: 150,
-                              decoration: BoxDecoration(
-                                color: BColors.white,
-                                borderRadius: BorderRadius.circular(
-                                  BSizes.cardRadiusLg,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.07),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
+                      // ---------------- TASK (LEFT) + FOCUS ROOM + MOOD (RIGHT) ----------------
+                      SizedBox(
+                        height: 230, // height of total section
+                        child: Row(
+                          children: [
+                            // ======================================================
+                            // LEFT SIDE — TASK BOX
+                            // ======================================================
+                            Expanded(
+                              child: Container(
+                                padding: EdgeInsets.all(BSizes.md),
+                                decoration: BoxDecoration(
+                                  color: BColors.white,
+                                  borderRadius: BorderRadius.circular(
+                                    BSizes.cardRadiusLg,
                                   ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Task",
-                                    style: textTheme.titleMedium?.copyWith(
-                                      fontFamily: 'K2D',
-                                      fontWeight: FontWeight.w700,
-                                      color: BColors.textprimary,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.07),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Expanded(
-                                    child: Stack(
-                                      alignment: Alignment.center,
+                                  ],
+                                ),
+
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Task",
+                                      style: textTheme.titleMedium?.copyWith(
+                                        fontFamily: 'K2D',
+                                        fontWeight: FontWeight.w700,
+                                        color: BColors.textprimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+
+                                    Expanded(
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          // ---- DONUT CHART ----
+                                          PieChart(
+                                            PieChartData(
+                                              startDegreeOffset: -90,
+                                              centerSpaceRadius: 25,
+                                              sectionsSpace: 2,
+                                              sections: [
+                                                PieChartSectionData(
+                                                  value: 4, // dummy
+                                                  title: '4',
+                                                  color: BColors.primary,
+                                                  radius: 24,
+                                                  titleStyle: const TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                                PieChartSectionData(
+                                                  value: 3, // dummy
+                                                  title: '3',
+                                                  color: BColors.secondry,
+                                                  radius: 20,
+                                                  titleStyle: const TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 10),
+
+                                    Row(
                                       children: [
-                                        PieChart(
-                                          PieChartData(
-                                            startDegreeOffset: -90,
-                                            centerSpaceRadius: 25,
-                                            sectionsSpace: 2,
-                                            sections: [
-                                              PieChartSectionData(
-                                                value:
-                                                    4, 
-                                                     title: '4',//we will replace later with actual data
-                                                color: BColors.primary,
-                                                radius: 24,
-                                                titleStyle: TextStyle(
-                                               fontSize: 14,
-                                               fontWeight: FontWeight.bold,
-                                               color: const Color.fromARGB(255, 255, 255, 255),
-                                               
-                                                ),
-                                              ),
-                                              PieChartSectionData(
-                                                value:
-                                                    3,
-                                                     title: '3', //we will replace later with actual data
-                                                color: BColors.secondry,
-                                                radius: 20,
-                                                 titleStyle: TextStyle(
-                                               fontSize: 14,
-                                               fontWeight: FontWeight.bold,
-                                               color: const Color.fromARGB(255, 255, 255, 255),
-                                               
-                                                ),
-                                              ),
-                                            ],
+                                        Container(
+                                          width: 10,
+                                          height: 10,
+                                          color: BColors.primary,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        const Text(
+                                          "Completed",
+                                          style: TextStyle(
+                                            fontFamily: 'K2D',
+                                            fontSize: 10,
+                                            color: Colors.grey,
                                           ),
                                         ),
-                                        //    Column(
-                                        //   mainAxisSize: MainAxisSize.min,
-                                        //   children: [
-                                        //     Text(
-                                        //       '7', //we will replace later with actual data
-                                        //       style: const TextStyle(
-                                        //         fontFamily: 'K2D',
-                                        //         fontSize: 18,
-                                        //         fontWeight: FontWeight.bold,
-                                        //         color: BColors.textprimary,
-                                        //       ),
-                                        //     ),
-                                        //     Text(
-                                        //       'tasks',
-                                        //       style: TextStyle(
-                                        //         fontFamily: 'K2D',
-                                        //         fontSize: 11,
-                                        //         color: Colors.grey.shade600,
-                                        //       ),
-                                        //     ),
-                                        //   ],
-                                        // ),
                                       ],
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Container(width: 10, height: 10, color: BColors.primary),
-                                          const SizedBox(width: 6),
-                                          const Text(
-                                            "Completed",
-                                            style: TextStyle(
-                                              fontFamily: 'K2D',
-                                              fontSize: 10,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Container(width: 10, height: 10, color: BColors.secondry),
-                                          const SizedBox(width: 6),
-                                          const Text(
-                                            "Incomplete",
-                                            style: TextStyle(
-                                              fontFamily: 'K2D',
-                                              fontSize: 10,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(width: 14),
-
-                          // ===== FOCUS ROOM BOX =====
-                          Expanded(
-                            child: Container(
-                              padding: EdgeInsets.all(BSizes.md),
-                              height: 150,
-                              decoration: BoxDecoration(
-                                color: BColors.white,
-                                borderRadius: BorderRadius.circular(BSizes.cardRadiusLg),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.07),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Focus Room",
-                                    style: textTheme.titleMedium?.copyWith(
-                                      fontFamily: 'K2D',
-                                      fontWeight: FontWeight.w700,
-                                      color: BColors.textprimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Expanded(
-                                    child: Center(
-                                      child: Transform.translate(
-                                        offset: const Offset(0, -10),
-                                        child: Text(
-                                          "35 min",
-                                          style: textTheme.headlineSmall?.copyWith(
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 10,
+                                          height: 10,
+                                          color: BColors.secondry,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        const Text(
+                                          "Incomplete",
+                                          style: TextStyle(
                                             fontFamily: 'K2D',
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                            color: BColors.primary.withOpacity(0.7),
+                                            fontSize: 10,
+                                            color: Colors.grey,
                                           ),
                                         ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(width: 14),
+
+                            // ======================================================
+                            // RIGHT SIDE — FOCUS ROOM + MOOD
+                            // ======================================================
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  // ----------------- FOCUS ROOM (TOP) -----------------
+                                  Expanded(
+                                    child: Container(
+                                      padding: EdgeInsets.all(BSizes.md),
+                                      decoration: BoxDecoration(
+                                        color: BColors.white,
+                                        borderRadius: BorderRadius.circular(
+                                          BSizes.cardRadiusLg,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(
+                                              0.07,
+                                            ),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "Focus Room",
+                                            style: textTheme.titleMedium
+                                                ?.copyWith(
+                                                  fontFamily: 'K2D',
+                                                  fontWeight: FontWeight.w700,
+                                                  color: BColors.textprimary,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Expanded(
+                                            child: Center(
+                                              child: Text(
+                                                "35 min", // dummy
+                                                style: textTheme.headlineSmall
+                                                    ?.copyWith(
+                                                      fontFamily: 'K2D',
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: BColors.primary
+                                                          .withOpacity(0.7),
+                                                    ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 10),
+
+                                  // ----------------- MOOD (BOTTOM) -----------------
+                                  Expanded(
+                                    child: Container(
+                                      padding: EdgeInsets.all(BSizes.md),
+                                      decoration: BoxDecoration(
+                                        color: BColors.white,
+                                        borderRadius: BorderRadius.circular(
+                                          BSizes.cardRadiusLg,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(
+                                              0.07,
+                                            ),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "Mood",
+                                            style: textTheme.titleMedium
+                                                ?.copyWith(
+                                                  fontFamily: 'K2D',
+                                                  fontWeight: FontWeight.w700,
+                                                  color: BColors.textprimary,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 8),
+
+                                          Expanded(
+                                            child: Center(
+                                              child: Container(
+                                                width: 150,
+                                                height: 150,
+                                                decoration: BoxDecoration(
+                                                  color: Color(
+                                                    0xFFFFF59D,
+                                                  ).withOpacity(0.15),
+                                                  shape: BoxShape.circle,
+
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Color(
+                                                        0xFFFFF59D,
+                                                      ).withOpacity(0.4),
+                                                      blurRadius: 12,
+                                                      spreadRadius: 2,
+                                                      offset: const Offset(
+                                                        0,
+                                                        4,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Icon(
+                                                  Icons.sentiment_neutral,
+                                                  color: Color(
+                                                    0xFFFFF59D,
+                                                  ), // mood color
+                                                  size: 50,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
 
                       const SizedBox(height: 22),
@@ -491,7 +609,9 @@ class _DashboardPageState extends State<DashboardPage> {
                         padding: EdgeInsets.all(BSizes.md),
                         decoration: BoxDecoration(
                           color: BColors.white,
-                          borderRadius: BorderRadius.circular(BSizes.cardRadiusLg),
+                          borderRadius: BorderRadius.circular(
+                            BSizes.cardRadiusLg,
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.07),
@@ -534,19 +654,21 @@ class _DashboardPageState extends State<DashboardPage> {
                                     barTouchData: BarTouchData(
                                       enabled: true,
                                       touchTooltipData: BarTouchTooltipData(
-                                        getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                                          final entry = entries[group.x.toInt()];
-                                          final key = entry.key;
-                                          final value = entry.value;
-                                          return BarTooltipItem(
-                                            '$key\n${value.toInt()} activities',
-                                            const TextStyle(
-                                              fontFamily: 'K2D',
-                                              fontSize: 12,
-                                              color: Colors.white,
-                                            ),
-                                          );
-                                        },
+                                        getTooltipItem:
+                                            (group, groupIndex, rod, rodIndex) {
+                                              final entry =
+                                                  entries[group.x.toInt()];
+                                              final key = entry.key;
+                                              final value = entry.value;
+                                              return BarTooltipItem(
+                                                '$key\n${value.toInt()} activities',
+                                                const TextStyle(
+                                                  fontFamily: 'K2D',
+                                                  fontSize: 12,
+                                                  color: Colors.white,
+                                                ),
+                                              );
+                                            },
                                       ),
                                     ),
                                     alignment: BarChartAlignment.spaceAround,
@@ -554,17 +676,23 @@ class _DashboardPageState extends State<DashboardPage> {
                                     gridData: FlGridData(
                                       show: true,
                                       drawVerticalLine: false,
-                                      getDrawingHorizontalLine: (value) => FlLine(
-                                        color: BColors.borderPrimary.withOpacity(0.25),
-                                        strokeWidth: 1.5,
-                                      ),
+                                      getDrawingHorizontalLine: (value) =>
+                                          FlLine(
+                                            color: BColors.borderPrimary
+                                                .withOpacity(0.25),
+                                            strokeWidth: 1.5,
+                                          ),
                                     ),
                                     titlesData: FlTitlesData(
                                       rightTitles: AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
+                                        sideTitles: SideTitles(
+                                          showTitles: false,
+                                        ),
                                       ),
                                       topTitles: AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
+                                        sideTitles: SideTitles(
+                                          showTitles: false,
+                                        ),
                                       ),
                                       leftTitles: AxisTitles(
                                         sideTitles: SideTitles(
@@ -594,14 +722,18 @@ class _DashboardPageState extends State<DashboardPage> {
                                             }
                                             final key = entries[i].key;
                                             return Padding(
-                                              padding: const EdgeInsets.only(top: 3),
+                                              padding: const EdgeInsets.only(
+                                                top: 3,
+                                              ),
                                               child: Transform.rotate(
                                                 angle: -0.2,
                                                 child: Text(
-                                                  key,
+                                                  key.isNotEmpty
+                                                      ? "${key[0].toUpperCase()}${key.substring(1).toLowerCase()}"
+                                                      : key,
                                                   style: const TextStyle(
                                                     fontFamily: 'K2D',
-                                                    fontSize: 11,
+                                                    fontSize: 9,
                                                     color: Colors.grey,
                                                   ),
                                                 ),
