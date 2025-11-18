@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumra_project/controller/Community/PostController.dart';
+import 'package:lumra_project/model/community/comments.dart';
 import 'package:lumra_project/model/community/communityModel.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
 import 'package:lumra_project/theme/custom_themes/text_theme.dart';
+import 'package:lumra_project/view/Community/CommentsPage.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+
 
 /// PostView
 /// This widget displays the community posts feed.
@@ -63,18 +67,88 @@ class PostView extends StatelessWidget {
           ),
         );
       }
+
       return ListView.separated(
         itemCount: postList.length,
         shrinkWrap: isShrinkWrap,
         physics: SrollType,
         separatorBuilder: (_, __) => SizedBox(height: BSizes.SpaceBtwItems),
-        itemBuilder: (context, index) => _postCard(postList[index]),
+       itemBuilder: (context, index) {
+  final post = postList[index];
+
+  if (post.userId == controller.currentUid) {
+    return Slidable(
+      key: Key(post.id),
+      endActionPane: ActionPane(
+        motion: const ScrollMotion(),
+        children: [
+          // Edit button
+          SlidableAction(
+            onPressed: (_) {
+              // handle edit
+              print("Edit tapped for ${post.id}");
+            },
+            backgroundColor: BColors.info.withOpacity(0.2),
+            foregroundColor: BColors.info,
+            icon: Icons.edit,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          // Delete button
+          SlidableAction(
+            onPressed: (_) async {
+              final confirm = await showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
+                  title: const Text('Delete Post?'),
+                  content: const Text('It will be permanently deleted!'),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text('Cancel')),
+                    ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: BColors.error,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                        ),
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        child: const Text("Delete")),
+                  ],
+                ),
+              );
+
+              if (confirm == true) {
+                await controller.deletePost(post.id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Post deleted')),
+                );
+              }
+            },
+            backgroundColor: BColors.error.withOpacity(0.2),
+            foregroundColor: BColors.error,
+            icon: Icons.delete_outline,
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ],
+      ),
+      child: _postCard(context, post),
+    );
+  } else {
+    return _postCard(context, post);
+  }
+}
+
+        //itemBuilder: (context, index) => _postCard(context,postList[index]),
+
       );
     });
   }
 
-  /// Builds a single post card with up to 2 comments
-  Widget _postCard(Post post) {
+  /// Builds a single post card
+  Widget _postCard(BuildContext context, Post post) {
     return Container(
       margin: const EdgeInsets.only(bottom: BSizes.sm),
       padding: const EdgeInsets.all(BSizes.sm),
@@ -96,7 +170,7 @@ class PostView extends StatelessWidget {
           _postHeader(post),
           const SizedBox(height: BSizes.sm),
           _postContent(post),
-          _postActionButtons(post),
+          _postActionButtons(context, post),
         ],
       ),
     );
@@ -173,7 +247,7 @@ class PostView extends StatelessWidget {
     );
   }
 
-  Widget _postActionButtons(Post post) {
+  Widget _postActionButtons(BuildContext context, Post post) {
     return Row(
       children: [
         SizedBox(width: BSizes.md),
@@ -219,7 +293,16 @@ class PostView extends StatelessWidget {
         SizedBox(width: BSizes.sm),
         IconButton(
           icon: const Icon(Icons.comment_outlined, size: BSizes.iconMd - 1.5),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    CommentsPage(postId: post.id, postUserName: post.userName),
+              ),
+            );
+          },
+
           color: BColors.darkGrey,
           tooltip: 'Comment',
         ),

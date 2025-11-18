@@ -56,7 +56,6 @@ dependencies:
   timezone: ^0.10.1
   firebase_messaging: ^16.0.3 
   profanity_filter: ^2.0.0
-  
 
 dev_dependencies:
 
@@ -103,6 +102,7 @@ flutter:
     - assets/images/NoSavedPosts.png
     - assets/images/NoMyPosts.png
     - assets/images/AvatarSimple.png
+    - assets/images/NoComments.png
     - assets/images/Focus.png
     #- assets/PDFs/TestCaseLumra.pdf
     - assets/adhd_cases/AdhdActivites.json

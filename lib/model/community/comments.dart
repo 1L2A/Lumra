@@ -1,24 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Comment {
-  final String text;
+  final String content;
   final String userId;
+  final String userName;
   final Timestamp createdAt;
   final bool isReported;
   String? id; //Firestore doc id
 
   Comment({
-    required this.text,
+    required this.content,
     required this.userId,
+    required this.userName,
     required this.createdAt,
-    required this.isReported,
+    this.isReported = false,
     this.id,
   });
 
   factory Comment.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return Comment(
-      text: data['text'] ?? '',
+      content: data['content'] ?? '',
+      userName: data['userName'] ?? '',
       userId: data['userId'] ?? '',
       createdAt: data['createdAt'] ?? Timestamp.now(),
       id: doc.id,
@@ -27,9 +30,10 @@ class Comment {
   }
 
   Map<String, dynamic> toFirestore() {
-    return {
-      'text': text,
+    return { 
+      'userName': userName,
       'userId': userId,
+      'content': content,
       'createdAt': createdAt,
       'isReported': isReported,
     };

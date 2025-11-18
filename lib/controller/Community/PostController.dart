@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lumra_project/model/community/comments.dart';
 import 'package:lumra_project/model/community/communityModel.dart';
 import 'package:lumra_project/utils/customWidgets/toastservice.dart';
 import 'package:profanity_filter/profanity_filter.dart';
@@ -31,6 +32,7 @@ class PostControllerX extends GetxController {
   var posts = <Post>[].obs;
   var savedPosts = <Post>[].obs;
   var userPosts = <Post>[].obs;
+  var Comments = <Comment>[].obs;
 
   late String communityCollection;
   var savedPostIds = <String>[].obs;
@@ -46,10 +48,13 @@ class PostControllerX extends GetxController {
   StreamSubscription<QuerySnapshot>? _postsSubscription;
   StreamSubscription<QuerySnapshot>? _savedPostsSubscription;
   StreamSubscription<QuerySnapshot>? _userPostsSubscription;
+
+  final Map<String, StreamSubscription<QuerySnapshot>> _commentsSubscriptions ={};
+  final Map<String, RxList<Comment>> _commentsPerPost = {};
+
   // Each like is stored once at /{postId}/likes/{userId}
   final Map<String, StreamSubscription<QuerySnapshot>> _likesSubscriptions = {};
   final Set<String> _likeOpsInFlight = {};
-
   @override
   void onInit() {
     super.onInit();
@@ -75,6 +80,11 @@ class PostControllerX extends GetxController {
     posts.clear();
     contentController.dispose();
     communityCollection = '';
+    // Cancel all comments subscriptions
+    for (final sub in _commentsSubscriptions.values) {
+      sub.cancel();
+    }
+    _commentsSubscriptions.clear();
     super.onClose();
   }
 
@@ -490,7 +500,6 @@ class PostControllerX extends GetxController {
     }
   }
 
-  //-----------------FUTURE SPRINTS---------///
   // Restored unsave functionality - removes saved post from user's savedPosts collection and updates reactive lists
   Future<void> unsavePost(String postId) async {
     if (currentUid == null) {
@@ -513,7 +522,6 @@ class PostControllerX extends GetxController {
       debugPrint('unsavePost error: $e');
     }
   }
-  //-----------------END-------///
 
   void showBookmarkCheck(String postId) {
     showingCheckIds.add(postId);
@@ -600,6 +608,167 @@ class PostControllerX extends GetxController {
       _likesSubscriptions[postId] = sub;
     }
   }
+
+  //🟢 Set up real-time listener for comments of a post
+  void listenToComments(String postId) {
+    // Cancel any existing subscription for this post
+    _commentsSubscriptions[postId]?.cancel();
+
+    print('Setting up comments listener for post: $postId');
+
+    _commentsSubscriptions[postId] = db
+        .collection(communityCollection)
+        .doc(postId)
+        .collection('comments')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .listen(
+          (snapshot) {
+            final commentList = snapshot.docs.map((doc) {
+              final data = doc.data();
+              return Comment(
+                id: doc.id,
+                content: data['content'] ?? '',
+                userId: data['userId'] ?? '',
+                userName: data['userName'] ?? '',
+                createdAt: data['createdAt'] ?? Timestamp.now(),
+                isReported: data['isReported'] ?? false,
+              );
+            }).toList();
+
+            // 🟢 Update reactive list for this post
+            commentsForPost(postId).value = commentList;
+
+            print('Fetched ${commentList.length} comments for post: $postId');
+          },
+          onError: (e) {
+            print('Error listening to comments for post $postId: $e');
+          },
+        );
+  }
+
+  // Returns reactive comments list for a post
+  RxList<Comment> commentsForPost(String postId) {
+    if (!_commentsPerPost.containsKey(postId)) {
+      _commentsPerPost[postId] = <Comment>[].obs;
+    }
+    return _commentsPerPost[postId]!;
+  }
+
+  /// 🟢 Report a comment
+  Future<void> reportComment(String postId, String commentId) async {
+    try {
+      await db
+          .collection(communityCollection)
+          .doc(postId)
+          .collection('comments')
+          .doc(commentId)
+          .update({'isReported': true});
+
+      print('Comment $commentId reported successfully for post $postId');
+    } catch (e) {
+      print('Failed to report comment $commentId: $e');
+    }
+  }
+
+  Future<bool> addComment(BuildContext context, String postId) async {
+    hasInteracted.value = true;
+
+    updateFormValidity(markInteracted: false);
+
+    if (!isFormValid.value) return false;
+
+    var text = contentController.text.trim();
+    text = text.trim().replaceAll(RegExp(r'\s+'), ' ');
+
+    if (text.isEmpty) {
+      ToastService.error("Comment cannot be empty");
+      return false;
+    }
+
+    if (currentUid == null) {
+      ToastService.error("You must be logged in to create a comment");
+      return false;
+    }
+
+    if (!_bannedWordsLoaded.value) {
+      await _loadBannedWords();
+    }
+
+    final hasProfanity = _profanityFilter.hasProfanity(text);
+    final hasBannedWords = _containsBannedWords(text);
+
+    if (hasProfanity || hasBannedWords) {
+      return false;
+    }
+
+    try {
+      isLoading.value = true;
+
+      // Ensure user info is up to date
+      await _updateCommunityCollection();
+
+      final userDoc = await db.collection("users").doc(currentUid).get();
+
+      final firstName = userDoc['firstName'] ?? '';
+      final lastName = userDoc['lastName'] ?? '';
+      final displayName = (firstName + ' ' + lastName).trim();
+
+      final comment = Comment(
+        id: '',
+        content: text,
+        userId: currentUid!,
+        userName: displayName,
+        createdAt: Timestamp.now(),
+      );
+
+      print(
+        'Adding Comment to post subcollection: $communityCollection/$postId/comments',
+      );
+
+      // --- Adding to firebase ----
+      final docRef = await db
+          .collection(communityCollection)
+          .doc(postId) // target the post
+          .collection("comments")
+          .add(comment.toFirestore());
+
+      await docRef.update({'id': docRef.id});
+
+      contentController.clear();
+      print("Comment added with ID: ${docRef.id}");
+
+      return true;
+    } catch (e) {
+      print(e);
+      ToastService.error("Could not add comment. Try again!");
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+
+Future<void> deletePost(String postId) async {
+  if (currentUid == null) return;
+
+  try {
+    // Ensure post belongs to current user
+    final postDoc = await db.collection(communityCollection).doc(postId).get();
+    if (postDoc.exists && postDoc['userId'] == currentUid) {
+      await db.collection(communityCollection).doc(postId).delete();
+
+      // Remove from reactive lists for immediate UI update
+      posts.removeWhere((p) => p.id == postId);
+      userPosts.removeWhere((p) => p.id == postId);
+      savedPosts.removeWhere((p) => p.id == postId);
+      savedPostIds.remove(postId);
+    }
+  } catch (e) {
+    print('Error deleting post $postId: $e');
+  }
+}
+
 
   void _clearLikesSubscriptions() {
     for (final sub in _likesSubscriptions.values) {
