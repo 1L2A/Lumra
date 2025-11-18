@@ -4,6 +4,7 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:lumra_project/controller/Activity/ActivityController.dart';
 import 'package:lumra_project/view/Activity/activityView.dart';
 import 'package:lumra_project/view/Community/CommunityPage.dart';
+import 'package:lumra_project/view/Dashboard/dashboardView.dart';
 import 'package:lumra_project/view/FocusRoom/focusPage.dart';
 import 'package:lumra_project/view/homepage/adhdHomePage.dart';
 import 'package:lumra_project/view/homepage/careGiverHomePage.dart';
@@ -50,9 +51,7 @@ final Map<UserRole, List<NavItem>> navConfig = {
     NavItem(
       label: 'Dashboard',
       icon: Icons.leaderboard_rounded,
-      page: ComingSoonPage(
-        feature: 'Dashboard',
-      ), //  Later: replace with DashboardPage()
+      page: DashboardPage(),
     ),
     NavItem(
       label: 'Community',
