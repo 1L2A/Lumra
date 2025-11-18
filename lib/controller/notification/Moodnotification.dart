@@ -143,7 +143,7 @@ class DailyMoodNotification {
       // Schedule notification
       await _notificationsPlugin.zonedSchedule(
         1,
-        "Daily Supportive ", // change the title
+        "Daily Support ", // change the title
         selectedMessage,
         scheduledDate,
         notificationDetails,

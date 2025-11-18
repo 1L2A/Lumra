@@ -4,12 +4,14 @@ class Comment {
   final String text;
   final String userId;
   final Timestamp createdAt;
+  final bool isReported;
   String? id; //Firestore doc id
 
   Comment({
     required this.text,
     required this.userId,
     required this.createdAt,
+    required this.isReported,
     this.id,
   });
 
@@ -20,6 +22,7 @@ class Comment {
       userId: data['userId'] ?? '',
       createdAt: data['createdAt'] ?? Timestamp.now(),
       id: doc.id,
+      isReported: data['isReported'] ?? false,
     );
   }
 
@@ -28,6 +31,7 @@ class Comment {
       'text': text,
       'userId': userId,
       'createdAt': createdAt,
+      'isReported': isReported,
     };
   }
 }
