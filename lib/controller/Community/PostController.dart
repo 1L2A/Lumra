@@ -612,7 +612,7 @@ class PostControllerX extends GetxController {
     }
   }
 
-  //🟢 Set up real-time listener for comments of a post
+  //Set up real-time listener for comments of a post
   void listenToComments(String postId) {
     // Cancel any existing subscription for this post
     _commentsSubscriptions[postId]?.cancel();
@@ -639,7 +639,7 @@ class PostControllerX extends GetxController {
               );
             }).toList();
 
-            // 🟢 Update reactive list for this post
+            // Update reactive list for this post
             commentsForPost(postId).value = commentList;
 
             print('Fetched ${commentList.length} comments for post: $postId');
@@ -658,7 +658,7 @@ class PostControllerX extends GetxController {
     return _commentsPerPost[postId]!;
   }
 
-  /// 🟢 Report a comment
+  // Report a comment
   Future<void> reportComment(String postId, String commentId) async {
     try {
       await db
@@ -667,10 +667,26 @@ class PostControllerX extends GetxController {
           .collection('comments')
           .doc(commentId)
           .update({'isReported': true});
+         ToastService.success("Your report has been received.");
 
       print('Comment $commentId reported successfully for post $postId');
     } catch (e) {
       print('Failed to report comment $commentId: $e');
+    }
+  }
+  // Report a Post
+  Future<void> reportPost(String postId) async {
+    try {
+      await db
+          .collection(communityCollection)
+          .doc(postId)
+          .update({'isReported': true});
+
+         ToastService.success("Your report has been received.");
+
+      print('Comment $postId reported successfully for post $postId');
+    } catch (e) {
+      print('Failed to report comment $postId: $e');
     }
   }
 
@@ -751,7 +767,6 @@ class PostControllerX extends GetxController {
     }
   }
 
-
 Future<void> deletePost(String postId) async {
   if (currentUid == null) return;
 
@@ -782,16 +797,18 @@ Future<bool> updatePost(String postId, String newContent) async {
         .doc(postId)
         .update({
       'content': newContent,
-      'updatedAt': Timestamp.now(),
+      //'updatedAt': Timestamp.now(),
+      'isEdited': true,
     });
-
     isLoading.value = false;
+    refreshUserPostsListener();
     return true; // success
   } catch (e) {
     isLoading.value = false;
     print("Error updating post: $e");
     return false; // failed
   }
+  
 }
 
 Future<void> deleteComment(String postId, String commentId) async {
