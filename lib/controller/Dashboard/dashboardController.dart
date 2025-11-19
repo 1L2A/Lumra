@@ -23,6 +23,14 @@ class DashboardController extends GetxController {
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _tasksSub;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _moodSub;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _focusSub; // NEW
+  final RxMap<String, double> activityCounts = <String, double>{}.obs;
+  final Map<String, String> _globalActivityMap = {};
+  Map<String, double> _customActivityCounts = {};
+  Map<String, double> _systemActivityCounts = {};
+
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _customActivitySub;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _systemActivitySub;
+
   @override
   void onInit() {
     super.onInit();
@@ -43,6 +51,9 @@ class DashboardController extends GetxController {
       _listenToAdhdTasks();
       _listenToDailyMood();
       _listenToFocusSessions();
+      // 3. Start Activity Listeners
+      _listenToCustomActivities();
+      _listenToSystemActivities();
     } catch (e) {
       totalTasks.value = 0;
       checkedTasks.value = 0;
@@ -136,11 +147,132 @@ class DashboardController extends GetxController {
         );
   }
 
+  
+
+  
+
+  String _getCategoryFromId(String activityId) {
+    final String id = activityId.trim();
+    switch (id) {
+      case '0twbkE4nsbAjGacxFTaI':
+        return 'Mindfulness';
+      case '5bC5hiEUr7T0IKZ1W2RV':
+        return 'Creative';
+      case 'opO3WTWQU1aY1CuH6qit':
+        return 'Sport';
+      case 'Activity4':
+        return 'Sport';
+      case 'Activity5':
+        return 'Learning';
+      case 'Activity6':
+        return 'Creative';
+      case 'Activity7':
+        return 'Sport';
+      case 'Activity8':
+        return 'Sport';
+      case 'Activity9':
+        return 'Creative';
+      case 'Activity10':
+        return 'Mindfulness';
+      case 'Activity11':
+        return 'Learning';
+      case 'Activity12':
+        return 'mindfulness';
+      default:
+        return 'other';
+    }
+  }
+
+  /// Stream 1: User Defined Activities (Directly has category + isChecked)
+  void _listenToCustomActivities() {
+    _customActivitySub?.cancel();
+    _customActivitySub = db
+        .collection('users')
+        .doc(adhdUid)
+        .collection('activities') // chat bot  activities
+        .where('isChecked', isEqualTo: true)
+        .snapshots()
+        .listen((snap) {
+      
+      final Map<String, double> tempCounts = {};
+
+      for (var doc in snap.docs) {
+        final data = doc.data();
+        String category = (data['category'] ?? 'other').toString().toLowerCase();
+        
+        if (tempCounts.containsKey(category)) {
+          tempCounts[category] = tempCounts[category]! + 1;
+        } else {
+          tempCounts[category] = 1;
+        }
+      }
+
+      _customActivityCounts = tempCounts;
+      _mergeAndPublishActivityCounts();
+    });
+  }
+
+
+
+  void _listenToSystemActivities() {
+    _systemActivitySub?.cancel();
+
+    _systemActivitySub = db
+        .collection('users')
+        .doc(adhdUid)
+        .collection('activityStatus') 
+        .where('isChecked', isEqualTo: true)
+        .snapshots()
+        .listen((snap) {
+      
+      final Map<String, double> tempCounts = {};
+
+      for (var doc in snap.docs) {
+       
+        final String activityId = doc.id; 
+        String category = _getCategoryFromId(activityId).toLowerCase();
+        
+        if (tempCounts.containsKey(category)) {
+          tempCounts[category] = tempCounts[category]! + 1;
+        } else {
+          tempCounts[category] = 1;
+        }
+      }
+
+      _systemActivityCounts = tempCounts;
+      _mergeAndPublishActivityCounts();
+    });
+  }
+
+  /// Combines counts from both sources and updates the UI
+  void _mergeAndPublishActivityCounts() {
+    final Map<String, double> merged = {};
+
+    // Add Custom Counts
+    _customActivityCounts.forEach((key, value) {
+      merged[key] = value;
+    });
+
+    // Add System Counts
+    _systemActivityCounts.forEach((key, value) {
+      if (merged.containsKey(key)) {
+        merged[key] = merged[key]! + value;
+      } else {
+        merged[key] = value;
+      }
+    });
+
+    
+    activityCounts.value = merged;
+  }
+
   @override
   void onClose() {
     _tasksSub?.cancel();
     _moodSub?.cancel();
     _focusSub?.cancel();
+    _customActivitySub?.cancel();
+    _systemActivitySub?.cancel();
     super.onClose();
   }
 }
