@@ -6,10 +6,10 @@ import 'package:lumra_project/model/community/communityModel.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
 import 'package:lumra_project/theme/custom_themes/text_theme.dart';
+import 'package:lumra_project/utils/customWidgets/toastservice.dart';
 import 'package:lumra_project/view/Community/CommentsPage.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:lumra_project/view/Community/communityWidgets/addPostView.dart';
-
 
 /// PostView
 /// This widget displays the community posts feed.
@@ -74,118 +74,125 @@ class PostView extends StatelessWidget {
         shrinkWrap: isShrinkWrap,
         physics: SrollType,
         separatorBuilder: (_, __) => SizedBox(height: BSizes.SpaceBtwItems),
-       itemBuilder: (context, index) {
-  final post = postList[index];
+        itemBuilder: (context, index) {
+          final post = postList[index];
 
-  if (post.userId == controller.currentUid) {
-    return Slidable(
-  key: Key(post.id),
-  endActionPane: ActionPane(
-    motion: const ScrollMotion(),
-    children: [
-      // Edit button
-      SlidableAction(
-        onPressed: (_) async {
-          // Prefill controller
-          controller.contentController.text = post.content;
+          if (post.userId == controller.currentUid) {
+            return Slidable(
+              key: Key(post.id),
+              endActionPane: ActionPane(
+                motion: const ScrollMotion(),
+                children: [
+                  // Edit button
+                  SlidableAction(
+                    onPressed: (_) async {
+                      // Prefill controller
+                      controller.contentController.text = post.content;
 
-          // Open bottom sheet for editing
-          final updated = await showModalBottomSheet<bool>(
-            context: context,
-            isScrollControlled: true,
-            useSafeArea: true,
-            backgroundColor: BColors.white,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-            ),
-            builder: (context) => FractionallySizedBox(
-              heightFactor: 0.80,
-              child: AddPostView(
-                promptMessage: "",
-                isEdit: true,
-                postToEdit: post,
-              ),
-            ),
-          );
+                      // Open bottom sheet for editing
+                      final updated = await showModalBottomSheet<bool>(
+                        context: context,
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                        backgroundColor: BColors.white,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(32),
+                          ),
+                        ),
+                        builder: (context) => FractionallySizedBox(
+                          heightFactor: 0.80,
+                          child: AddPostView(
+                            promptMessage: "",
+                            isEdit: true,
+                            postToEdit: post,
+                          ),
+                        ),
+                      );
 
-          controller.contentController.clear();
-          controller.updateFormValidity();
+                      controller.contentController.clear();
+                      controller.updateFormValidity();
 
-          if (updated != null && updated) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Post updated')),
-            );
-          }
-        },
-        backgroundColor: BColors.info.withOpacity(0.2),
-        foregroundColor: BColors.info,
-        icon: Icons.edit,
-borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16),
-          bottomLeft: Radius.circular(16),
-        ),        spacing: 0,
-        flex: 1, // <-- full height
-      ),
-
-      // Delete button
-      SlidableAction(
-        onPressed: (_) async {
-          final confirm = await showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              title: const Text('Delete'),
-              content: const Text('Are you sure you want to delete this post?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(false),
-                  child: const Text('Cancel',style: TextStyle(color: Colors.black),),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      if (updated != null && updated) {
+                        ToastService.success('Post Updated Successfully');
+                      }
+                    },
+                    backgroundColor: BColors.info.withOpacity(0.2),
+                    foregroundColor: BColors.info,
+                    icon: Icons.edit,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      bottomLeft: Radius.circular(16),
                     ),
+                    spacing: 0,
+                    flex: 1, // <-- full height
                   ),
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                  child: const Text("Confirm",style: TextStyle(fontFamily: 'K2D',fontSize: 14)),
-                ),
-              ],
-            ),
-          );
 
-          if (confirm == true) {
-            await controller.deletePost(post.id);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Post deleted')),
+                  // Delete button
+                  SlidableAction(
+                    onPressed: (_) async {
+                      final confirm = await showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          title: const Text('Delete'),
+                          content: const Text(
+                            'Are you sure you want to delete this post?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(false),
+                              child: const Text(
+                                'Cancel',
+                                style: TextStyle(color: Colors.black),
+                              ),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: BColors.primary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              onPressed: () => Navigator.of(ctx).pop(true),
+                              child: const Text(
+                                "Confirm",
+                                style: TextStyle(
+                                  fontFamily: 'K2D',
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true) {
+                        await controller.deletePost(post.id);
+                      }
+                    },
+                    backgroundColor: BColors.error.withOpacity(0.2),
+                    foregroundColor: BColors.error,
+                    icon: Icons.delete_outline,
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                    ),
+                    spacing: 0,
+                    flex: 1,
+                  ),
+                ],
+              ),
+              child: _postCard(context, post),
             );
+          } else {
+            return _postCard(context, post);
           }
         },
-        backgroundColor: BColors.error.withOpacity(0.2),
-        foregroundColor: BColors.error,
-        icon: Icons.delete_outline,
-            borderRadius: const BorderRadius.only(
-          topRight: Radius.circular(16),
-          bottomRight: Radius.circular(16),
-        ),
-        spacing: 0,
-        flex: 1,
-      ),
-    ],
-  ),
-  child: _postCard(context, post),
-);
-
-  } else {
-    return _postCard(context, post);
-  }
-}
-
         //itemBuilder: (context, index) => _postCard(context,postList[index]),
-
       );
     });
   }
@@ -210,7 +217,7 @@ borderRadius: const BorderRadius.only(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _postHeader(post),
+          _postHeader(context, post),
           const SizedBox(height: BSizes.sm),
           _postContent(post),
           _postActionButtons(context, post),
@@ -219,8 +226,10 @@ borderRadius: const BorderRadius.only(
     );
   }
 
-  Widget _postHeader(Post post) {
+  Widget _postHeader(BuildContext context, Post post) {
     const double avatarDiameter = 40;
+    // For Report Animation
+    final reportNotifier = ValueNotifier<bool>(false);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -254,11 +263,80 @@ borderRadius: const BorderRadius.only(
             ),
           ],
         ),
+        // Report
         IconButton(
-          icon: const Icon(Icons.flag_outlined, size: BSizes.iconMd),
-          onPressed: () {},
-          color: BColors.darkGrey,
-          tooltip: 'Report',
+          icon: ValueListenableBuilder<bool>(
+            valueListenable: reportNotifier,
+            builder: (context, isReporting, child) {
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 245),
+                transitionBuilder: (child, anim) =>
+                    ScaleTransition(scale: anim, child: child),
+                child: isReporting
+                    ? Icon(
+                        Icons.flag,
+                        key: ValueKey('reporting_${post.id}'),
+                        color: BColors.error,
+                        size: BSizes.iconMd,
+                      )
+                    : Icon(
+                        Icons.flag_outlined,
+                        key: ValueKey('unreported_${post.id}'),
+                        color: BColors.darkGrey,
+                        size: BSizes.iconMd,
+                      ),
+              );
+            },
+          ),
+          tooltip: 'Report Post',
+          onPressed: () async {
+            final confirm = await showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                title: const Text('Report'),
+                content: const Text(
+                  'Are you sure you want to report this Post?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: BColors.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    child: const Text(
+                      "Confirm",
+                      style: TextStyle(fontFamily: 'K2D', fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+            );
+
+            if (confirm == true) {
+              // Trigger bounce animation
+              reportNotifier.value = true;
+
+              await controller.reportPost(post.id);
+              // Revert back automatically making the flag empty
+              Future.delayed(const Duration(milliseconds: 600), () {
+                reportNotifier.value = false;
+              });
+            }
+          },
         ),
       ],
     );
