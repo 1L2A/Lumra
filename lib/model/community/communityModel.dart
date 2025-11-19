@@ -5,6 +5,8 @@ class Post {
   final String userId;
   final String userName;
   final String content;
+  final bool isEdited;
+  final bool isReported;
   final Timestamp createdAt;
   String id;
 
@@ -13,6 +15,8 @@ class Post {
     required this.userName,
     required this.content,
     required this.createdAt,
+    this.isReported=false,
+    this.isEdited=false,
     required this.id,
   });
 
@@ -22,6 +26,8 @@ class Post {
       userId: data['userId'] ?? '',
       userName: data['userName'] ?? '',
       content: data['content'] ?? '',
+      isReported: data['isReported'] ?? false,
+      isEdited: data['isEdited'] == true, 
       createdAt: data['createdAt'] ?? Timestamp.now(),
       id: doc.id,
     );
@@ -33,6 +39,7 @@ class Post {
       'userName': userName,
       'content': content,
       'createdAt': createdAt,
+       if (isEdited) 'isEdited': true,   // ONLY included when true
     };
   }
 }

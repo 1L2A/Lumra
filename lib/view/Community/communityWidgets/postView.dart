@@ -355,12 +355,20 @@ class PostView extends StatelessWidget {
         children: [
           Text(post.content),
           SizedBox(height: BSizes.sm),
-          Text(
+          Row(children: [ Text(
             'Posted ${post.createdAt.toDate().toLocal().toString().split(' ')[0]}',
             style: BTextTheme.lightTextTheme.labelMedium?.copyWith(
               fontStyle: FontStyle.italic,
             ),
           ),
+          if (post.isEdited)
+            Text(
+              "    (Edited)",
+              style: BTextTheme.lightTextTheme.labelMedium?.copyWith(
+                fontStyle: FontStyle.italic,
+              ),
+            ),],),
+         
           SizedBox(height: BSizes.xs),
           Divider(indent: 0.5, endIndent: 0.5, color: BColors.grey),
         ],

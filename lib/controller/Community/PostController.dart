@@ -797,7 +797,8 @@ Future<bool> updatePost(String postId, String newContent) async {
         .doc(postId)
         .update({
       'content': newContent,
-      'updatedAt': Timestamp.now(),
+      //'updatedAt': Timestamp.now(),
+      'isEdited': true,
     });
     isLoading.value = false;
     refreshUserPostsListener();
