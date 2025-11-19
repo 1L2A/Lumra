@@ -238,4 +238,33 @@ class FocusController extends GetxController {
       'plannedBreakMin': plannedBreakMin,
     });
   }
+
+  Stream<int> todayFocusMinutesStream({String? userId}) {
+    final uid = userId ?? FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      // return a stream that just emits 0 once
+      return Stream.value(0);
+    }
+
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('focus_sessions')
+        .where('startedAt', isGreaterThanOrEqualTo: startOfDay)
+        .where('startedAt', isLessThan: endOfDay)
+        .snapshots()
+        .map((snap) {
+          int totalSeconds = 0;
+          for (final doc in snap.docs) {
+            final data = doc.data();
+            final seconds = (data['actualSeconds'] ?? 0) as int;
+            totalSeconds += seconds;
+          }
+          return (totalSeconds / 60).round(); // minutes
+        });
+  }
 }
