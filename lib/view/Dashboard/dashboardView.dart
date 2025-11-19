@@ -1,5 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:lumra_project/controller/Dashboard/dashboardController.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
 import 'package:lumra_project/view/Activity/ActivityWidgets/categoryStyle.dart';
@@ -18,6 +22,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
   // ADDED: toggle state to switch between daily and weekly view
   bool showDaily = true;
+
+  final DashboardController dashController = Get.put(
+    DashboardController(FirebaseFirestore.instance),
+  );
 
   // Helper: compute week of month for a given date
   int weekOfMonth(DateTime date) {
@@ -375,84 +383,125 @@ class _DashboardPageState extends State<DashboardPage> {
                                     const SizedBox(height: 8),
 
                                     Expanded(
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          // ---- DONUT CHART ----
-                                          PieChart(
-                                            PieChartData(
-                                              startDegreeOffset: -90,
-                                              centerSpaceRadius: 25,
-                                              sectionsSpace: 2,
-                                              sections: [
-                                                PieChartSectionData(
-                                                  value: 4, // dummy
-                                                  title: '4',
+                                      child: Obx(() {
+                                        final total =
+                                            dashController.totalTasks.value;
+                                        final completed =
+                                            dashController.checkedTasks.value;
+                                        final incomplete = (total - completed)
+                                            .clamp(0, total);
+
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Expanded(
+                                              child: Center(
+                                                child: total == 0
+                                                    ? const Text(
+                                                        "No tasks yet",
+                                                        style: TextStyle(
+                                                          fontFamily: 'K2D',
+                                                          fontSize: 12,
+                                                          color: Colors.grey,
+                                                        ),
+                                                      )
+                                                    : PieChart(
+                                                        PieChartData(
+                                                          startDegreeOffset:
+                                                              -90,
+                                                          centerSpaceRadius: 25,
+                                                          sectionsSpace: 2,
+                                                          sections: [
+                                                            PieChartSectionData(
+                                                              value: completed
+                                                                  .toDouble(),
+                                                              title: completed
+                                                                  .toString(),
+                                                              color: BColors
+                                                                  .primary,
+                                                              radius: 24,
+                                                              titleStyle:
+                                                                  const TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    color: Colors
+                                                                        .white,
+                                                                  ),
+                                                            ),
+                                                            PieChartSectionData(
+                                                              value: incomplete
+                                                                  .toDouble(),
+                                                              title: incomplete
+                                                                  .toString(),
+                                                              color: BColors
+                                                                  .secondry,
+                                                              radius: 20,
+                                                              titleStyle:
+                                                                  const TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    color: Colors
+                                                                        .white,
+                                                                  ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                              ),
+                                            ),
+
+                                            const SizedBox(height: 10),
+
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  width: 10,
+                                                  height: 10,
                                                   color: BColors.primary,
-                                                  radius: 24,
-                                                  titleStyle: const TextStyle(
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.white,
-                                                  ),
                                                 ),
-                                                PieChartSectionData(
-                                                  value: 3, // dummy
-                                                  title: '3',
-                                                  color: BColors.secondry,
-                                                  radius: 20,
-                                                  titleStyle: const TextStyle(
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.white,
+                                                const SizedBox(width: 6),
+                                                const Text(
+                                                  "Completed",
+                                                  style: TextStyle(
+                                                    fontFamily: 'K2D',
+                                                    fontSize: 10,
+                                                    color: Colors.grey,
                                                   ),
                                                 ),
                                               ],
                                             ),
-                                          ),
-                                        ],
-                                      ),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  width: 10,
+                                                  height: 10,
+                                                  color: BColors.secondry,
+                                                ),
+                                                const SizedBox(width: 6),
+                                                const Text(
+                                                  "Incomplete",
+                                                  style: TextStyle(
+                                                    fontFamily: 'K2D',
+                                                    fontSize: 10,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        );
+                                      }),
                                     ),
 
                                     const SizedBox(height: 10),
-
-                                    Row(
-                                      children: [
-                                        Container(
-                                          width: 10,
-                                          height: 10,
-                                          color: BColors.primary,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        const Text(
-                                          "Completed",
-                                          style: TextStyle(
-                                            fontFamily: 'K2D',
-                                            fontSize: 10,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        Container(
-                                          width: 10,
-                                          height: 10,
-                                          color: BColors.secondry,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        const Text(
-                                          "Incomplete",
-                                          style: TextStyle(
-                                            fontFamily: 'K2D',
-                                            fontSize: 10,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
                                   ],
                                 ),
                               ),
@@ -540,58 +589,154 @@ class _DashboardPageState extends State<DashboardPage> {
                                           ),
                                         ],
                                       ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            "Mood",
-                                            style: textTheme.titleMedium
-                                                ?.copyWith(
-                                                  fontFamily: 'K2D',
-                                                  fontWeight: FontWeight.w700,
-                                                  color: BColors.textprimary,
-                                                ),
-                                          ),
-                                          const SizedBox(height: 8),
+                                      child: Obx(() {
+                                        final int? mood = dashController
+                                            .dailyMood
+                                            .value; // 1..5 or null
 
-                                          Expanded(
-                                            child: Center(
-                                              child: Container(
-                                                width: 150,
-                                                height: 150,
-                                                decoration: BoxDecoration(
-                                                  color: Color(
-                                                    0xFFFFF59D,
-                                                  ).withOpacity(0.15),
-                                                  shape: BoxShape.circle,
-
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: Color(
-                                                        0xFFFFF59D,
-                                                      ).withOpacity(0.4),
-                                                      blurRadius: 12,
-                                                      spreadRadius: 2,
-                                                      offset: const Offset(
-                                                        0,
-                                                        4,
-                                                      ),
+                                        // ---- No mood selected yet ----
+                                        if (mood == null) {
+                                          return Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                "Mood",
+                                                style: textTheme.titleMedium
+                                                    ?.copyWith(
+                                                      fontFamily: 'K2D',
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color:
+                                                          BColors.textprimary,
                                                     ),
-                                                  ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              const Expanded(
+                                                child: Center(
+                                                  child: Text(
+                                                    "No mood yet",
+                                                    style: TextStyle(
+                                                      fontFamily: 'K2D',
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
                                                 ),
-                                                child: Icon(
-                                                  Icons.sentiment_neutral,
-                                                  color: Color(
-                                                    0xFFFFF59D,
-                                                  ), // mood color
-                                                  size: 50,
+                                              ),
+                                            ],
+                                          );
+                                        }
+
+                                        // Map 1–5 to icons and colors
+                                        IconData icon;
+                                        Color color;
+                                        String label;
+
+                                        switch (mood) {
+                                          case 1:
+                                            icon = Icons
+                                                .sentiment_very_dissatisfied;
+                                            color = const Color(0xFFE57373);
+                                            label = "Very sad";
+                                            break;
+                                          case 2:
+                                            icon = Icons.sentiment_dissatisfied;
+                                            color = const Color(0xFFFFB74D);
+                                            label = "Sad";
+                                            break;
+                                          case 3:
+                                            icon = Icons.sentiment_neutral;
+                                            color = const Color.fromARGB(
+                                              255,
+                                              246,
+                                              236,
+                                              145,
+                                            );
+                                            label = "Neutral";
+                                            break;
+                                          case 4:
+                                            icon = Icons.sentiment_satisfied;
+                                            color = const Color(0xFF81C784);
+                                            label = "Happy";
+                                            break;
+                                          case 5:
+                                          default:
+                                            icon =
+                                                Icons.sentiment_very_satisfied;
+                                            color = const Color(0xFF4CAF50);
+                                            label = "Very happy";
+                                            break;
+                                        }
+
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "Mood",
+                                              style: textTheme.titleMedium
+                                                  ?.copyWith(
+                                                    fontFamily: 'K2D',
+                                                    fontWeight: FontWeight.w700,
+                                                    color: BColors.textprimary,
+                                                  ),
+                                            ),
+                                            const SizedBox(height: 8),
+
+                                            Expanded(
+                                              child: Center(
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 16,
+                                                        vertical: 7,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: color.withOpacity(
+                                                      0.12,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          24,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: color.withOpacity(
+                                                        0.8,
+                                                      ),
+                                                      width: 1,
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        icon,
+                                                        color: color,
+                                                        size: 28,
+                                                      ),
+                                                      const SizedBox(width: 10),
+                                                      Text(
+                                                        label,
+                                                        style: TextStyle(
+                                                          fontFamily: 'K2D',
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: color,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
+                                          ],
+                                        );
+                                      }),
                                     ),
                                   ),
                                 ],
