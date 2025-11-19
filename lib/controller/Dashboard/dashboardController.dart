@@ -18,9 +18,11 @@ class DashboardController extends GetxController {
 
   final RxnInt dailyMood = RxnInt();
 
+  /// NEW by JANA: today's total focus minutes for the ADHD user
+  final todayFocusMinutes = 0.obs;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _tasksSub;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _moodSub;
-
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _focusSub; // NEW
   @override
   void onInit() {
     super.onInit();
@@ -40,10 +42,12 @@ class DashboardController extends GetxController {
       // attach all realtime listeners that use adhdUid
       _listenToAdhdTasks();
       _listenToDailyMood();
+      _listenToFocusSessions();
     } catch (e) {
       totalTasks.value = 0;
       checkedTasks.value = 0;
       dailyMood.value = null;
+      todayFocusMinutes.value = 0;
     }
   }
 
@@ -101,10 +105,42 @@ class DashboardController extends GetxController {
         );
   }
 
+  void _listenToFocusSessions() {
+    _focusSub?.cancel();
+
+    // compute "today" range
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    _focusSub = db
+        .collection('users')
+        .doc(adhdUid) // ADHD user focus sessions
+        .collection('focus_sessions')
+        .where('startedAt', isGreaterThanOrEqualTo: startOfDay)
+        .where('startedAt', isLessThan: endOfDay)
+        .snapshots()
+        .listen(
+          (snap) {
+            int totalSeconds = 0;
+            for (final doc in snap.docs) {
+              final data = doc.data();
+              final seconds = (data['actualSeconds'] ?? 0) as int;
+              totalSeconds += seconds;
+            }
+            todayFocusMinutes.value = (totalSeconds / 60).round();
+          },
+          onError: (_) {
+            todayFocusMinutes.value = 0;
+          },
+        );
+  }
+
   @override
   void onClose() {
     _tasksSub?.cancel();
     _moodSub?.cancel();
+    _focusSub?.cancel();
     super.onClose();
   }
 }

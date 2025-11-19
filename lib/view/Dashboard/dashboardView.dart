@@ -548,20 +548,49 @@ class _DashboardPageState extends State<DashboardPage> {
                                                 ),
                                           ),
                                           const SizedBox(height: 8),
+
+                                          // Reactive focus minutes from DashboardController
                                           Expanded(
-                                            child: Center(
-                                              child: Text(
-                                                "35 min", // dummy
-                                                style: textTheme.headlineSmall
-                                                    ?.copyWith(
-                                                      fontFamily: 'K2D',
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: BColors.primary
-                                                          .withOpacity(0.7),
+                                            child: Obx(() {
+                                              final minutes = dashController
+                                                  .todayFocusMinutes
+                                                  .value;
+
+                                              return Center(
+                                                child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Text(
+                                                      "$minutes min",
+                                                      style: textTheme
+                                                          .headlineSmall
+                                                          ?.copyWith(
+                                                            fontFamily: 'K2D',
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            color: BColors
+                                                                .primary
+                                                                .withOpacity(
+                                                                  0.7,
+                                                                ),
+                                                          ),
                                                     ),
-                                              ),
-                                            ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      minutes == 0
+                                                          ? "No focus session today"
+                                                          : "Today's total focus time",
+                                                      style: const TextStyle(
+                                                        fontFamily: 'K2D',
+                                                        fontSize: 11,
+                                                        color: Colors.grey,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            }),
                                           ),
                                         ],
                                       ),
