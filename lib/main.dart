@@ -18,6 +18,7 @@ import 'package:lumra_project/controller/Activity/ActivityController.dart';
 import "package:lumra_project/view/ChatBootADHD/ChatBootADHD.dart";
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:lumra_project/view/Admin/admin_home_page.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print(" Notification in background: ${message.notification?.title}");
@@ -101,7 +102,10 @@ class MyApp extends StatelessWidget {
             home: SplashGifScreen(
               nextScreen: LoginScreen(),
             ), //splash then we start! :)
-            getPages: [GetPage(name: '/app', page: () => RoleAwareRoot())],
+            getPages: [
+              GetPage(name: '/app', page: () => RoleAwareRoot()),
+              GetPage(name: '/admin', page: () => const AdminHomePage()),
+            ],
           ),
           //const ChatBotWidget(), //  stays visible on pages but dont forget to remove it from login, splash, other pages
         ],
