@@ -300,6 +300,76 @@ class PostControllerX extends GetxController {
     }
   }
 
+  Future<bool> checkAndResetBanIfNeeded() async {
+    if (currentUid == null) return true;
+
+    try {
+      final userDoc = await db.collection('users').doc(currentUid).get();
+      if (!userDoc.exists) return true;
+
+      final data = userDoc.data() ?? {};
+      final deletedCount = data['deletedPostsCount'] == null
+          ? 0
+          : (data['deletedPostsCount'] is int
+              ? data['deletedPostsCount']
+              : int.tryParse(data['deletedPostsCount'].toString()) ?? 0);
+
+      if (deletedCount < 6) return true;
+
+      final reachedSixAt = data['reachedSixAt'];
+      if (reachedSixAt == null || reachedSixAt is! Timestamp) return true;
+
+      final now = Timestamp.now();
+      final elapsedSeconds = now.seconds - reachedSixAt.seconds;
+      final elapsedDays = elapsedSeconds ~/ 86400;
+
+      if (elapsedDays >= 14) {
+        await db.collection('users').doc(currentUid).update({
+          'deletedPostsCount': 0,
+          'reachedSixAt': FieldValue.delete(),
+        });
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      print('Error checking ban status: $e');
+      return true;
+    }
+  }
+
+  Future<int?> getRemainingBanDays() async {
+    if (currentUid == null) return null;
+
+    try {
+      final userDoc = await db.collection('users').doc(currentUid).get();
+      if (!userDoc.exists) return null;
+
+      final data = userDoc.data() ?? {};
+      final deletedCount = data['deletedPostsCount'] == null
+          ? 0
+          : (data['deletedPostsCount'] is int
+              ? data['deletedPostsCount']
+              : int.tryParse(data['deletedPostsCount'].toString()) ?? 0);
+
+      if (deletedCount < 6) return null;
+
+      final reachedSixAt = data['reachedSixAt'];
+      if (reachedSixAt == null || reachedSixAt is! Timestamp) return null;
+
+      final now = Timestamp.now();
+      final elapsedSeconds = now.seconds - reachedSixAt.seconds;
+      final elapsedDays = elapsedSeconds ~/ 86400;
+
+      if (elapsedDays >= 14) return null;
+
+      return 14 - elapsedDays;
+    } catch (e) {
+      print('Error getting remaining ban days: $e');
+      return null;
+    }
+  }
+
   Future<bool> addPost(BuildContext context) async {
     hasInteracted.value = true;
 
