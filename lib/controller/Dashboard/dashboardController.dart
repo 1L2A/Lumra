@@ -332,11 +332,13 @@ class DashboardController extends GetxController {
     return (focusPoints / maxPoints).clamp(0.0, 1.0);
   }
 
-  //Activities: every 3 activities = 1 point, cap at 4 points (12 acts)
+  // Activities: each activity = 1 point, cap at 4 points (4 activities)
   double _activityScore() {
     if (_activitiesCount <= 0) return 0.0;
-    final activityPoints = _activitiesCount / 3.0;
-    const maxPoints = 4.0;
+
+    const maxPoints = 4.0; // full score when reach 4 activities
+    final activityPoints = _activitiesCount.toDouble(); // 1 point per activity
+
     return (activityPoints / maxPoints).clamp(0.0, 1.0);
   }
 
