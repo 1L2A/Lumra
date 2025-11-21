@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import "package:lumra_project/view/ChatBootADHD/ChatBootADHD.dart";
+import 'package:lumra_project/view/ChatBootADHD/ChatPage.dart';
 import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:get/get.dart';
 import 'dart:async';
@@ -18,7 +19,6 @@ class ChatBotWidget extends StatefulWidget {
 }
 
 class _ChatBotWidgetState extends State<ChatBotWidget> {
-  bool _isChatOpen = false;
   bool _showHint = false; // start hidden
   Timer? _hintTimer;
   late final AdhdChatController adhdCtrl;
@@ -52,78 +52,15 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
     super.dispose();
   }
 
-  void _toggleChat() async {
-    if (_isChatOpen) {
-      Navigator.of(context).pop();
-      setState(() => _isChatOpen = false);
-      return;
-    }
-
-    // Opening
+  void _toggleChat() {
+    // Hide hint when opening chat
     setState(() {
-      _isChatOpen = true;
-      _showHint = false; // hide now
+      _showHint = false;
     });
     _hintTimer?.cancel(); // stop any pending auto-hide
 
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: true, // keep this
-      enableDrag: true, // swipe down still works
-      backgroundColor: Colors.transparent,
-      showDragHandle: false, //  disables the small rounded rectangle
-      barrierColor: Colors.transparent,
-      builder: (ctx) {
-        return Stack(
-          children: [
-            // 1) FULLSCREEN TAP-TO-DISMISS LAYER (behind the sheet)
-            Positioned.fill(
-              child: GestureDetector(
-                behavior:
-                    HitTestBehavior.opaque, // make the whole area tappable
-                onTap: () => Navigator.of(ctx).pop(),
-                child: const SizedBox.shrink(),
-              ),
-            ),
-
-            // 2)  SHEET (on top)
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 20, right: 20, left: 20),
-                child: Material(
-                  elevation: 10,
-                  borderRadius: BorderRadius.circular(20),
-                  color: Colors.transparent,
-                  child: Container(
-                    width: 380,
-                    height: 680, //  height (AVOID OVERLAP)
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: BColors.primary.withOpacity(0.25),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.all(Radius.circular(20)),
-                      child: ChatView(controller: _activeCtrl),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (mounted) setState(() => _isChatOpen = false);
+    // Navigate to dedicated chat page
+    Get.to(() => ChatPage(controller: _activeCtrl));
   }
 
   @override
@@ -135,11 +72,11 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
           bottom: 170,
           right: 35,
           child: AnimatedOpacity(
-            opacity: (_showHint && !_isChatOpen) ? 1.0 : 0.0,
+            opacity: _showHint ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 400),
             curve: Curves.easeOut,
             child: IgnorePointer(
-              ignoring: !_showHint || _isChatOpen,
+              ignoring: !_showHint,
               child: ChatHintBubble(
                 message: widget.role == 'caregiver'
                     ? "💬 Need to talk? Chat with Lumra!"
@@ -166,9 +103,9 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
               ],
             ),
             child: IconButton(
-              tooltip: _isChatOpen ? 'Close chat' : 'Open chat',
-              icon: Icon(
-                _isChatOpen ? Icons.close_rounded : Icons.chat_bubble_rounded,
+              tooltip: 'Open chat',
+              icon: const Icon(
+                Icons.chat_bubble_rounded,
                 color: BColors.primary,
                 size: 24,
               ),
