@@ -9,6 +9,8 @@ class AdminPostsController extends GetxController {
   var allPosts = <Map<String, dynamic>>[].obs; // {post, collection, raw}
   var reportedPosts =
       <Map<String, dynamic>>[].obs; // فقط اللي isReported = true
+  var reportedComments = <Map<String, dynamic>>[].obs;
+  var allReportedItems = <Map<String, dynamic>>[].obs;
   var isLoading = false.obs;
 
   StreamSubscription? _caregiverSub;
@@ -18,6 +20,8 @@ class AdminPostsController extends GetxController {
   void onInit() {
     super.onInit();
     fetchAllPostsRealtime();
+    listenReportedPostsRealtime();
+    listenReportedCommentsRealtime();
   }
 
   @override
@@ -47,6 +51,88 @@ class AdminPostsController extends GetxController {
     });
   }
 
+  /// 🟢 Fetch all reported comments from all posts
+  Future<void> fetchReportedComments() async {
+    reportedComments.clear();
+
+    // نجيب كل البوستات
+    final postsSnapshot = await db.collection("CareGiverCommunityPosts").get();
+    final postsSnapshot2 = await db.collection("ADHDCommunityPosts").get();
+
+    for (var postDoc in [...postsSnapshot.docs, ...postsSnapshot2.docs]) {
+      final postId = postDoc.id;
+      final collection = postDoc.reference.parent.id;
+
+      final commentsSnap = await db
+          .collection(collection)
+          .doc(postId)
+          .collection('comments')
+          .where('isReported', isEqualTo: true)
+          .get();
+
+      for (var c in commentsSnap.docs) {
+        reportedComments.add({
+          "type": "comment",
+          "postId": postId,
+          "collection": collection,
+          "data": c.data(),
+          "docId": c.id,
+        });
+      }
+    }
+
+    mergeReportedItems();
+  }
+
+  /// 🟠 Merge reported posts + reported comments
+  void mergeReportedItems() {
+    // 🧠 خريطة تضمن كل عنصر يكون له مفتاح فريد (مافي تكرار)
+    final Map<String, Map<String, dynamic>> uniqueItems = {};
+
+    // -------- POSTS --------
+    for (var p in reportedPosts) {
+      final post = p["post"] as Post;
+      final collection = p["collection"] as String;
+
+      // مفتاح فريد للبوست (حسب id + collection)
+      final key = "post_${post.id}_$collection";
+
+      uniqueItems[key] = {
+        "type": "post",
+        "userName": post.userName,
+        "content": post.content,
+        "date": post.createdAt,
+        "postId": post.id,
+        "collection": collection,
+        "userId": post.userId, // 🔥 عشان deletePost يحتاج userId
+      };
+    }
+
+    // -------- COMMENTS --------
+    for (var c in reportedComments) {
+      final data = c["data"] as Map<String, dynamic>;
+      final postId = c["postId"] as String;
+      final docId = c["docId"] as String;
+      final collection = c["collection"] as String;
+
+      // مفتاح فريد للكومنت (post + comment + collection)
+      final key = "comment_${postId}_${docId}_$collection";
+
+      uniqueItems[key] = {
+        "type": "comment",
+        "userName": data["userName"],
+        "content": data["content"],
+        "date": data["createdAt"],
+        "postId": postId,
+        "docId": docId,
+        "collection": collection,
+      };
+    }
+
+    // ✨ نحط القيم فقط (بدون مفاتيح) في الـ RxList
+    allReportedItems.assignAll(uniqueItems.values.toList());
+  }
+
   void _process(List<QueryDocumentSnapshot> docs, String fromCollection) {
     List<Map<String, dynamic>> incoming = docs.map((doc) {
       return {
@@ -70,6 +156,7 @@ class AdminPostsController extends GetxController {
       final raw = item["raw"] as Map<String, dynamic>;
       return raw["isReported"] == true;
     }).toList();
+    mergeReportedItems();
   }
 
   // -------------------------------------------------------
@@ -102,35 +189,210 @@ class AdminPostsController extends GetxController {
     String userId,
   ) async {
     try {
-      //await deleteSubcollection(collection, postId, "comments");
+      // 🗑 حذف كل الـ subcollections قبل حذف البوست:
+      await deleteSubcollection(collection, postId, "comments");
       await deleteSubcollection(collection, postId, "likes");
 
+      // 🔥 بعد ما حذفنا كل شيء — الآن نحذف البوست نفسه
       await db.collection(collection).doc(postId).delete();
-
-      final userRef = db.collection('users').doc(userId);
-
-      await db.runTransaction((transaction) async {
-        final snapshot = await transaction.get(userRef);
-        final data = snapshot.data() as Map<String, dynamic>? ?? {};
-
-        final int currentCount = data['deletedPostsCount'] == null
-            ? 0
-            : (data['deletedPostsCount'] is int
-                  ? data['deletedPostsCount']
-                  : int.tryParse(data['deletedPostsCount'].toString()) ?? 0);
-
-        final int newCount = currentCount + 1;
-
-        final updateData = <String, dynamic>{'deletedPostsCount': newCount};
-
-        if (newCount >= 6 && (data['reachedSixAt'] == null)) {
-          updateData['reachedSixAt'] = FieldValue.serverTimestamp();
-        }
-
-        transaction.set(userRef, updateData, SetOptions(merge: true));
-      });
+      await _incrementDeletedCountForUser(userId);
     } catch (e) {
       print('Error in deletePost: $e');
     }
+  }
+
+  Future<void> deleteReportedComment({
+    required String postId,
+    required String collection,
+    required String commentDocId,
+  }) async {
+    try {
+      // ⛔ اول شيء نجيب الداتا ونستخرج منها userId
+      final docSnap = await db
+          .collection(collection)
+          .doc(postId)
+          .collection('comments')
+          .doc(commentDocId)
+          .get();
+
+      final data = docSnap.data() as Map<String, dynamic>?;
+
+      // 🗑 نحذف الكومنت
+      await db
+          .collection(collection)
+          .doc(postId)
+          .collection('comments')
+          .doc(commentDocId)
+          .delete();
+
+      // 👇 نحسب حذف للمستخدم (مره مهم!)
+      if (data != null && data["userId"] != null) {
+        await _incrementDeletedCountForUser(data["userId"]);
+      }
+
+      // 🔥 تحديث الليست بعد الحذف
+      reportedComments.removeWhere((c) => c["docId"] == commentDocId);
+      mergeReportedItems();
+    } catch (e) {
+      print('Error deleting comment: $e');
+    }
+  }
+
+  Future<void> fetchReportedPosts() async {
+    reportedPosts.clear();
+
+    final snap1 = await db
+        .collection("CareGiverCommunityPosts")
+        .where('isReported', isEqualTo: true)
+        .get();
+
+    final snap2 = await db
+        .collection("ADHDCommunityPosts")
+        .where('isReported', isEqualTo: true)
+        .get();
+
+    for (var doc in [...snap1.docs, ...snap2.docs]) {
+      reportedPosts.add({
+        "type": "post",
+        "postId": doc.id,
+        "post": Post.fromFirestore(doc),
+        "collection": doc.reference.parent.id,
+      });
+    }
+    mergeReportedItems();
+  }
+
+  void listenReportedPostsRealtime() {
+    reportedPosts.clear(); // نظافة في البداية فقط مرة وحدة
+
+    // Caregiver posts
+    db
+        .collection("CareGiverCommunityPosts")
+        .where('isReported', isEqualTo: true)
+        .snapshots()
+        .listen((snapshot) {
+          for (var doc in snapshot.docs) {
+            // 🛑 مهم جدًا: نحذف أي نسخة قديمة قبل ما نضيف
+            reportedPosts.removeWhere(
+              (item) =>
+                  item["postId"] == doc.id &&
+                  item["collection"] == doc.reference.parent.id,
+            );
+
+            reportedPosts.add({
+              "type": "post",
+              "postId": doc.id,
+              "post": Post.fromFirestore(doc),
+              "collection": doc.reference.parent.id,
+            });
+          }
+          mergeReportedItems(); // تحديث الفيو
+        });
+
+    // ADHD posts
+    db
+        .collection("ADHDCommunityPosts")
+        .where('isReported', isEqualTo: true)
+        .snapshots()
+        .listen((snapshot) {
+          for (var doc in snapshot.docs) {
+            reportedPosts.removeWhere(
+              (item) =>
+                  item["postId"] == doc.id &&
+                  item["collection"] == doc.reference.parent.id,
+            );
+
+            reportedPosts.removeWhere(
+              (item) =>
+                  item["postId"] == doc.id &&
+                  item["collection"] == doc.reference.parent.id,
+            );
+
+            // 🟢 بعدين نضيف البوست مرة وحدة فقط
+            reportedPosts.add({
+              "type": "post",
+              "postId": doc.id,
+              "post": Post.fromFirestore(doc),
+              "collection": doc.reference.parent.id,
+            });
+          }
+          mergeReportedItems(); // تحديث الفيو
+        });
+  }
+
+  void listenReportedCommentsRealtime() async {
+    final caregivers = await db.collection("CareGiverCommunityPosts").get();
+    final adhd = await db.collection("ADHDCommunityPosts").get();
+
+    for (var postDoc in [...caregivers.docs, ...adhd.docs]) {
+      db
+          .collection(postDoc.reference.parent.id)
+          .doc(postDoc.id)
+          .collection('comments')
+          .where('isReported', isEqualTo: true)
+          .snapshots()
+          .listen((snap) {
+            reportedComments.removeWhere(
+              (c) => c["postId"] == postDoc.id,
+            ); // 👈 مهم جدًا
+            for (var c in snap.docs) {
+              reportedComments.add({
+                "type": "comment",
+                "postId": postDoc.id,
+                "collection": postDoc.reference.parent.id,
+                "data": c.data(),
+                "docId": c.id,
+              });
+            }
+            mergeReportedItems();
+          });
+    }
+  }
+
+  Future<void> ignoreComment({
+    required String postId,
+    required String collection,
+    required String commentDocId,
+  }) async {
+    // ① تحديث Firestore (إلغاء التبليغ)
+    await db
+        .collection(collection)
+        .doc(postId)
+        .collection('comments')
+        .doc(commentDocId)
+        .update({"isReported": false});
+
+    // ② تحديث الـ UI مباشرة (بدون انتظار real-time)
+    reportedComments.removeWhere((c) => c["docId"] == commentDocId);
+    mergeReportedItems();
+  }
+
+  /// 🧠  دالة تسوي update للـ deletedPostsCount لكل مستخدم
+  Future<void> _incrementDeletedCountForUser(String userId) async {
+    final userRef = db.collection('users').doc(userId);
+
+    await db.runTransaction((transaction) async {
+      final snapshot = await transaction.get(userRef);
+      final data = snapshot.data() as Map<String, dynamic>? ?? {};
+
+      // currentCount = لو ما فيه قيمة نخليه 0
+      int currentCount = data['deletedPostsCount'] is int
+          ? data['deletedPostsCount']
+          : int.tryParse("${data['deletedPostsCount']}") ?? 0;
+
+      final newCount = currentCount + 1;
+
+      // 👇 بيانات التحديث
+      final updateData = <String, dynamic>{'deletedPostsCount': newCount};
+
+      // لو تعدى 6 أول مرة → نحط timestamp مرة وحده
+      if (newCount >= 6 && data['reachedSixAt'] == null) {
+        updateData['reachedSixAt'] = FieldValue.serverTimestamp();
+      }
+
+      transaction.set(userRef, updateData, SetOptions(merge: true));
+    });
+
+    print('🔢 deletedPostsCount updated for $userId');
   }
 }

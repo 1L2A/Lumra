@@ -5,6 +5,8 @@ import 'package:lumra_project/theme/base_themes/colors.dart';
 import 'package:lumra_project/theme/base_themes/sizes.dart';
 import 'package:lumra_project/theme/custom_themes/text_theme.dart';
 import 'package:lumra_project/model/community/communityModel.dart';
+import 'package:lumra_project/view/Admin/admin_comments_page.dart';
+import 'package:lumra_project/view/Admin/dialog_helper.dart';
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({super.key});
@@ -127,41 +129,37 @@ class _AdminHomePageState extends State<AdminHomePage> {
   }
 
   // ---------------- REPORTED POSTS VIEW ----------------
+  // ---------------- REPORTED VIEW ( post + comment ) ----------------
   Widget _reportedPostsView() {
     return Obx(() {
-      if (adminController.reportedPosts.isEmpty) {
+      if (adminController.allReportedItems.isEmpty) {
         return Center(
           child: Padding(
             padding: const EdgeInsets.only(top: 100),
             child: Text(
-              "No reported posts.",
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-                fontWeight: FontWeight.w500,
-              ),
+              "Nothing reported yet.",
+              style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
           ),
         );
       }
 
       return ListView.separated(
-        itemCount: adminController.reportedPosts.length,
-        separatorBuilder: (_, __) =>
-            const SizedBox(height: BSizes.SpaceBtwItems),
+        itemCount: adminController.allReportedItems.length,
+        separatorBuilder: (_, __) => SizedBox(height: BSizes.SpaceBtwItems),
         itemBuilder: (context, index) {
-          final item = adminController.reportedPosts[index];
-          final post = item["post"] as Post;
+          final item = adminController.allReportedItems[index];
 
-          return _postCard(
-            userName: post.userName,
-            content: post.content,
-            date: post.createdAt.toDate().toString().split(' ')[0],
-            showIgnore: true,
-            postId: post.id,
-            collection: item["collection"],
-            userId: post.userId,
-          );
+          final type = item["type"];
+          final userName = item["userName"];
+          final content = item["content"];
+          final date = item["date"].toDate().toString().split(" ")[0];
+
+          final icon = type == "post"
+              ? Icon(Icons.article, color: BColors.primary)
+              : Icon(Icons.chat_bubble_outline, color: Colors.orange);
+
+          return _reportedCard(item);
         },
       );
     });
@@ -221,9 +219,9 @@ class _AdminHomePageState extends State<AdminHomePage> {
         children: [
           _postHeader(userName),
           const SizedBox(height: BSizes.sm),
-          _postContent(content, date),
+          _postContent(content),
           const SizedBox(height: BSizes.sm),
-          _actions(showIgnore, postId, collection, userId),
+          _actions(postId, userName, collection, userId, date),
         ],
       ),
     );
@@ -252,195 +250,245 @@ class _AdminHomePageState extends State<AdminHomePage> {
     );
   }
 
-  Widget _postContent(String content, String date) {
+  Widget _postContent(String content) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: BSizes.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(content),
-          const SizedBox(height: 6),
-          Text(
-            "Posted $date",
-            style: BTextTheme.lightTextTheme.labelMedium?.copyWith(
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
+        children: [Text(content), const SizedBox(height: 6)],
       ),
     );
   }
 
-  _actions(bool showIgnore, String postId, String collection, String userId) {
+  Widget _actions(
+    String postId,
+    String userName,
+    String collection,
+    String userId,
+    String date,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        // IGNORE
-        if (showIgnore)
-          GestureDetector(
-            onTap: () async {
-              final ok = await showDialog<bool>(
-                context: context,
-                barrierDismissible: false,
-                builder: (ctx) => AlertDialog(
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  insetPadding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 24,
-                  ),
-                  title: const Text(
-                    'Ignore report?',
-                    style: TextStyle(
-                      fontFamily: 'K2D',
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  content: const Text(
-                    'This post will return to the community feed.',
-                    style: TextStyle(
-                      fontFamily: 'K2D',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(false),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(
-                          fontFamily: 'K2D',
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: BColors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                        minimumSize: const Size(90, 40),
-                      ),
-
-                      onPressed: () => Navigator.of(ctx).pop(true),
-
-                      child: const Text(
-                        "Ignore",
-                        style: TextStyle(
-                          fontFamily: 'K2D',
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-
-              if (ok == true) {
-                await adminController.ignorePost(postId, collection);
-              }
-            },
-            child: Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Text(
-                "Ignore",
-                style: TextStyle(
-                  color: BColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+        Text(
+          "Posted $date",
+          style: BTextTheme.lightTextTheme.labelMedium?.copyWith(
+            fontStyle: FontStyle.italic,
+            color: BColors.darkGrey,
           ),
-
-        SizedBox(width: 12),
-
-        // DELETE
-        GestureDetector(
-          onTap: () async {
-            final ok = await showDialog<bool>(
-              context: context,
-              barrierDismissible: false,
-              builder: (ctx) => AlertDialog(
-                backgroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+        ),
+        const Spacer(),
+        // 💬 COMMENT BUTTON (نفس صفحة صديقتك)
+        IconButton(
+          icon: const Icon(Icons.comment_outlined, size: BSizes.iconMd - 1),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AdminCommentsPage(
+                  postId: postId,
+                  postUserName: userName,
+                  collectionName: collection, // ← هذا كان ناقص
                 ),
-                insetPadding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 24,
-                ),
-                title: const Text(
-                  'Delete post?',
-                  style: TextStyle(
-                    fontFamily: 'K2D',
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                content: const Text(
-                  'This action is permanent and cannot be undone.',
-                  style: TextStyle(
-                    fontFamily: 'K2D',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(false),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
-                        fontFamily: 'K2D',
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      minimumSize: const Size(90, 40),
-                    ),
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    child: const Text(
-                      "Delete",
-                      style: TextStyle(
-                        fontFamily: 'K2D',
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
               ),
             );
+          },
+          color: BColors.darkGrey,
+          tooltip: 'Comments',
+        ),
 
-            if (ok == true) {
+        const SizedBox(width: 10),
+
+        // 🚮 DELETE POST → نفس كودك الحالي ما يلمس كود صديقتك
+        IconButton(
+          icon: Icon(Icons.delete_outline, color: BColors.error),
+          tooltip: 'Delete Post',
+          onPressed: () async {
+            final confirm = await showConfirmDialog(
+              context: context, // هذا مهم جدًا
+              title: "Delete Post?",
+              message: "This action is permanent.",
+            );
+
+            if (confirm == true) {
               await adminController.deletePost(postId, collection, userId);
+
+              showFeedback(
+                title: "Deleted",
+                message: "Post has been deleted successfully!",
+              );
             }
           },
-          child: const Icon(Icons.delete, color: BColors.error),
         ),
       ],
+    );
+  }
+
+  Widget _reportedCard(Map<String, dynamic> item) {
+    final type = item["type"]; // post OR comment
+    final isPost = type == "post";
+
+    final userName = item["userName"];
+    final content = item["content"];
+    final date = item["date"].toDate().toString().split(" ")[0];
+
+    return Container(
+      padding: const EdgeInsets.all(BSizes.sm),
+      decoration: BoxDecoration(
+        color: BColors.white,
+        borderRadius: BorderRadius.circular(BSizes.cardRadiusLg),
+        border: Border.all(color: BColors.secondry),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x11000000),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // HEADER (avatar + username + نوع البلاغ)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: BColors.secondry),
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/AvatarSimple.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(userName, style: BTextTheme.lightTextTheme.labelLarge),
+                ],
+              ),
+              // هنا نوضح نوعه Post أو Comment
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isPost ? BColors.primary : BColors.primary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  isPost ? "POST" : "COMMENT",
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: BSizes.sm),
+
+          // المحتوى
+          _postContent(content),
+
+          const SizedBox(height: 6),
+
+          const SizedBox(height: BSizes.sm),
+
+          // ACTIONS (IGNORE + DELETE) ← نفس البنْية حق all post
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                "Posted $date",
+                style: BTextTheme.lightTextTheme.labelMedium?.copyWith(
+                  fontStyle: FontStyle.italic,
+                  color: BColors.darkGrey,
+                ),
+              ),
+              const Spacer(),
+
+              // 💬 COMMENT BUTTON ما نحتاجه للـ reported card
+
+              // IGNORE
+              TextButton(
+                onPressed: () async {
+                  final confirm = await showConfirmDialog(
+                    context: context,
+                    title: "Ignore Report?",
+                    message: "Are you sure you want to ignore this report?",
+                  );
+
+                  if (confirm == true) {
+                    if (item["type"] == "post") {
+                      adminController.ignorePost(
+                        item["postId"],
+                        item["collection"],
+                      );
+                    } else {
+                      adminController.ignoreComment(
+                        postId: item["postId"],
+                        collection: item["collection"],
+                        commentDocId: item["docId"],
+                      );
+                    }
+
+                    showFeedback(
+                      title: "Ignored",
+                      message: "Report has been ignored successfully!",
+                    );
+                  }
+                },
+                child: const Text(
+                  "Ignore",
+                  style: TextStyle(
+                    color: BColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              // DELETE
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: BColors.error),
+                onPressed: () async {
+                  final confirm = await showConfirmDialog(
+                    context: context,
+                    title: "Delete Comment?",
+                    message: "This action is permanent.",
+                  );
+
+                  if (confirm == true) {
+                    if (isPost) {
+                      await adminController.deletePost(
+                        item["postId"],
+                        item["collection"],
+                        item["userId"],
+                      );
+                    } else {
+                      await adminController.deleteReportedComment(
+                        postId: item["postId"],
+                        collection: item["collection"],
+                        commentDocId: item["docId"],
+                      );
+                    }
+                    showFeedback(
+                      title: "Deleted",
+                      message: "Removed successfully!",
+                    );
+                  } else {
+                    Navigator.of(context).maybePop();
+                  }
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
