@@ -1,5 +1,5 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import { initializeApp } from "firebase-admin/app";
 
@@ -150,3 +150,130 @@ export const sendDailyCaregiverSupport = onSchedule("every 24 hours", async (eve
       }
     }
   });
+
+export const sendTaskReminder = onSchedule("every 1 minutes", async (event) => {
+  console.log("Checking for users with incomplete tasks after 10 hours...");
+
+  // Get current UTC time
+  const nowUTC = new Date();
+
+  const nowSaudi = new Date(nowUTC.getTime() + (3 * 60 * 60 * 1000));
+
+  // Create a new date representing start of day
+  const startOfDaySaudi = new Date(Date.UTC(
+    nowSaudi.getUTCFullYear(),
+    nowSaudi.getUTCMonth(),
+    nowSaudi.getUTCDate(),
+    0, 0, 0, 0
+  ));
+
+  const endOfDaySaudi = new Date(Date.UTC(
+    nowSaudi.getUTCFullYear(),
+    nowSaudi.getUTCMonth(),
+    nowSaudi.getUTCDate(),
+    23, 59, 59, 999
+  ));
+
+  const startOfDay = new Date(startOfDaySaudi.getTime() - (3 * 60 * 60 * 1000));
+  const endOfDay = new Date(endOfDaySaudi.getTime() - (3 * 60 * 60 * 1000));
+
+  const year = nowSaudi.getUTCFullYear();
+  const month = String(nowSaudi.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(nowSaudi.getUTCDate()).padStart(2, '0');
+  const todayDateString = `${year}-${month}-${day}`;
+
+  // Get all users (both caregiver and ADHD)
+  const usersSnap = await db.collection("users").get();
+
+  if (usersSnap.empty) {
+    console.log("No users found.");
+    return;
+  }
+
+  for (const userDoc of usersSnap.docs) {
+    const user = userDoc.data();
+    const userId = userDoc.id;
+    const token = user.fcmToken;
+
+    if (!token) {
+      continue;
+    }
+
+    // Check if notification was already sent today
+    const taskReminderSentAt = user.taskReminderSentAt;
+    if (taskReminderSentAt === todayDateString) {
+      continue;
+    }
+
+    // Get all tasks created today (startOfDay <= createdAt <= endOfDay)
+    const tasksSnap = await db
+      .collection("users")
+      .doc(userId)
+      .collection("tasks")
+      .where("createdAt", ">=", startOfDay)
+      .where("createdAt", "<=", endOfDay)
+      .get();
+
+    // If no tasks exist today, skip
+    if (tasksSnap.empty) {
+      continue;
+    }
+
+    // Find the oldest task's createdAt timestamp (minimum createdAt)
+    let oldestTaskCreatedAt = null;
+    for (const taskDoc of tasksSnap.docs) {
+      const taskData = taskDoc.data();
+      const createdAt = taskData.createdAt;
+      if (createdAt) {
+        if (oldestTaskCreatedAt === null || createdAt.toMillis() < oldestTaskCreatedAt.toMillis()) {
+          oldestTaskCreatedAt = createdAt;
+        }
+      }
+    }
+
+    if (oldestTaskCreatedAt === null) {
+      continue;
+    }
+
+    const oldestTaskDateUTC = oldestTaskCreatedAt.toDate();
+    const oldestTaskDateSaudi = new Date(oldestTaskDateUTC.getTime() + (3 * 60 * 60 * 1000));
+    const elapsedHours = (nowSaudi.getTime() - oldestTaskDateSaudi.getTime()) / (1000 * 60 * 60);
+    
+    if (elapsedHours < 10) {
+      continue;
+    }
+
+    let hasCompletedTask = false;
+    for (const taskDoc of tasksSnap.docs) {
+      const taskData = taskDoc.data();
+      if (taskData.isChecked === true) {
+        hasCompletedTask = true;
+        break;
+      }
+    }
+
+    if (hasCompletedTask) {
+      continue;
+    }
+
+    // All conditions met: send notification
+    const message = {
+      notification: {
+        title: "Tasks Reminder",
+        body: "You haven't completed any tasks today. Let's get started!",
+      },
+      token,
+    };
+
+    try {
+      await messaging.send(message);
+      // Store as "YYYY-MM-DD"
+      await db.collection("users").doc(userId).update({
+        taskReminderSentAt: todayDateString,
+      });
+      console.log(`Sent task reminder to user ${userId}`);
+    } catch (err) {
+      console.error(`Error sending task reminder to user ${userId}:`, err);
+    }
+  }
+});
