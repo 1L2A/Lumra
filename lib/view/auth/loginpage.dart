@@ -89,16 +89,62 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: BSizes.lg,
-              vertical: BSizes.xl + BSizes.md,
-            ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Stack(
+            children: [
+              Container(color: Colors.white),
 
-            child: Column(
-              children: [
+              Positioned(
+                top: -100,
+                left: -100,
+                child: Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF5F8C84).withOpacity(0.9),
+                        const Color(0xFF8FA692),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                ),
+              ),
+
+              Positioned(
+                bottom: -100,
+                right: -100,
+                child: Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFE9B8A9).withOpacity(0.9),
+                        const Color(0xFFFDE9C9),
+                      ],
+                      begin: Alignment.topRight,
+                      end: Alignment.bottomLeft,
+                    ),
+                  ),
+                ),
+              ),
+
+              SafeArea(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: BSizes.lg,
+                      vertical: BSizes.xl + BSizes.md,
+                    ),
+
+                    child: Column(
+                      children: [
                 const SizedBox(height: BSizes.xl + BSizes.md),
                 Image.asset('assets/images/logo.png', height: 140),
                 const SizedBox(height: BSizes.xl + BSizes.sm),
@@ -427,9 +473,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ],
-            ),
-          ),
-        ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
