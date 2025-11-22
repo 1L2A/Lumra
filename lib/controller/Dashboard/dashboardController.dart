@@ -133,48 +133,81 @@ class DashboardController extends GetxController {
     }
   }
 
-  // Realtime listener on /users/{adhdUid}/tasks
   void _listenToAdhdTasks() {
-    _tasksSub?.cancel();
+  _tasksSub?.cancel();
 
-    final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
-    final endOfDay = startOfDay.add(const Duration(days: 1));
+  _tasksSub = db
+      .collection('users')
+      .doc(adhdUid)
+      .collection('tasks')
+      .snapshots()
+      .listen(
+        (snap) {
+          final now = DateTime.now();
 
-    _tasksSub = db
-        .collection('users')
-        .doc(adhdUid)
-        .collection('tasks')
-        // Only tasks created today
-        .where(
-          'createdAt',
-          isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
-        )
-        .where('createdAt', isLessThan: Timestamp.fromDate(endOfDay))
-        .snapshots()
-        .listen(
-          (snap) {
-            final docs = snap.docs;
+          // dateKey represents the "day this task belongs to"
+          // e.g. "2025-11-22"
+          final todayKey =
+              '${now.year.toString().padLeft(4, '0')}-'
+              '${now.month.toString().padLeft(2, '0')}-'
+              '${now.day.toString().padLeft(2, '0')}';
 
-            final int total = docs.length; // tasks for today only
-            final int checked = docs
-                .where((d) => d.data()['isChecked'] == true)
-                .length;
+          // DASHBOARD FILTER:
+          // Only include tasks that belong to today.
+          // If a task has dateKey, we compare it directly.
+          // If it doesn't (older data), we fall back to createdAt.
+          final todayDocs = snap.docs.where((d) {
+            final data = d.data();
 
-            totalTasks.value = total;
-            checkedTasks.value = checked;
+            // 1) Prefer dateKey if present
+            final dk = data['dateKey'];
+            if (dk is String) {
+              return dk == todayKey;
+            }
 
-            // scoring uses today's tasks only
-            updateTaskProgress(checked, total);
-            // scoring uses today's tasks only
-          },
-          onError: (e) {
-            totalTasks.value = 0;
-            checkedTasks.value = 0;
-            updateTaskProgress(0, 0);
-          },
-        );
-  }
+            // 2) Fallback: use createdAt date
+            final createdAt = data['createdAt'];
+            if (createdAt is Timestamp) {
+              final dt = createdAt.toDate();
+              return dt.year == now.year &&
+                  dt.month == now.month &&
+                  dt.day == now.day;
+            }
+
+            // 3) As a last resort, keep the task (so old tasks don't disappear suddenly)
+            return true;
+          }).toList();
+
+          final int total = todayDocs.length; // tasks for today only
+          final int checked = todayDocs
+              .where((d) => d.data()['isChecked'] == true)
+              .length;
+
+          totalTasks.value = total;
+          checkedTasks.value = checked;
+
+          // Scoring uses today's tasks only
+          updateTaskProgress(checked, total);
+        },
+        onError: (e) {
+          totalTasks.value = 0;
+          checkedTasks.value = 0;
+          updateTaskProgress(0, 0);
+        },
+      );
+}
+
+// FILTERING FOR DASHBOARD:
+  // We only count tasks that belong to "today"
+  // The dashboard uses dateKey to know which day the task was created
+  // This ensures that daily progress reflects only today's tasks
+  // even if the task is still visible from previous days
+  //
+  // Example:
+  // - Task created on Thursday with dateKey="2025-11-20"
+  // - User checks it on Friday
+  // → It will NOT count for Friday's task progress
+  // → It counted only on Thursday
 
   void _listenToDailyMood() {
     _moodSub?.cancel();
