@@ -33,17 +33,12 @@ class _ChatPageState extends State<ChatPage>
       backgroundColor: BColors.lightGrey,
       body: Column(
         children: [
-          // Unified header: Stack with wave background + header row on top
           SizedBox(
             height:
-                MediaQuery.of(context).viewPadding.top +
-                BSizes.lg +
-                36 +
-                30, // Slightly increased wave height for better visual balance
+                MediaQuery.of(context).viewPadding.top + BSizes.lg + 36 + 30,
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                // 1. Background decorative wave (AnimatedWaveClipper) - thin header decoration
                 Positioned.fill(
                   child: AnimatedBuilder(
                     animation: _waveCtrl,
@@ -64,18 +59,16 @@ class _ChatPageState extends State<ChatPage>
                     },
                   ),
                 ),
-                // 2. Header row above the wave
                 SafeArea(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
                       BSizes.lg,
                       BSizes.lg,
                       BSizes.lg,
-                      BSizes.xs, // Minimal bottom padding for tight header
+                      BSizes.xs,
                     ),
                     child: Row(
                       children: [
-                        // Back button with correct shadow/elevation - standard size
                         GestureDetector(
                           onTap: () => Get.back(),
                           child: Container(
@@ -101,7 +94,6 @@ class _ChatPageState extends State<ChatPage>
                           ),
                         ),
                         SizedBox(width: BSizes.sm),
-                        // Title - must be visible and above the wave, centered but slightly shifted left
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.only(left: 0),
@@ -126,7 +118,6 @@ class _ChatPageState extends State<ChatPage>
               ],
             ),
           ),
-          // Chat content below - expands to full vertical space
           Expanded(child: ChatView(controller: widget.controller)),
         ],
       ),
@@ -134,7 +125,6 @@ class _ChatPageState extends State<ChatPage>
   }
 }
 
-// Wave clipper (copied from ChatBootADHD.dart)
 class _AnimatedWaveClipper extends CustomClipper<Path> {
   final double phase; // 0..1
   const _AnimatedWaveClipper({required this.phase});
