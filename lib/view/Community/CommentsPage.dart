@@ -8,6 +8,7 @@ import 'package:lumra_project/theme/base_themes/sizes.dart';
 import 'package:lumra_project/theme/custom_themes/appbar_theme.dart';
 import 'package:lumra_project/view/Community/communityWidgets/CommentView.dart';
 import 'package:lumra_project/view/Community/communityWidgets/addCommentView.dart'; // <- your new comment sheet
+import 'package:lumra_project/utils/customWidgets/custom_dialog.dart';
 
 class CommentsPage extends StatefulWidget {
   final String postId;
@@ -41,7 +42,6 @@ class _CommentsPageState extends State<CommentsPage> {
     controller.listenToComments(widget.postId);
   }
 
-
   void handleReport(Comment comment) {
     //controller.reportComment(widget.postId, comment.id);
   }
@@ -59,7 +59,7 @@ class _CommentsPageState extends State<CommentsPage> {
               BAppBarTheme.createHeader(
                 context: context,
                 title: "Comments",
-                subtitle:"for "+ widget.postUserName+"'s post",
+                subtitle: "for " + widget.postUserName + "'s post",
                 showBackButton: true,
                 onBackPressed: () => Navigator.pop(context),
               ),
@@ -85,8 +85,8 @@ class _CommentsPageState extends State<CommentsPage> {
               ),
             ],
           ),
-            /// Scrollable posts list
-              
+
+          /// Scrollable posts list
 
           /// FLOATING ADD-COMMENT BUTTON
           Positioned(
@@ -111,7 +111,23 @@ class _CommentsPageState extends State<CommentsPage> {
                   color: BColors.primary,
                   size: BSizes.iconMd + 5,
                 ),
-                onPressed: () {
+                onPressed: () async {
+                  final canPost = await controller.checkAndResetBanIfNeeded();
+                  if (!canPost) {
+                    final remainingDays = await controller
+                        .getRemainingBanDays();
+                    if (remainingDays != null) {
+                      final dayText = remainingDays == 1 ? 'day' : 'days';
+                      CustomDialog.showCloseOnly(
+                        context,
+                        title: "Posting Temporarily Disabled",
+                        message:
+                            "Posting has been disabled due to your recent posting activity.\nYou can post again in $remainingDays $dayText.",
+                      );
+                    }
+                    return;
+                  }
+
                   showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
@@ -124,7 +140,11 @@ class _CommentsPageState extends State<CommentsPage> {
                     ),
                     builder: (context) => FractionallySizedBox(
                       heightFactor: 0.80,
-                      child: AddCommentView(promptMessage: 'Write a comment and pass on something helpful!', postId: widget.postId),
+                      child: AddCommentView(
+                        promptMessage:
+                            'Write a comment and pass on something helpful!',
+                        postId: widget.postId,
+                      ),
                     ),
                   );
                 },
