@@ -506,7 +506,7 @@ class ViewProfile extends StatelessWidget {
                 filled: true,
                 fillColor: BColors.softGrey,
                 
-                suffixIcon: icon != null ? Icon(icon) : null, 
+                prefixIcon: icon != null ? Icon(icon) : null, 
                 hintText: 'YYYY-MM-DD',
                 border: const OutlineInputBorder(),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
