@@ -43,6 +43,7 @@ class DashboardController extends GetxController {
   final RxList<double> weeklyHistory = <double>[].obs;
 
   Timer? _midnightTimer;
+  bool _isInitialized = false;
 
   @override
   void onInit() {
@@ -60,6 +61,11 @@ class DashboardController extends GetxController {
       //from your users collection
       adhdUid = data['linkedUserId'] as String;
 
+      //Load current weekly and history first
+      await _loadWeeklyScores();
+      await _loadWeeklyHistory();
+      _isInitialized = true;
+
       // attach all realtime listeners that use adhdUid
       _listenToAdhdTasks();
       _listenToDailyMood();
@@ -67,9 +73,6 @@ class DashboardController extends GetxController {
       // 3. Start Activity Listeners
       _listenToCustomActivities();
       _listenToSystemActivities();
-
-      await _loadWeeklyScores(); //load existing weeklyDashboard from Firestore
-      await _loadWeeklyHistory();
 
       _scheduleMidnightSave(); // schedule daily saving at midnight
     } catch (e) {
@@ -423,6 +426,7 @@ class DashboardController extends GetxController {
 
   // Combine all into dailyScore (0–100) and update weeklyScores today index
   void _recomputeDailyScore() {
+    if (!_isInitialized) return;
     final mood = _moodScore();
     final task = _taskScore();
     final focus = _focusScore();
@@ -432,6 +436,9 @@ class DashboardController extends GetxController {
     dailyScore.value = combined * 100.0;
 
     _updateWeeklyScoresLive(); //so line chart reflects live changes CHECK THIS WITH GIRLS
+    _updateWeeklyHistoryRealtime();
+
+    _saveRealtimeScores();
   }
 
   // LIVE: average score for the current week so far (0–100)
@@ -489,12 +496,55 @@ class DashboardController extends GetxController {
     weeklyScores.refresh();
   }
 
+  void _updateWeeklyHistoryRealtime() {
+    final nonZero = weeklyScores.where((v) => v > 0).toList();
+    final avg = nonZero.isEmpty
+        ? 0.0
+        : nonZero.fold(0.0, (sum, v) => sum + v) / nonZero.length;
+
+    final todayIdx = _dayIndex(DateTime.now());
+
+    // if today is Sunday and last week exists, start a new entry
+    if (todayIdx == 0 && weeklyHistory.isNotEmpty) {
+      weeklyHistory.add(avg);
+    } else if (weeklyHistory.isEmpty) {
+      weeklyHistory.add(avg);
+    } else {
+      weeklyHistory[weeklyHistory.length - 1] = avg;
+    }
+  }
+
+  Future<void> _saveRealtimeScores() async {
+    if (!_isInitialized) return;
+
+    final todayIdx = _dayIndex(DateTime.now());
+
+    final updatedWeeklyScores = List<double>.from(weeklyScores);
+    updatedWeeklyScores[todayIdx] = dailyScore.value;
+
+    final nonZeroDays = updatedWeeklyScores.where((v) => v > 0).toList();
+    final currentWeekAvg = nonZeroDays.isEmpty
+        ? 0.0
+        : nonZeroDays.fold(0.0, (sum, v) => sum + v) / nonZeroDays.length;
+
+    final updatedWeeklyHistory = List<double>.from(weeklyHistory);
+    if (updatedWeeklyHistory.isEmpty || todayIdx == 0) {
+      updatedWeeklyHistory.add(currentWeekAvg);
+    } else {
+      updatedWeeklyHistory[updatedWeeklyHistory.length - 1] = currentWeekAvg;
+    }
+
+    await db.collection('users').doc(adhdUid).set({
+      'weeklyDashboard': updatedWeeklyScores,
+      'weeklyHistory': updatedWeeklyHistory,
+    }, SetOptions(merge: true));
+  }
+
   // save today's score into Firestore weeklyDashboard array at midnight
   // save daily and compute weekly score at end of week
   Future<void> _saveDailyScoreToWeekArray() async {
     final now = DateTime.now();
-    final yesterday = now.subtract(const Duration(days: 1));
-    final dayIdx = _dayIndex(yesterday); // 0=Sun .. 6=Sat
+    final dayIdx = _dayIndex(now); // 0=Sun .. 6=Sat
 
     // keep weeklyScores at size 7
     if (weeklyScores.length < 7) {
