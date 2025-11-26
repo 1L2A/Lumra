@@ -41,7 +41,6 @@ class _MyPostsPageState extends State<MyPostsPage> {
               BAppBarTheme.createHeader(
                 context: context,
                 title: 'My Posts',
-                subtitle: 'To edit or delete your posts Swipe left!',
                 showBackButton: true,
                 onBackPressed: () => Navigator.pop(context),
               ),

@@ -74,125 +74,7 @@ class PostView extends StatelessWidget {
         shrinkWrap: isShrinkWrap,
         physics: SrollType,
         separatorBuilder: (_, __) => SizedBox(height: BSizes.SpaceBtwItems),
-        itemBuilder: (context, index) {
-          final post = postList[index];
-
-          if (post.userId == controller.currentUid) {
-            return Slidable(
-              key: Key(post.id),
-              endActionPane: ActionPane(
-                motion: const ScrollMotion(),
-                children: [
-                  // Edit button
-                  SlidableAction(
-                    onPressed: (_) async {
-                      // Prefill controller
-                      controller.contentController.text = post.content;
-
-                      // Open bottom sheet for editing
-                      final updated = await showModalBottomSheet<bool>(
-                        context: context,
-                        isScrollControlled: true,
-                        useSafeArea: true,
-                        backgroundColor: BColors.white,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(32),
-                          ),
-                        ),
-                        builder: (context) => FractionallySizedBox(
-                          heightFactor: 0.80,
-                          child: AddPostView(
-                            promptMessage: "",
-                            isEdit: true,
-                            postToEdit: post,
-                          ),
-                        ),
-                      );
-
-                      controller.contentController.clear();
-                      controller.updateFormValidity();
-
-                      if (updated != null && updated) {
-                        ToastService.success('Post Updated Successfully');
-                      }
-                    },
-                    backgroundColor: BColors.info.withOpacity(0.2),
-                    foregroundColor: BColors.info,
-                    icon: Icons.edit,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      bottomLeft: Radius.circular(16),
-                    ),
-                    spacing: 0,
-                    flex: 1, // <-- full height
-                  ),
-
-                  // Delete button
-                  SlidableAction(
-                    onPressed: (_) async {
-                      final confirm = await showDialog(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          title: const Text('Delete'),
-                          content: const Text(
-                            'Are you sure you want to delete this post?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(false),
-                              child: const Text(
-                                'Cancel',
-                                style: TextStyle(color: Colors.black),
-                              ),
-                            ),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: BColors.primary,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              onPressed: () => Navigator.of(ctx).pop(true),
-                              child: const Text(
-                                "Confirm",
-                                style: TextStyle(
-                                  fontFamily: 'K2D',
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-
-                      if (confirm == true) {
-                        await controller.deletePost(post.id);
-                      }
-                    },
-                    backgroundColor: BColors.error.withOpacity(0.2),
-                    foregroundColor: BColors.error,
-                    icon: Icons.delete_outline,
-                    borderRadius: const BorderRadius.only(
-                      topRight: Radius.circular(16),
-                      bottomRight: Radius.circular(16),
-                    ),
-                    spacing: 0,
-                    flex: 1,
-                  ),
-                ],
-              ),
-              child: _postCard(context, post),
-            );
-          } else {
-            return _postCard(context, post);
-          }
-        },
-        //itemBuilder: (context, index) => _postCard(context,postList[index]),
+        itemBuilder: (context, index) => _postCard(context, postList[index]),
       );
     });
   }
@@ -228,12 +110,13 @@ class PostView extends StatelessWidget {
 
   Widget _postHeader(BuildContext context, Post post) {
     const double avatarDiameter = 40;
-    // For Report Animation
     final reportNotifier = ValueNotifier<bool>(false);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        // LEFT: Avatar + Username
         Row(
           children: [
             Padding(
@@ -243,10 +126,7 @@ class PostView extends StatelessWidget {
                 height: avatarDiameter,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: BColors.secondry, // border color
-                    width: 1, // border thickness
-                  ),
+                  border: Border.all(color: BColors.secondry, width: 1),
                 ),
                 child: ClipOval(
                   child: Image.asset(
@@ -263,81 +143,188 @@ class PostView extends StatelessWidget {
             ),
           ],
         ),
-        // Report
-        IconButton(
-          icon: ValueListenableBuilder<bool>(
-            valueListenable: reportNotifier,
-            builder: (context, isReporting, child) {
-              return AnimatedSwitcher(
-                duration: const Duration(milliseconds: 245),
-                transitionBuilder: (child, anim) =>
-                    ScaleTransition(scale: anim, child: child),
-                child: isReporting
-                    ? Icon(
-                        Icons.flag,
-                        key: ValueKey('reporting_${post.id}'),
-                        color: BColors.error,
-                        size: BSizes.iconMd,
-                      )
-                    : Icon(
-                        Icons.flag_outlined,
-                        key: ValueKey('unreported_${post.id}'),
-                        color: BColors.darkGrey,
-                        size: BSizes.iconMd,
+
+        // RIGHT: Actions
+        if (post.userId == controller.currentUid)
+          // My Post: Only Edit/Delete Menu 
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: BColors.primary),
+            color: BColors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(32),
+            ),
+            onSelected: (value) async {
+              if (value == 'edit') {
+                controller.contentController.text = post.content;
+
+                final updated = await showModalBottomSheet<bool>(
+                  context: context,
+                  isScrollControlled: true,
+                  useSafeArea: true,
+                  backgroundColor: BColors.white,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(32),
+                    ),
+                  ),
+                  builder: (context) => FractionallySizedBox(
+                    heightFactor: 0.80,
+                    child: AddPostView(
+                      promptMessage: "",
+                      isEdit: true,
+                      postToEdit: post,
+                    ),
+                  ),
+                );
+
+                controller.contentController.clear();
+                controller.updateFormValidity();
+
+                if (updated == true) {
+                  ToastService.success('Post Updated Successfully');
+                }
+              } else if (value == 'delete') {
+                final confirm = await showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    title: const Text('Delete'),
+                    content: const Text(
+                      'Are you sure you want to delete this post?',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.black),
+                        ),
                       ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: BColors.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        child: const Text(
+                          "Confirm",
+                          style: TextStyle(fontFamily: 'K2D', fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true) {
+                  await controller.deletePost(post.id);
+                }
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, size: 20, color: BColors.primary),
+                    const SizedBox(width: 8),
+                    const Text("Edit"),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete_outline,
+                      size: 20,
+                      color: BColors.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text("Delete"),
+                  ],
+                ),
+              ),
+            ],
+          )
+        else
+          // Someone Else's Post: Report Icon 
+          IconButton(
+            icon: ValueListenableBuilder<bool>(
+              valueListenable: reportNotifier,
+              builder: (context, isReporting, child) {
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 245),
+                  transitionBuilder: (child, anim) =>
+                      ScaleTransition(scale: anim, child: child),
+                  child: isReporting
+                      ? Icon(
+                          Icons.flag,
+                          key: ValueKey('reporting_${post.id}'),
+                          color: BColors.error,
+                          size: BSizes.iconMd,
+                        )
+                      : Icon(
+                          Icons.flag_outlined,
+                          key: ValueKey('unreported_${post.id}'),
+                          color: BColors.primary,
+                          size: BSizes.iconMd,
+                        ),
+                );
+              },
+            ),
+            tooltip: 'Report Post',
+            onPressed: () async {
+              final confirm = await showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  title: const Text('Report'),
+                  content: const Text(
+                    'Are you sure you want to report this Post?',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: Colors.black),
+                      ),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BColors.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text(
+                        "Confirm",
+                        style: TextStyle(fontFamily: 'K2D', fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
               );
+
+              if (confirm == true) {
+                reportNotifier.value = true;
+                await controller.reportPost(post.id);
+                Future.delayed(const Duration(milliseconds: 600), () {
+                  reportNotifier.value = false;
+                });
+              }
             },
           ),
-          tooltip: 'Report Post',
-          onPressed: () async {
-            final confirm = await showDialog(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                backgroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                title: const Text('Report'),
-                content: const Text(
-                  'Are you sure you want to report this Post?',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(false),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(color: Colors.black),
-                    ),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    child: const Text(
-                      "Confirm",
-                      style: TextStyle(fontFamily: 'K2D', fontSize: 14),
-                    ),
-                  ),
-                ],
-              ),
-            );
-
-            if (confirm == true) {
-              // Trigger bounce animation
-              reportNotifier.value = true;
-
-              await controller.reportPost(post.id);
-              // Revert back automatically making the flag empty
-              Future.delayed(const Duration(milliseconds: 600), () {
-                reportNotifier.value = false;
-              });
-            }
-          },
-        ),
       ],
     );
   }
@@ -355,20 +342,24 @@ class PostView extends StatelessWidget {
         children: [
           Text(post.content),
           SizedBox(height: BSizes.sm),
-          Row(children: [ Text(
-            'Posted ${post.createdAt.toDate().toLocal().toString().split(' ')[0]}',
-            style: BTextTheme.lightTextTheme.labelMedium?.copyWith(
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          if (post.isEdited)
-            Text(
-              "    (Edited)",
-              style: BTextTheme.lightTextTheme.labelMedium?.copyWith(
-                fontStyle: FontStyle.italic,
+          Row(
+            children: [
+              Text(
+                'Posted ${post.createdAt.toDate().toLocal().toString().split(' ')[0]}',
+                style: BTextTheme.lightTextTheme.labelMedium?.copyWith(
+                  fontStyle: FontStyle.italic,
+                ),
               ),
-            ),],),
-         
+              if (post.isEdited)
+                Text(
+                  "    (Edited)",
+                  style: BTextTheme.lightTextTheme.labelMedium?.copyWith(
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+            ],
+          ),
+
           SizedBox(height: BSizes.xs),
           Divider(indent: 0.5, endIndent: 0.5, color: BColors.grey),
         ],
@@ -413,7 +404,7 @@ class PostView extends StatelessWidget {
                       key: ValueKey('bookmark_${post.id}'),
                       color: isSaved
                           ? const Color.fromARGB(255, 241, 205, 99)
-                          : BColors.darkGrey,
+                          : BColors.primary,
                       size: BSizes.iconMd,
                     ),
             ),
@@ -421,7 +412,7 @@ class PostView extends StatelessWidget {
         }),
         SizedBox(width: BSizes.sm),
         IconButton(
-          icon: const Icon(Icons.comment_outlined, size: BSizes.iconMd - 1.5),
+          icon: const Icon(Icons.comment_outlined, size: BSizes.iconMd - 1.5, color: BColors.primary,),
           onPressed: () {
             Navigator.push(
               context,
@@ -490,7 +481,7 @@ class _LikeButtonState extends State<_LikeButton>
                   Icon(
                     isLiked ? Icons.favorite : Icons.favorite_border,
                     size: BSizes.iconMd,
-                    color: isLiked ? Colors.red : BColors.darkGrey,
+                    color: isLiked ? Colors.red : BColors.primary,
                   ),
                   SizedBox(
                     width: 24,
@@ -500,7 +491,7 @@ class _LikeButtonState extends State<_LikeButton>
                             child: Text(
                               '$likeCount',
                               style: BTextTheme.lightTextTheme.labelMedium
-                                  ?.copyWith(color: BColors.darkGrey),
+                                  ?.copyWith(color: BColors.primary),
                             ),
                           )
                         : null,
