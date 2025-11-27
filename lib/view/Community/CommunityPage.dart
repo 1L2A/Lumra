@@ -119,27 +119,64 @@ class _CommunityPageState extends State<CommunityPage> {
                     return;
                   }
 
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    useSafeArea: true,
-                    backgroundColor: BColors.white,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(32),
-                      ),
-                    ),
-                    builder: (context) => FractionallySizedBox(
-                      heightFactor: 0.80,
-                      child: AddPostView(
-                        promptMessage:
-                            "Share a tip, experience, or resource that has helped you. Your insight might help someone else!",
-                      ),
-                    ),
-                  ).whenComplete(() {
-                    postController.contentController.clear();
-                    postController.updateFormValidity();
-                  });
+            showModalBottomSheet(
+  context: context,
+  isScrollControlled: true,
+  useSafeArea: true,
+  backgroundColor: BColors.white, // modal background
+  shape: const RoundedRectangleBorder(
+    borderRadius: BorderRadius.vertical(
+      top: Radius.circular(32),
+    ),
+  ),
+  builder: (context) => WillPopScope(
+    onWillPop: () async {
+      if (postController.contentController.text.length >= 70) {
+        bool exit = await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: BColors.white, // dialog background
+            title: const Text("Confirm Exit"),
+            content: const Text(
+              "You have typed a lot of content. Are you sure you want to exit?",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                style: TextButton.styleFrom(
+                  foregroundColor: BColors.black, // button color
+                ),
+                child: const Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(
+                  backgroundColor: BColors.primary, // button background
+    foregroundColor: Colors.white,    // button text color
+                ),
+                child: const Text("Exit"),
+              ),
+            ],
+          ),
+        );
+        return exit ?? false;
+      }
+      return true;
+    },
+    child: FractionallySizedBox(
+      heightFactor: 0.80,
+      child: AddPostView(
+        promptMessage:
+            "Share a tip, experience, or resource that has helped you. Your insight might help someone else!",
+      ),
+    ),
+  ),
+).whenComplete(() {
+  postController.contentController.clear();
+  postController.updateFormValidity();
+});
+
+
                 },
               ),
             ),
