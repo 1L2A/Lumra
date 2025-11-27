@@ -182,7 +182,9 @@ class _AdminCommentsPageState extends State<AdminCommentsPage> {
                       );
                     }
 
-                    ToastService.success("Comment removed successfully");
+                    ToastService.success(
+                      "Comment has been deleted successfully",
+                    );
                   }
                 },
               ),
