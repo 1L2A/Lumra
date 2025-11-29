@@ -56,7 +56,7 @@ class Signoutdialog {
               onPressed: () async {
                 await authController.logout();
                 Navigator.pop(context);
-                Get.offAll(() => const Welcomepage());
+                Get.offAll(() => const LoginScreen());
               },
               child: const Text(
                 "Confirm",

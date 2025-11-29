@@ -9,6 +9,7 @@ import 'package:lumra_project/view/Admin/admin_comments_page.dart';
 import 'package:lumra_project/view/Admin/dialog_helper.dart';
 import 'package:lumra_project/controller/auth/auth_controller.dart';
 import 'package:lumra_project/view/welcomePage.dart';
+import 'package:lumra_project/view/auth/loginPage.dart';
 import 'package:lumra_project/utils/customWidgets/toastservice.dart';
 
 class AdminHomePage extends StatefulWidget {
@@ -160,7 +161,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
               onPressed: () async {
                 await authController.logout();
                 Navigator.pop(context);
-                Get.offAll(() => const Welcomepage());
+                Get.offAll(() => const LoginScreen());
               },
               child: const Text(
                 "Confirm",
