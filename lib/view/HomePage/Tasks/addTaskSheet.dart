@@ -182,6 +182,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: _priority,
+                          dropdownColor: Colors.white,
                           items: const [
                             DropdownMenuItem(
                               value: "high",
@@ -197,6 +198,8 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                           validator: (v) =>
                               v == null ? "Priority is required" : null,
                           decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.white,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(
                                 BSizes.inputFieldRadius,
