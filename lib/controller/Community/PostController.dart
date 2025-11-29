@@ -727,8 +727,6 @@ class PostControllerX extends GetxController {
 
             //Update reactive list for this post
             commentsForPost(postId).value = commentList;
-            //Update real-time comment count
-            commentCounts[postId] = snapshot.size;
 
             print('Fetched ${commentList.length} comments for post: $postId');
           },
@@ -736,13 +734,6 @@ class PostControllerX extends GetxController {
             print('Error listening to comments for post $postId: $e');
           },
         );
-  }
-
-  var commentCounts =
-      <String, int>{}.obs; //Stores real-time comment counts per post
-
-  int getCommentCountReactive(String postId) {
-    return commentCounts[postId] ?? 0; // Returns real-time count
   }
 
   // Returns reactive comments list for a post
@@ -945,5 +936,14 @@ class PostControllerX extends GetxController {
       sub.cancel();
     }
     _likesSubscriptions.clear();
+  }
+
+    Stream<int> commentCountStream(String postId) {
+    return db
+        .collection(communityCollection)
+        .doc(postId)
+        .collection('comments')
+        .snapshots()
+        .map((snapshot) => snapshot.size);
   }
 }

@@ -352,7 +352,7 @@ class PostView extends StatelessWidget {
               ),
               if (post.isEdited)
                 Text(
-                  "    (Edited)",
+                  "   (Edited)",
                   style: BTextTheme.lightTextTheme.labelMedium?.copyWith(
                     fontStyle: FontStyle.italic,
                   ),
@@ -414,41 +414,54 @@ class PostView extends StatelessWidget {
         Row(
           children: [
             // comment
-            IconButton(
-              icon: const Icon(
-                Icons.comment_outlined,
-                size: BSizes.iconMd - 1.8,
-                color: BColors.primary,
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CommentsPage(
-                      postId: post.id,
-                      postUserName: post.userName,
-                    ),
-                  ),
-                );
-              },
-              color: BColors.darkGrey,
-              tooltip: 'Comment',
+            StreamBuilder<int>(
+  stream: controller.commentCountStream(post.id),
+  builder: (context, snapshot) {
+    final count = snapshot.data ?? 0;
+
+    return Row(
+      children: [
+        Transform.translate(
+          offset: const Offset(0, 1.2),
+          child: IconButton(
+            icon: const Icon(
+              Icons.comment_outlined,
+              size: BSizes.iconMd - 1.8,
+              color: BColors.primary,
             ),
-
-            //comment count
-            Obx(() {
-              final count = controller.getCommentCountReactive(post.id);
-
-              if (count == 0) return const SizedBox();
-
-              return Transform.translate(
-                offset: const Offset(-9, -1),
-                child: Text(
-                  "$count",
-                  style: const TextStyle(color: BColors.primary),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CommentsPage(
+                    postId: post.id,
+                    postUserName: post.userName,
+                  ),
                 ),
               );
-            }),
+            },
+            tooltip: 'Comment',
+          ),
+        ),
+
+        if (count > 0)
+          Transform.translate(
+            offset: const Offset(-9, 0.5),
+            child: Text(
+              "$count",
+              style: const TextStyle(
+                color: BColors.primary,
+                fontSize: 13,
+              ),
+            ),
+          ),
+      ],
+    );
+  },
+),
+
+
+            
           ],
         ),
       ],
