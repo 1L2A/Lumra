@@ -127,7 +127,7 @@ export const sendDailyCaregiverSupport = onSchedule("every 24 hours", async (eve
       if (completedCount > 0) {
         //WE MIGHT USE THIS ASK TEAM 
        // body = `Great job today! ${completedCount} task${completedCount > 1 ? "s were" : " was"} completed. Your follow-up is making a big difference `;
-       body = `Nice work today! You completed some tasks — keep going.`;
+       body = `Good job today! Keep making progress.`;
 
       } else {
         body =

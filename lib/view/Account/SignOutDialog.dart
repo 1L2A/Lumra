@@ -12,6 +12,7 @@ class Signoutdialog {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
