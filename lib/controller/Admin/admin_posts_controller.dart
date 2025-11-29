@@ -373,4 +373,13 @@ class AdminPostsController extends GetxController {
 
     print(' deletedPostsCount updated for $userId');
   }
+
+  Stream<int> commentCountStream(String postId, String collection) {
+    return db
+        .collection(collection)
+        .doc(postId)
+        .collection('comments')
+        .snapshots()
+        .map((snapshot) => snapshot.size);
+  }
 }

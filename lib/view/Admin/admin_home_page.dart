@@ -384,22 +384,53 @@ class _AdminHomePageState extends State<AdminHomePage> {
         ),
         const Spacer(),
 
-        IconButton(
-          icon: const Icon(Icons.comment_outlined, size: BSizes.iconMd - 1),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => AdminCommentsPage(
-                  postId: postId,
-                  postUserName: userName,
-                  collectionName: collection,
+        // ---------------------- COMMENTS BUTTON + Real-Time COUNT ----------------------
+        StreamBuilder<int>(
+          stream: adminController.commentCountStream(
+            postId,
+            collection,
+          ), //  Real-Time
+          builder: (context, snapshot) {
+            final count = snapshot.data ?? 0;
+
+            return Row(
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.comment_outlined,
+                    size: BSizes.iconMd - 1,
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AdminCommentsPage(
+                          postId: postId,
+                          postUserName: userName,
+                          collectionName: collection,
+                        ),
+                      ),
+                    );
+                  },
+                  color: BColors.darkGrey,
+                  tooltip: 'Comments',
                 ),
-              ),
+
+                if (count > 0)
+                  Transform.translate(
+                    offset: const Offset(-9, -1.5),
+                    child: Text(
+                      "$count",
+                      style: const TextStyle(
+                        color: BColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+              ],
             );
           },
-          color: BColors.darkGrey,
-          tooltip: 'Comments',
         ),
 
         const SizedBox(width: 10),
