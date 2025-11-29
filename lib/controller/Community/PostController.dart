@@ -261,7 +261,7 @@ class PostControllerX extends GetxController {
     // Regex: checks if the string contains only special characters or spaces
     final onlySpecialChars = RegExp(r'^[^a-zA-Z0-9]+$');
 
-    if (text.isEmpty || isContentNotChanged() ) {
+    if (text.isEmpty || isContentNotChanged()) {
       hasInteracted.value = false;
       contentError.value = null;
       hasRestrictedContent.value = false;
@@ -281,17 +281,16 @@ class PostControllerX extends GetxController {
     }
   }
 
-    bool isContentNotChanged() {
+  bool isContentNotChanged() {
     return originalContent == contentController.text.trim();
   }
 
-    void setOriginalContent(String content) {
+  void setOriginalContent(String content) {
     originalContent = content;
     contentController.text = content;
     currentLength.value = content.length;
     updateFormValidity();
   }
-
 
   void _checkRestrictedContent(String text) {
     if (!_bannedWordsLoaded.value) {
@@ -623,7 +622,6 @@ class PostControllerX extends GetxController {
   bool isPostLiked(String postId) => likedPostIds.contains(postId);
   int getLikeCount(String postId) => likeCounts[postId] ?? 0;
 
-
   Future<void> toggleLike(String postId) async {
     if (currentUid == null) {
       ToastService.error("You must be logged in to like posts");
@@ -727,8 +725,10 @@ class PostControllerX extends GetxController {
               );
             }).toList();
 
-            // Update reactive list for this post
+            //Update reactive list for this post
             commentsForPost(postId).value = commentList;
+            //Update real-time comment count
+            commentCounts[postId] = snapshot.size;
 
             print('Fetched ${commentList.length} comments for post: $postId');
           },
@@ -736,6 +736,13 @@ class PostControllerX extends GetxController {
             print('Error listening to comments for post $postId: $e');
           },
         );
+  }
+
+  var commentCounts =
+      <String, int>{}.obs; //Stores real-time comment counts per post
+
+  int getCommentCountReactive(String postId) {
+    return commentCounts[postId] ?? 0; // Returns real-time count
   }
 
   // Returns reactive comments list for a post
@@ -777,16 +784,6 @@ class PostControllerX extends GetxController {
       print('Failed to report comment $postId: $e');
     }
   }
-
-Future<int> getCommentCount(String postId) async {
-  final snapshot = await db
-      .collection(communityCollection)
-      .doc(postId)
-      .collection('comments')
-      .get();
-
-  return snapshot.size;
-}
 
   Future<bool> addComment(BuildContext context, String postId) async {
     hasInteracted.value = true;
@@ -844,7 +841,7 @@ Future<int> getCommentCount(String postId) async {
       );
       final docRef = await db
           .collection(communityCollection)
-          .doc(postId) 
+          .doc(postId)
           .collection("comments")
           .add(comment.toFirestore());
 
@@ -863,75 +860,70 @@ Future<int> getCommentCount(String postId) async {
     }
   }
 
-Future<void> deletePost(String postId) async {
-  try {
-    // Check ownership first
-    final postDoc = await db
-        .collection(communityCollection)
-        .doc(postId)
-        .get();
+  Future<void> deletePost(String postId) async {
+    try {
+      // Check ownership first
+      final postDoc = await db
+          .collection(communityCollection)
+          .doc(postId)
+          .get();
 
-    if (!postDoc.exists) return;
+      if (!postDoc.exists) return;
 
-    if (postDoc['userId'] != currentUid) {
-      print("Not allowed to delete this post");
-      return;
+      if (postDoc['userId'] != currentUid) {
+        print("Not allowed to delete this post");
+        return;
+      }
+
+      // Delete subcollections FIRST
+      await deleteSubcollection(communityCollection, postId, "comments");
+      await deleteSubcollection(communityCollection, postId, "likes");
+
+      // Delete the main post document
+      await db.collection(communityCollection).doc(postId).delete();
+
+      // Update UI lists
+      posts.removeWhere((p) => p.id == postId);
+      userPosts.removeWhere((p) => p.id == postId);
+      savedPosts.removeWhere((p) => p.id == postId);
+      savedPostIds.remove(postId);
+
+      print("Post $postId deleted successfully");
+    } catch (e) {
+      print('Error deleting post $postId: $e');
     }
-
-    // Delete subcollections FIRST
-    await deleteSubcollection(communityCollection, postId, "comments");
-    await deleteSubcollection(communityCollection, postId, "likes");
-
-    // Delete the main post document
-    await db.collection(communityCollection).doc(postId).delete();
-
-    // Update UI lists
-    posts.removeWhere((p) => p.id == postId);
-    userPosts.removeWhere((p) => p.id == postId);
-    savedPosts.removeWhere((p) => p.id == postId);
-    savedPostIds.remove(postId);
-
-    print("Post $postId deleted successfully");
-  } catch (e) {
-    print('Error deleting post $postId: $e');
   }
-}
 
+  Future<void> deleteSubcollection(
+    String collection,
+    String postId,
+    String sub,
+  ) async {
+    final ref = db.collection(collection).doc(postId).collection(sub);
 
-Future<void> deleteSubcollection(
-  String collection,
-  String postId,
-  String sub,
-) async {
-  final ref = db.collection(collection).doc(postId).collection(sub);
+    final snapshots = await ref.get();
 
-  final snapshots = await ref.get();
-
-  for (var doc in snapshots.docs) {
-    await ref.doc(doc.id).delete();
+    for (var doc in snapshots.docs) {
+      await ref.doc(doc.id).delete();
+    }
   }
-}
-
 
   String? originalContent; // store original content for edit
   Future<bool> updatePost(String postId, String newContent) async {
     try {
-     isLoading.value = true;
-     newContent = newContent.trim().replaceAll(RegExp(r'\s+'), ' ');
+      isLoading.value = true;
+      newContent = newContent.trim().replaceAll(RegExp(r'\s+'), ' ');
       await FirebaseFirestore.instance
           .collection(communityCollection)
           .doc(postId)
-          .update({
-            'content': newContent,
-            'isEdited': true,
-          });
+          .update({'content': newContent, 'isEdited': true});
       isLoading.value = false;
       refreshUserPostsListener();
-      return true; 
+      return true;
     } catch (e) {
       isLoading.value = false;
       print("Error updating post: $e");
-      return false; 
+      return false;
     }
   }
 
