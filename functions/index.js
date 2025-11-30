@@ -69,71 +69,74 @@ export const scheduleEventReminder = onSchedule("every 1 minutes", async (event)
     }
 });
 ///////////////JANAS PART//////////////////////////////////
-export const sendDailyCaregiverSupport = onSchedule("every 24 hours", async (event) => {
-  //FOR TEST
-  //export const sendDailyCaregiverSupport = onSchedule("*/1 * * * *", async (event) => {
 
+export const sendDailyCaregiverSupport = onSchedule(
+  {
+    // Run every day at 12:00 PM (noon) 
+    schedule: "30 11 * * *",
+    timeZone: "Asia/Riyadh",
+    //schedule: "30 12 * * *",   // → 12:30 PM
+  },
+  async (event) => {
     console.log("Sending daily supportive notifications to caregivers...");
-  
+
     const now = new Date();
-  
-    // Today range (00:00 -> 23:59)
+
+    // Today range (00:00 -> 23:59) 
     const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
-  
+
     const endOfDay = new Date(now);
     endOfDay.setHours(23, 59, 59, 999);
-  
+
     //  Get all caregivers
     const caregiversSnap = await db
       .collection("users")
       .where("role", "==", "caregiver")
       .get();
-  
+
     if (caregiversSnap.empty) {
       console.log("No caregivers found.");
       return;
     }
-  
+
     for (const caregiverDoc of caregiversSnap.docs) {
       const caregiver = caregiverDoc.data();
       const caregiverId = caregiverDoc.id;
       const token = caregiver.fcmToken;
       const linkedUserId = caregiver.linkedUserId; // ADHD child UID
-  
+
       if (!token) {
         console.log(`Caregiver ${caregiverId} has no FCM token, skipping.`);
         continue;
       }
-  
+
       if (!linkedUserId) {
         console.log(`Caregiver ${caregiverId} has no linkedUserId, skipping.`);
         continue;
       }
-  
-      // Count checked tasks for the CG user today
+
       const tasksSnap = await db
-      .collection("users")
-      .doc(caregiverId)
-      .collection("tasks")
-      .where("isChecked", "==", true)
-      .where("updatedAt", ">=", startOfDay)
-      .where("updatedAt", "<=", endOfDay)
-      .get();
+        .collection("users")
+        .doc(caregiverId)
+        .collection("tasks")
+        .where("isChecked", "==", true)
+        .where("updatedAt", ">=", startOfDay)
+        .where("updatedAt", "<=", endOfDay)
+        .get();
+
       const completedCount = tasksSnap.size;
-  
+
       // supportive message
       let body;
       if (completedCount > 0) {
-        //WE MIGHT USE THIS ASK TEAM 
-       // body = `Great job today! ${completedCount} task${completedCount > 1 ? "s were" : " was"} completed. Your follow-up is making a big difference `;
-       body = `Good job today! Keep making progress.`;
-
+        // body = `Great job today! ${completedCount} task${completedCount > 1 ? "s were" : " was"} completed. Your follow-up is making a big difference `;
+        body = `Good job today! Keep making progress.`;
       } else {
         body =
           "Today was a quiet day, and that’s okay. You’re still doing your best!";
       }
-  
+
       const message = {
         notification: {
           title: "Daily Support",
@@ -141,15 +144,23 @@ export const sendDailyCaregiverSupport = onSchedule("every 24 hours", async (eve
         },
         token,
       };
-  
+
       try {
         await messaging.send(message);
-        console.log(`Sent daily supportive notification to caregiver ${caregiverId}`);
+        console.log(
+          `Sent daily supportive notification to caregiver ${caregiverId}`
+        );
       } catch (err) {
-        console.error(`Error sending daily support to caregiver ${caregiverId}:`, err);
+        console.error(
+          `Error sending daily support to caregiver ${caregiverId}:`,
+          err
+        );
       }
     }
-  });
+  }
+);
+
+
 
 export const sendTaskReminder = onSchedule("every 1 minutes", async (event) => {
   console.log("Checking for users with incomplete tasks after 10 hours...");
