@@ -31,13 +31,13 @@ class DashboardController extends GetxController {
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _customActivitySub;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _systemActivitySub;
 
-  //NEW by Loba for the weekly and daily:
+  // NEW for weekly and daily:
   int? _currentMood; // 1–5 or null
   double _taskPercent = 0; // 0–100
   int _focusMinutesCache = 0; // 0–240
   int _activitiesCount = 0; // total completed
 
-  //composite daily score (0–100) and weekly array (Sun=0..Sat=6)
+  // composite daily score (0–100) and weekly array (Sun=0..Sat=6)
   final RxDouble dailyScore = 0.0.obs;
   final RxList<double> weeklyScores = List<double>.filled(7, 0.0).obs;
   final RxList<double> weeklyHistory = <double>[].obs;
@@ -48,6 +48,7 @@ class DashboardController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    print('⚡⚡ DASHBOARD DEBUG ACTIVE (DashboardController.onInit) ⚡⚡');
     _initAll();
   }
 
@@ -58,12 +59,20 @@ class DashboardController extends GetxController {
       final snap = await db.collection('users').doc(caregiverUid).get();
       final data = snap.data()!;
 
-      //from your users collection
+      // from your users collection
       adhdUid = data['linkedUserId'] as String;
+      print('[DEBUG] _initAll → adhdUid=$adhdUid');
 
-      //Load current weekly and history first
+      // Load weekly scores + history first
       await _loadWeeklyScores();
       await _loadWeeklyHistory();
+      print(
+        '[DEBUG] _initAll → loaded weeklyScores=${weeklyScores.toList()}, weeklyHistory=${weeklyHistory.toList()}',
+      );
+
+      // Handle week change (shift + reset) once per week
+      await _ensureWeekBoundary();
+
       _isInitialized = true;
 
       // attach all realtime listeners that use adhdUid
@@ -76,6 +85,7 @@ class DashboardController extends GetxController {
 
       _scheduleMidnightSave(); // schedule daily saving at midnight
     } catch (e) {
+      print('[DEBUG] _initAll ERROR → $e');
       totalTasks.value = 0;
       checkedTasks.value = 0;
       dailyMood.value = null;
@@ -83,23 +93,102 @@ class DashboardController extends GetxController {
     }
   }
 
-  // NEW: append a weekly score, keep only last 8 weeks
-  Future<void> _appendWeekToHistory(double weekScore) async {
-    final list = List<double>.from(weeklyHistory);
-    list.add(weekScore);
+  // ---------- WEEK BOUNDARY HANDLING ----------
 
-    if (list.length > 8) {
-      list.removeAt(0); // remove oldest week
-    }
-
-    weeklyHistory.assignAll(list);
-
-    await db.collection('users').doc(adhdUid).set({
-      'weeklyHistory': list,
-    }, SetOptions(merge: true));
+  // helper: Sunday = 0 .. Saturday = 6
+  int _dayIndex(DateTime d) {
+    return d.weekday % 7;
   }
 
-  //NEW by Loba: load existing weeklyDashboard array (if any)
+  String _weekKeyFor(DateTime now) {
+    final idx = _dayIndex(now); // 0..6
+    // Sunday-based week start
+    final weekStart = DateTime(now.year, now.month, now.day - idx);
+    final y = weekStart.year.toString().padLeft(4, '0');
+    final m = weekStart.month.toString().padLeft(2, '0');
+    final d = weekStart.day.toString().padLeft(2, '0');
+    return '$y-$m-$d'; // e.g. "2025-11-30" for week starting Sunday
+  }
+
+  String _dateKey(DateTime d) {
+    final y = d.year.toString().padLeft(4, '0');
+    final m = d.month.toString().padLeft(2, '0');
+    final da = d.day.toString().padLeft(2, '0');
+    return '$y-$m-$da'; // e.g. 2025-11-30
+  }
+
+  Future<void> _ensureWeekBoundary() async {
+    final now = DateTime.now();
+    final currentWeekKey = _weekKeyFor(now); // Sunday-based
+    final doc = await db.collection('users').doc(adhdUid).get();
+    final data = doc.data() ?? {};
+
+    final prevWeekKey = data['weeklyWeekKey'] as String?;
+
+    print(
+      '[DEBUG] _ensureWeekBoundary → prevWeekKey=$prevWeekKey, '
+      'currentWeekKey=$currentWeekKey, weeklyScores=${weeklyScores.toList()}, '
+      'weeklyHistory=${weeklyHistory.toList()}',
+    );
+
+    // 1) First ever → just store key, no shift/reset
+    if (prevWeekKey == null) {
+      await db.collection('users').doc(adhdUid).set({
+        'weeklyWeekKey': currentWeekKey,
+      }, SetOptions(merge: true));
+
+      print(
+        '[DEBUG] _ensureWeekBoundary → first run, '
+        'set weeklyWeekKey=$currentWeekKey (no shift/reset)',
+      );
+      return;
+    }
+
+    // 2) If we go to same or OLDER week → do NOT shift/reset
+    if (currentWeekKey.compareTo(prevWeekKey) <= 0) {
+      print(
+        '[DEBUG] _ensureWeekBoundary → currentWeekKey <= prevWeekKey '
+        '($currentWeekKey <= $prevWeekKey) → no shift/reset',
+      );
+      return;
+    }
+
+    // 3) Only now: we moved FORWARD to a NEW week → finalize old week
+    final scores = List<double>.from(weeklyScores);
+    double lastWeekAvg = 0.0;
+    if (scores.isNotEmpty) {
+      final sum = scores.fold<double>(0.0, (s, v) => s + v);
+      lastWeekAvg = sum / scores.length;
+    }
+
+    print(
+      '[DEBUG] _ensureWeekBoundary → NEWER WEEK, '
+      'lastWeekAvg=$lastWeekAvg, oldScores=$scores',
+    );
+
+    final hist = List<double>.from(weeklyHistory);
+    hist.add(lastWeekAvg);
+    if (hist.length > 8) {
+      final removed = hist.removeAt(0);
+      print('[DEBUG] _ensureWeekBoundary → removed oldest week=$removed');
+    }
+
+    final resetWeek = List<double>.filled(7, 0.0);
+    weeklyHistory.assignAll(hist);
+    weeklyScores.assignAll(resetWeek);
+
+    await db.collection('users').doc(adhdUid).set({
+      'weeklyHistory': hist,
+      'weeklyDashboard': resetWeek,
+      'weeklyWeekKey': currentWeekKey,
+    }, SetOptions(merge: true));
+
+    print(
+      '[DEBUG] _ensureWeekBoundary → AFTER shift history=$hist, '
+      'resetWeek=$resetWeek, saved weeklyWeekKey=$currentWeekKey',
+    );
+  }
+
   Future<void> _loadWeeklyScores() async {
     final doc = await db.collection('users').doc(adhdUid).get();
     final data = doc.data();
@@ -111,10 +200,15 @@ class DashboardController extends GetxController {
         arr[i] = (raw[i] as num).toDouble();
       }
       weeklyScores.assignAll(arr);
+      print('[DEBUG] _loadWeeklyScores → weeklyScores=$arr');
+    } else {
+      print(
+        '[DEBUG] _loadWeeklyScores → no weeklyDashboard found, using zeros',
+      );
     }
   }
 
-  // NEW: load last 8 weeks history from Firestore
+  // load last 8 weeks history from Firestore
   Future<void> _loadWeeklyHistory() async {
     final doc = await db.collection('users').doc(adhdUid).get();
     final data = doc.data();
@@ -128,8 +222,15 @@ class DashboardController extends GetxController {
       } else {
         weeklyHistory.assignAll(list);
       }
+      print(
+        '[DEBUG] _loadWeeklyHistory → weeklyHistory=${weeklyHistory.toList()}',
+      );
+    } else {
+      print('[DEBUG] _loadWeeklyHistory → no weeklyHistory found');
     }
   }
+
+  // ---------- LISTENERS (unchanged logic) ----------
 
   void _listenToAdhdTasks() {
     _tasksSub?.cancel();
@@ -143,27 +244,19 @@ class DashboardController extends GetxController {
           (snap) {
             final now = DateTime.now();
 
-            // dateKey represents the "day this task belongs to"
-            // e.g. "2025-11-22"
             final todayKey =
                 '${now.year.toString().padLeft(4, '0')}-'
                 '${now.month.toString().padLeft(2, '0')}-'
                 '${now.day.toString().padLeft(2, '0')}';
 
-            // DASHBOARD FILTER:
-            // Only include tasks that belong to today.
-            // If a task has dateKey, we compare it directly.
-            // If it doesn't (older data), we fall back to createdAt.
             final todayDocs = snap.docs.where((d) {
               final data = d.data();
 
-              // 1) Prefer dateKey if present
               final dk = data['dateKey'];
               if (dk is String) {
                 return dk == todayKey;
               }
 
-              // 2) Fallback: use createdAt date
               final createdAt = data['createdAt'];
               if (createdAt is Timestamp) {
                 final dt = createdAt.toDate();
@@ -172,7 +265,6 @@ class DashboardController extends GetxController {
                     dt.day == now.day;
               }
 
-              // 3) As a last resort, keep the task (so old tasks don't disappear suddenly)
               return true;
             }).toList();
 
@@ -184,28 +276,16 @@ class DashboardController extends GetxController {
             totalTasks.value = total;
             checkedTasks.value = checked;
 
-            // Scoring uses today's tasks only
             updateTaskProgress(checked, total);
           },
           onError: (e) {
+            print('[DEBUG] _listenToAdhdTasks ERROR → $e');
             totalTasks.value = 0;
             checkedTasks.value = 0;
             updateTaskProgress(0, 0);
           },
         );
   }
-
-  // FILTERING FOR DASHBOARD:
-  // We only count tasks that belong to "today"
-  // The dashboard uses dateKey to know which day the task was created
-  // This ensures that daily progress reflects only today's tasks
-  // even if the task is still visible from previous days
-  //
-  // Example:
-  // - Task created on Thursday with dateKey="2025-11-20"
-  // - User checks it on Friday
-  // → It will NOT count for Friday's task progress
-  // → It counted only on Thursday
 
   void _listenToDailyMood() {
     _moodSub?.cancel();
@@ -223,7 +303,6 @@ class DashboardController extends GetxController {
               return;
             }
 
-            // Might be stored as int or num in Firestore, so cast safely
             final val = data['dailyMood'];
             int? moodInt;
             if (val is int) {
@@ -245,7 +324,6 @@ class DashboardController extends GetxController {
   void _listenToFocusSessions() {
     _focusSub?.cancel();
 
-    // compute "today" range
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
@@ -266,7 +344,7 @@ class DashboardController extends GetxController {
               totalSeconds += seconds;
             }
             final minutes = (totalSeconds / 60).round();
-            todayFocusMinutes.value = minutes; //NEW byt Loba
+            todayFocusMinutes.value = minutes;
             updateFocusMinutes(minutes);
           },
           onError: (_) {
@@ -308,13 +386,12 @@ class DashboardController extends GetxController {
     }
   }
 
-  /// Stream 1: User Defined Activities (Directly has category + isChecked)
   void _listenToCustomActivities() {
     _customActivitySub?.cancel();
     _customActivitySub = db
         .collection('users')
         .doc(adhdUid)
-        .collection('activities') // chat bot  activities
+        .collection('activities')
         .where('isChecked', isEqualTo: true)
         .snapshots()
         .listen((snap) {
@@ -366,16 +443,13 @@ class DashboardController extends GetxController {
         });
   }
 
-  /// Combines counts from both sources and updates the UI
   void _mergeAndPublishActivityCounts() {
     final Map<String, double> merged = {};
 
-    // Add Custom Counts
     _customActivityCounts.forEach((key, value) {
       merged[key] = value;
     });
 
-    // Add System Counts
     _systemActivityCounts.forEach((key, value) {
       if (merged.containsKey(key)) {
         merged[key] = merged[key]! + value;
@@ -386,27 +460,23 @@ class DashboardController extends GetxController {
 
     activityCounts.value = merged;
 
-    //NEW by Loba: total completed activities for scoring
     final totalCompleted = merged.values.fold<double>(0, (sum, v) => sum + v);
     updateActivitiesCount(totalCompleted.toInt());
   }
 
-  // ----------------- SCORING HELPERS -----------------
+  // ---------- SCORING HELPERS ----------
 
-  // Mood: 1–5 → 0–1
   double _moodScore() {
     if (_currentMood == null) return 0.0;
     final m = _currentMood!.clamp(1, 5);
     return (m - 1) / 4.0;
   }
 
-  // Tasks: % 0–100 → 0–1
   double _taskScore() {
     if (_taskPercent <= 0) return 0.0;
     return (_taskPercent / 100.0).clamp(0.0, 1.0);
   }
 
-  // Focus: every 30 min = 1 point, max 240 min (8 points) !!CHECK
   double _focusScore() {
     if (_focusMinutesCache <= 0) return 0.0;
     final focusPoints = _focusMinutesCache / 30.0; // 30 min = 1 point
@@ -414,17 +484,15 @@ class DashboardController extends GetxController {
     return (focusPoints / maxPoints).clamp(0.0, 1.0);
   }
 
-  // Activities: each activity = 1 point, cap at 4 points (4 activities)
   double _activityScore() {
     if (_activitiesCount <= 0) return 0.0;
 
-    const maxPoints = 4.0; // full score when reach 4 activities
-    final activityPoints = _activitiesCount.toDouble(); // 1 point per activity
+    const maxPoints = 4.0;
+    final activityPoints = _activitiesCount.toDouble();
 
     return (activityPoints / maxPoints).clamp(0.0, 1.0);
   }
 
-  // Combine all into dailyScore (0–100) and update weeklyScores today index
   void _recomputeDailyScore() {
     if (!_isInitialized) return;
     final mood = _moodScore();
@@ -435,17 +503,14 @@ class DashboardController extends GetxController {
     final combined = (mood + task + focus + act) / 4.0;
     dailyScore.value = combined * 100.0;
 
-    _updateWeeklyScoresLive(); //so line chart reflects live changes CHECK THIS WITH GIRLS
+    _updateWeeklyScoresLive();
     _updateWeeklyHistoryRealtime();
-
     _saveRealtimeScores();
   }
 
-  // LIVE: average score for the current week so far (0–100)
   double get currentWeekAverage {
     if (weeklyScores.isEmpty) return 0.0;
 
-    // consider only days that have some score > 0
     final nonZero = weeklyScores.where((v) => v > 0).toList();
     if (nonZero.isEmpty) return 0.0;
 
@@ -453,7 +518,6 @@ class DashboardController extends GetxController {
     return sum / nonZero.length;
   }
 
-  // called whenever tasks change
   void updateTaskProgress(int completed, int total) {
     if (total <= 0) {
       _taskPercent = 0;
@@ -463,42 +527,24 @@ class DashboardController extends GetxController {
     _recomputeDailyScore();
   }
 
-  // called whenever focus minutes change
   void updateFocusMinutes(int minutes) {
     _focusMinutesCache = minutes.clamp(0, 240);
     _recomputeDailyScore();
   }
 
-  // called whenever mood changes
   void updateDailyMood(int? mood) {
     _currentMood = mood;
     _recomputeDailyScore();
   }
 
-  // called whenever activity counts change
   void updateActivitiesCount(int count) {
     _activitiesCount = count.clamp(0, 1000);
     _recomputeDailyScore();
   }
 
-  // helper: Sunday=0..Saturday=6
-  int _dayIndex(DateTime d) {
-    return d.weekday % 7;
-  }
+  // ---------- WEEKLY SCORES + HISTORY (REALTIME) ----------
 
-  //جديده
-  Future<void> _updateLastWeekHistory(double avg) async {
-    final updated = List<double>.from(weeklyHistory);
-    updated[updated.length - 1] = avg;
-    weeklyHistory.assignAll(updated);
-
-    // save trimmed to Firestore
-    await db.collection('users').doc(adhdUid).set({
-      'weeklyHistory': _trimTo8(updated),
-    }, SetOptions(merge: true));
-  }
-
-  // live update weeklyScores for today
+  // keep weeklyScores for today’s index updated
   void _updateWeeklyScoresLive() {
     final idx = _dayIndex(DateTime.now());
     if (weeklyScores.length < 7) {
@@ -506,66 +552,75 @@ class DashboardController extends GetxController {
     }
     weeklyScores[idx] = dailyScore.value;
     weeklyScores.refresh();
+    print(
+      '[DEBUG] _updateWeeklyScoresLive → idx=$idx, weeklyScores=${weeklyScores.toList()}',
+    );
   }
 
+  // Only this function updates weeklyHistory realtime (last index)
   Future<void> _updateWeeklyHistoryRealtime() async {
-    final nonZero = weeklyScores.where((v) => v > 0).toList();
-    final avg = nonZero.isEmpty
-        ? 0.0
-        : nonZero.fold(0.0, (sum, v) => sum + v) / nonZero.length;
+    if (!_isInitialized) return;
 
-    final todayIdx = _dayIndex(DateTime.now());
-
-    //عدلت هنا
-    if (todayIdx == 0 || weeklyHistory.isEmpty) {
-      await _appendWeekToHistory(avg); //جديد
-    } else {
-      await _updateLastWeekHistory(avg);
+    final scores = List<double>.from(weeklyScores);
+    double avg = 0.0;
+    if (scores.isNotEmpty) {
+      final sum = scores.fold<double>(0.0, (s, v) => s + v);
+      avg = sum / scores.length;
     }
+
+    print(
+      '[DEBUG] _updateWeeklyHistoryRealtime → weeklyScores=$scores, avg=$avg, BEFORE=${weeklyHistory.toList()}',
+    );
+
+    final updated = List<double>.from(weeklyHistory);
+    if (updated.isEmpty) {
+      // first week slot
+      updated.add(avg);
+    } else {
+      // current week is always last index
+      updated[updated.length - 1] = avg;
+    }
+
+    weeklyHistory.assignAll(_trimTo8(updated));
+
+    await db.collection('users').doc(adhdUid).set({
+      'weeklyHistory': weeklyHistory.toList(),
+    }, SetOptions(merge: true));
+
+    print(
+      '[DEBUG] _updateWeeklyHistoryRealtime → AFTER=${weeklyHistory.toList()}',
+    );
   }
 
-  // جديد: ensure lists never exceed 8 items
+  // ensure lists never exceed 8 items
   List<double> _trimTo8(List<double> list) {
     if (list.length <= 8) return list;
     return list.sublist(list.length - 8);
   }
 
-  //عدلت هنا
+  // Save weeklyDashboard only (no weeklyHistory here anymore)
   Future<void> _saveRealtimeScores() async {
     if (!_isInitialized) return;
 
-    final todayIdx = _dayIndex(DateTime.now());
+    print(
+      '[DEBUG] _saveRealtimeScores → weeklyDashboard=${weeklyScores.toList()}',
+    );
 
-    final updatedWeeklyScores = List<double>.from(weeklyScores);
-    updatedWeeklyScores[todayIdx] = dailyScore.value;
-
-    final nonZeroDays = updatedWeeklyScores.where((v) => v > 0).toList();
-    final currentWeekAvg = nonZeroDays.isEmpty
-        ? 0.0
-        : nonZeroDays.fold(0.0, (sum, v) => sum + v) / nonZeroDays.length;
-
-    final updatedWeeklyHistory = List<double>.from(weeklyHistory);
-    //هنا التعديل
-    // Save weeklyDashboard first
     await db.collection('users').doc(adhdUid).set({
-      'weeklyDashboard': updatedWeeklyScores,
+      'weeklyDashboard': weeklyScores.toList(),
     }, SetOptions(merge: true));
-
-    // Update last week safely
-    if (updatedWeeklyHistory.isEmpty || todayIdx == 0) {
-      await _appendWeekToHistory(currentWeekAvg);
-    } else {
-      await _updateLastWeekHistory(currentWeekAvg);
-    }
   }
 
-  // save today's score into Firestore weeklyDashboard array at midnight
-  // save daily and compute weekly score at end of week
+  // ---------- MIDNIGHT SAVE (ONLY weeklyDashboard) ----------
+
   Future<void> _saveDailyScoreToWeekArray() async {
     final now = DateTime.now();
-    final dayIdx = _dayIndex(now); // 0=Sun .. 6=Sat
+    final dayIdx = _dayIndex(now);
 
-    // keep weeklyScores at size 7
+    print(
+      '[DEBUG] _saveDailyScoreToWeekArray → dayIdx=$dayIdx, BEFORE weeklyScores=${weeklyScores.toList()}',
+    );
+
     if (weeklyScores.length < 7) {
       final fill = List<double>.filled(7, 0.0);
       for (int i = 0; i < weeklyScores.length && i < 7; i++) {
@@ -574,24 +629,17 @@ class DashboardController extends GetxController {
       weeklyScores.assignAll(fill);
     }
 
-    // write yesterday’s score into its slot
     weeklyScores[dayIdx] = dailyScore.value;
 
-    // save daily array (Sun-Sat)
     await db.collection('users').doc(adhdUid).set({
-      'weeklyDashboard': weeklyScores,
+      'weeklyDashboard': weeklyScores.toList(),
     }, SetOptions(merge: true));
 
-    // if yesterday was Saturday → the WEEK is finished
-    if (dayIdx == 6) {
-      double sum = weeklyScores.fold(0.0, (p, e) => p + e);
-      double avgWeek = sum / weeklyScores.length;
-
-      await _appendWeekToHistory(avgWeek);
-    }
+    print(
+      '[DEBUG] _saveDailyScoreToWeekArray → AFTER weeklyScores=${weeklyScores.toList()}',
+    );
   }
 
-  // schedule midnight save (and reschedule for next day)
   void _scheduleMidnightSave() {
     _midnightTimer?.cancel();
 
@@ -599,9 +647,16 @@ class DashboardController extends GetxController {
     final tomorrow = DateTime(now.year, now.month, now.day + 1);
     final diff = tomorrow.difference(now);
 
+    print(
+      '[DEBUG] _scheduleMidnightSave → now=$now, tomorrow=$tomorrow, diff=$diff',
+    );
+
     _midnightTimer = Timer(diff, () async {
+      print(
+        '[DEBUG] _scheduleMidnightSave TIMER FIRED → calling _saveDailyScoreToWeekArray',
+      );
       await _saveDailyScoreToWeekArray();
-      _scheduleMidnightSave(); // schedule again for next midnight
+      _scheduleMidnightSave();
     });
   }
 

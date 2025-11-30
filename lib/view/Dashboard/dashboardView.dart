@@ -477,10 +477,34 @@ class _DashboardPageState extends State<DashboardPage> {
                                                         ),
                                                       ),
                                                     ),
-                                                    lineTouchData:
-                                                        LineTouchData(
-                                                          enabled: true,
-                                                        ),
+                                                    lineTouchData: LineTouchData(
+                                                      enabled: true,
+                                                      touchTooltipData: LineTouchTooltipData(
+                                                        getTooltipItems: (touchedSpots) {
+                                                          return touchedSpots.map((
+                                                            spot,
+                                                          ) {
+                                                            return LineTooltipItem(
+                                                              spot.y
+                                                                  .toStringAsFixed(
+                                                                    2,
+                                                                  ),
+                                                              const TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontSize: 12,
+                                                                fontFamily:
+                                                                    'K2D',
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                              ),
+                                                            );
+                                                          }).toList();
+                                                        },
+                                                      ),
+                                                    ),
+
                                                     lineBarsData: [
                                                       LineChartBarData(
                                                         spots: List.generate(
@@ -664,10 +688,33 @@ class _DashboardPageState extends State<DashboardPage> {
                                                           ),
                                                         ),
                                                       ),
-                                                      lineTouchData:
-                                                          LineTouchData(
-                                                            enabled: true,
-                                                          ),
+                                                      lineTouchData: LineTouchData(
+                                                        enabled: true,
+                                                        touchTooltipData: LineTouchTooltipData(
+                                                          getTooltipItems: (touchedSpots) {
+                                                            return touchedSpots.map((
+                                                              spot,
+                                                            ) {
+                                                              return LineTooltipItem(
+                                                                spot.y
+                                                                    .toStringAsFixed(
+                                                                      2,
+                                                                    ),
+                                                                const TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontSize: 12,
+                                                                  fontFamily:
+                                                                      'K2D',
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                ),
+                                                              );
+                                                            }).toList();
+                                                          },
+                                                        ),
+                                                      ),
                                                       lineBarsData: [
                                                         LineChartBarData(
                                                           spots: List.generate(
@@ -1247,7 +1294,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                 final key = entry.key;
                                                 final value = entry.value;
                                                 return BarTooltipItem(
-                                                  '$key\n${value.toInt()} activities',
+                                                  '$key\n${value.toStringAsFixed(2)} activities',
                                                   const TextStyle(
                                                     fontFamily: 'K2D',
                                                     fontSize: 12,
