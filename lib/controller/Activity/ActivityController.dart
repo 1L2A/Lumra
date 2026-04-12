@@ -691,59 +691,147 @@ class Activitycontroller {
     return count;
   }
 
-  //added this for timer:
   void onActivityTimeTap(Activitymodel item, BuildContext context) {
-    final time = item.time.trim();
-    if (time.isEmpty) return;
-
-    // Extract integer minutes
-    final match = RegExp(r'(\d+)').firstMatch(time);
-    final minutes = match != null ? int.tryParse(match.group(1)!) ?? 0 : 0;
-
+    final minutes = _parseMinutes(item.time);
     if (minutes <= 0) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Invalid time value')));
+      _showInvalidTimeSnack(context);
       return;
     }
 
-    // Action differs by category
-    final category = item.category.toLowerCase().trim();
-    final title = item.title.toLowerCase().trim();
-
-    if (category.contains('sport')) {
-      // Open sport timer
-      Get.to(() => SportTimer(duration: Duration(minutes: minutes)));
-    } else if (title.contains('large puzzle') ||
-        title.contains('flash memory challenge') ||
-        title.contains('brain games')) {
-      Get.to(() => const NumberPuzzle());
-      //for now nothing until the rest is added
-    } else if (title.contains('writing') ||
-        title.contains('write') ||
-        title.contains('art') ||
-        title.contains('drawing') ||
-        title.contains('draw') ||
-        title.contains('journaling')) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          content: ActivityPrompts(activityTitle: item.title, minutes: minutes),
-        ),
-      );
-      return; // stop further navigation
-    } else if (title.contains('cooking')) {
-      getUserAge().then((age) {
-        Get.to(() => Cooking(userAge: age));
-      });
-    } else {
-      Get.to(() => LiquidTimer(duration: Duration(minutes: minutes)));
+    if (_isSport(item)) {
+      _openSportTimer(minutes);
+      return;
     }
+    if (_isPuzzle(item)) {
+      _openPuzzle();
+      return;
+    }
+    if (_isCreativeWrite(item)) {
+      _openPromptDialog(context, item, minutes);
+      return;
+    }
+    if (_isCooking(item)) {
+      _openCooking();
+      return;
+    }
+    _openGenericTimer(minutes);
   }
+
+  int _parseMinutes(String time) {
+    final match = RegExp(r'(\d+)').firstMatch(time.trim());
+    return match != null ? int.tryParse(match.group(1)!) ?? 0 : 0;
+  }
+
+  void _showInvalidTimeSnack(BuildContext context) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Invalid time value')));
+  }
+
+  bool _isSport(Activitymodel item) =>
+      item.category.toLowerCase().contains('sport');
+
+  bool _isPuzzle(Activitymodel item) {
+    final t = item.title.toLowerCase();
+    return t.contains('large puzzle') ||
+        t.contains('flash memory challenge') ||
+        t.contains('brain games');
+  }
+
+  bool _isCreativeWrite(Activitymodel item) {
+    final t = item.title.toLowerCase();
+    return t.contains('writing') ||
+        t.contains('write') ||
+        t.contains('art') ||
+        t.contains('drawing') ||
+        t.contains('draw') ||
+        t.contains('journaling');
+  }
+
+  bool _isCooking(Activitymodel item) =>
+      item.title.toLowerCase().contains('cooking');
+
+  void _openSportTimer(int minutes) =>
+      Get.to(() => SportTimer(duration: Duration(minutes: minutes)));
+
+  void _openPuzzle() => Get.to(() => const NumberPuzzle());
+
+  void _openPromptDialog(
+    BuildContext context,
+    Activitymodel item,
+    int minutes,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: ActivityPrompts(activityTitle: item.title, minutes: minutes),
+      ),
+    );
+  }
+
+  void _openCooking() {
+    getUserAge().then((age) {
+      Get.to(() => Cooking(userAge: age));
+    });
+  }
+
+  void _openGenericTimer(int minutes) =>
+      Get.to(() => LiquidTimer(duration: Duration(minutes: minutes)));
+
+  // //added this for timer:
+  // void onActivityTimeTap(Activitymodel item, BuildContext context) {
+  //   final time = item.time.trim();
+  //   if (time.isEmpty) return;
+
+  //   // Extract integer minutes
+  //   final match = RegExp(r'(\d+)').firstMatch(time);
+  //   final minutes = match != null ? int.tryParse(match.group(1)!) ?? 0 : 0;
+
+  //   if (minutes <= 0) {
+  //     ScaffoldMessenger.of(
+  //       context,
+  //     ).showSnackBar(const SnackBar(content: Text('Invalid time value')));
+  //     return;
+  //   }
+
+  //   // Action differs by category
+  //   final category = item.category.toLowerCase().trim();
+  //   final title = item.title.toLowerCase().trim();
+
+  //   if (category.contains('sport')) {
+  //     // Open sport timer
+  //     Get.to(() => SportTimer(duration: Duration(minutes: minutes)));
+  //   } else if (title.contains('large puzzle') ||
+  //       title.contains('flash memory challenge') ||
+  //       title.contains('brain games')) {
+  //     Get.to(() => const NumberPuzzle());
+  //   } else if (title.contains('writing') ||
+  //       title.contains('write') ||
+  //       title.contains('art') ||
+  //       title.contains('drawing') ||
+  //       title.contains('draw') ||
+  //       title.contains('journaling')) {
+  //     showDialog(
+  //       context: context,
+  //       builder: (context) => AlertDialog(
+  //         backgroundColor: Colors.white,
+  //         shape: RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.circular(20),
+  //         ),
+  //         content: ActivityPrompts(activityTitle: item.title, minutes: minutes),
+  //       ),
+  //     );
+  //     return; // stop further navigation
+  //   } else if (title.contains('cooking')) {
+  //     getUserAge().then((age) {
+  //       Get.to(() => Cooking(userAge: age));
+  //     });
+  //   } else {
+  //     Get.to(() => LiquidTimer(duration: Duration(minutes: minutes)));
+  //   }
+  // }
 
   // final RxBool _capacityNoticePending = false.obs; // queued toast
 
