@@ -692,9 +692,17 @@ class Activitycontroller {
   }
 
   void onActivityTimeTap(Activitymodel item, BuildContext context) {
-    final minutes = _parseMinutes(item.time);
+    final time = item.time.trim();
+    if (time.isEmpty) return;
+
+    // Extract integer minutes
+    final match = RegExp(r'(\d+)').firstMatch(time);
+    final minutes = match != null ? int.tryParse(match.group(1)!) ?? 0 : 0;
+
     if (minutes <= 0) {
-      _showInvalidTimeSnack(context);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Invalid time value')));
       return;
     }
 
@@ -715,17 +723,6 @@ class Activitycontroller {
       return;
     }
     _openGenericTimer(minutes);
-  }
-
-  int _parseMinutes(String time) {
-    final match = RegExp(r'(\d+)').firstMatch(time.trim());
-    return match != null ? int.tryParse(match.group(1)!) ?? 0 : 0;
-  }
-
-  void _showInvalidTimeSnack(BuildContext context) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Invalid time value')));
   }
 
   bool _isSport(Activitymodel item) =>
