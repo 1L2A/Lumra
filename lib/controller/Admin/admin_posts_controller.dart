@@ -252,43 +252,17 @@ class AdminPostsController extends GetxController {
 
   void listenReportedPostsRealtime() {
     reportedPosts.clear();
+    _listenReportedPostsFromCollection("CareGiverCommunityPosts");
+    _listenReportedPostsFromCollection("ADHDCommunityPosts");
+  }
 
-    // Caregiver posts
+  void _listenReportedPostsFromCollection(String collectionName) {
     db
-        .collection("CareGiverCommunityPosts")
+        .collection(collectionName)
         .where('isReported', isEqualTo: true)
         .snapshots()
         .listen((snapshot) {
           for (var doc in snapshot.docs) {
-            reportedPosts.removeWhere(
-              (item) =>
-                  item["postId"] == doc.id &&
-                  item["collection"] == doc.reference.parent.id,
-            );
-
-            reportedPosts.add({
-              "type": "post",
-              "postId": doc.id,
-              "post": Post.fromFirestore(doc),
-              "collection": doc.reference.parent.id,
-            });
-          }
-          mergeReportedItems();
-        });
-
-    // ADHD posts
-    db
-        .collection("ADHDCommunityPosts")
-        .where('isReported', isEqualTo: true)
-        .snapshots()
-        .listen((snapshot) {
-          for (var doc in snapshot.docs) {
-            reportedPosts.removeWhere(
-              (item) =>
-                  item["postId"] == doc.id &&
-                  item["collection"] == doc.reference.parent.id,
-            );
-
             reportedPosts.removeWhere(
               (item) =>
                   item["postId"] == doc.id &&
