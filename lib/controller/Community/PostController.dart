@@ -394,30 +394,7 @@ class PostControllerX extends GetxController {
     if (!isFormValid.value) return false;
 
     var text = contentController.text.trim();
-    //Remove leading/trailing spaces and collapse multiple spaces between words
-    text = text.trim().replaceAll(RegExp(r'\s+'), ' ');
-
-    if (text.isEmpty) {
-      ToastService.error("Post cannot be empty");
-      return false;
-    }
-
-    if (currentUid == null) {
-      ToastService.error("You must be logged in to create a post");
-      return false;
-    }
-
-    if (!_bannedWordsLoaded.value) {
-      await _loadBannedWords();
-    }
-
-    final hasProfanity = _profanityFilter.hasProfanity(text);
-    final hasBannedWords = _containsBannedWords(text);
-
-    if (hasProfanity || hasBannedWords) {
-      return false;
-    }
-
+    if (!await validateContent(contentController.text)) return false;
     try {
       isLoading.value = true;
       // Update community collection to ensure we're using the current user's role
@@ -784,28 +761,7 @@ class PostControllerX extends GetxController {
     if (!isFormValid.value) return false;
 
     var text = contentController.text.trim();
-    text = text.trim().replaceAll(RegExp(r'\s+'), ' ');
-
-    if (text.isEmpty) {
-      ToastService.error("Comment cannot be empty");
-      return false;
-    }
-
-    if (currentUid == null) {
-      ToastService.error("You must be logged in to create a comment");
-      return false;
-    }
-
-    if (!_bannedWordsLoaded.value) {
-      await _loadBannedWords();
-    }
-
-    final hasProfanity = _profanityFilter.hasProfanity(text);
-    final hasBannedWords = _containsBannedWords(text);
-
-    if (hasProfanity || hasBannedWords) {
-      return false;
-    }
+    if (!await validateContent(contentController.text)) return false;
 
     try {
       isLoading.value = true;
@@ -850,6 +806,29 @@ class PostControllerX extends GetxController {
       isLoading.value = false;
     }
   }
+
+
+Future<bool> validateContent(String text) async {
+  text = text.trim().replaceAll(RegExp(r'\s+'), ' ');
+
+  if (text.isEmpty) {
+  ToastService.error("content cannot be empty");
+  return false; }
+
+  if (currentUid == null) {
+  ToastService.error("You must be logged in ");
+  return false;}
+
+  if (!_bannedWordsLoaded.value) {
+    await _loadBannedWords();
+  }
+
+  final hasProfanity = _profanityFilter.hasProfanity(text);
+  final hasBannedWords = _containsBannedWords(text);
+
+  return !(hasProfanity || hasBannedWords);
+}
+
 
   Future<void> deletePost(String postId) async {
     try {
@@ -947,3 +926,7 @@ class PostControllerX extends GetxController {
         .map((snapshot) => snapshot.size);
   }
 }
+
+
+
+
