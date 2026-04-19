@@ -285,14 +285,18 @@ class RegistrationController extends ChangeNotifier {
     return null;
   }
 
-  bool _isValidPassword(String password) {
+ bool _isValidPassword(String password) {
     // Check password strength requirements: 8+ chars, uppercase, number, symbol
-    if (password.length < 8) return false;
-    if (!password.contains(RegExp(r'[A-Z]'))) return false;
-    if (!password.contains(RegExp(r'[0-9]'))) return false;
-    if (!password.contains(RegExp(r'[^a-zA-Z0-9]'))) return false;
+    if (password.length < 8 ||
+        !password.contains(RegExp(r'[A-Z]')) ||
+        !password.contains(RegExp(r'[0-9]')) ||
+        !password.contains(RegExp(r'[^a-zA-Z0-9]'))) {
+      return false;
+    }
     return true;
   }
+
+
 
   void onGenderFieldTouched() {
     _genderFieldTouched = true;
